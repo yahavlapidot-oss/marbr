@@ -43,9 +43,37 @@ Three separate apps share a common backend:
 
 ## Commands
 
-<!-- Fill in once the monorepo/workspace is scaffolded. Examples:
-Backend  – cd backend && npm run start:dev
-Panel    – cd business-panel && npm run dev
-Tests    – cd backend && npm test
-Single   – cd backend && npm test -- --testPathPattern=<name>
--->
+### Local infrastructure (PostgreSQL + Redis)
+```bash
+docker-compose up -d
+```
+
+### Backend (NestJS)
+```bash
+cd backend
+npm run start:dev          # dev server with watch
+npm run build              # production build
+npm test                   # unit tests
+npm test -- --testPathPattern=<name>  # single test file
+npx prisma generate        # regenerate Prisma client after schema changes
+npx prisma migrate dev     # create and apply a new migration
+```
+Swagger UI: http://localhost:3000/api/docs
+
+### Business Panel (Next.js) — not yet scaffolded
+```bash
+cd business-panel
+npm run dev
+```
+
+### Customer App (Flutter) — not yet scaffolded
+```bash
+cd customer-app
+flutter run
+```
+
+### Node.js PATH note
+Node is installed via Homebrew. If `node`/`npm` are not found, run:
+```bash
+export PATH="/opt/homebrew/bin:$PATH"
+```

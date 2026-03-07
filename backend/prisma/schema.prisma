@@ -1,0 +1,497 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum UserRole {
+  CUSTOMER
+  OWNER
+  MANAGER
+  BARTENDER
+  CASHIER
+  HOSTESS
+  ADMIN
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum BusinessType {
+  BAR
+  PUB
+  CLUB
+  RESTAURANT
+  ENTERTAINMENT
+  FESTIVAL
+}
+
+enum CampaignStatus {
+  DRAFT
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  ENDED
+  CANCELLED
+}
+
+enum CampaignType {
+  RAFFLE
+  INSTANT_WIN
+  EVERY_N
+  WEIGHTED_ODDS
+}
+
+enum EntryMethod {
+  QR_SCAN
+  MANUAL_CODE
+  CHECKIN
+  POS_CALLBACK
+}
+
+enum RewardStatus {
+  ACTIVE
+  REDEEMED
+  EXPIRED
+  REVOKED
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  FAILED
+}
+
+enum NotificationChannel {
+  PUSH
+  SMS
+  EMAIL
+}
+
+enum SubscriptionPlan {
+  FREE
+  STARTER
+  GROWTH
+  ENTERPRISE
+}
+
+enum FraudSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+// ---------------------------------------------------------------------------
+// Users & Auth
+// ---------------------------------------------------------------------------
+
+model User {
+  id               String    @id @default(cuid())
+  email            String?   @unique
+  phone            String?   @unique
+  passwordHash     String?
+  fullName         String
+  dateOfBirth      DateTime?
+  gender           Gender?
+  role             UserRole  @default(CUSTOMER)
+  isActive         Boolean   @default(true)
+  isVerified       Boolean   @default(false)
+  marketingConsent Boolean   @default(false)
+  city             String?
+  avatarUrl        String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+
+  devices          UserDevice[]
+  entries          Entry[]
+  userRewards      UserReward[]
+  notifications    Notification[]
+  favorites        FavoriteBusiness[]
+  eventLogs        EventLog[]
+  fraudFlags       FraudFlag[]
+  employeeProfiles Employee[]
+
+  @@map("users")
+}
+
+model UserDevice {
+  id          String   @id @default(cuid())
+  userId      String
+  fcmToken    String?
+  apnsToken   String?
+  deviceId    String
+  platform    String
+  deviceModel String?
+  osVersion   String?
+  appVersion  String?
+  lastSeenAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, deviceId])
+  @@map("user_devices")
+}
+
+model OtpCode {
+  id        String   @id @default(cuid())
+  target    String
+  code      String
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  @@map("otp_codes")
+}
+
+// ---------------------------------------------------------------------------
+// Businesses & Branches
+// ---------------------------------------------------------------------------
+
+model Business {
+  id          String       @id @default(cuid())
+  name        String
+  type        BusinessType
+  description String?
+  logoUrl     String?
+  coverUrl    String?
+  email       String?
+  phone       String?
+  website     String?
+  isActive    Boolean      @default(true)
+  isVerified  Boolean      @default(false)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  branches     Branch[]
+  employees    Employee[]
+  products     Product[]
+  campaigns    Campaign[]
+  subscription Subscription?
+  eventLogs    EventLog[]
+
+  @@map("businesses")
+}
+
+model Branch {
+  id             String   @id @default(cuid())
+  businessId     String
+  name           String
+  address        String
+  city           String
+  country        String   @default("IL")
+  lat            Float?
+  lng            Float?
+  geofenceRadius Int?
+  phone          String?
+  openingHours   Json?
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  employees   Employee[]
+  campaigns   CampaignBranch[]
+  redemptions Redemption[]
+
+  @@map("branches")
+}
+
+// ---------------------------------------------------------------------------
+// Employees
+// ---------------------------------------------------------------------------
+
+model Employee {
+  id         String    @id @default(cuid())
+  userId     String
+  businessId String
+  branchId   String?
+  role       UserRole
+  isActive   Boolean   @default(true)
+  invitedAt  DateTime  @default(now())
+  acceptedAt DateTime?
+
+  user     User     @relation(fields: [userId], references: [id])
+  business Business @relation(fields: [businessId], references: [id])
+  branch   Branch?  @relation(fields: [branchId], references: [id])
+
+  @@unique([userId, businessId])
+  @@map("employees")
+}
+
+// ---------------------------------------------------------------------------
+// Products
+// ---------------------------------------------------------------------------
+
+model Product {
+  id          String   @id @default(cuid())
+  businessId  String
+  name        String
+  sku         String?
+  posId       String?
+  price       Float?
+  imageUrl    String?
+  isAvailable Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  business         Business          @relation(fields: [businessId], references: [id])
+  campaignProducts CampaignProduct[]
+
+  @@map("products")
+}
+
+// ---------------------------------------------------------------------------
+// Campaigns
+// ---------------------------------------------------------------------------
+
+model Campaign {
+  id                String         @id @default(cuid())
+  businessId        String
+  name              String
+  description       String?
+  type              CampaignType
+  status            CampaignStatus @default(DRAFT)
+  startsAt          DateTime?
+  endsAt            DateTime?
+  maxEntries        Int?
+  maxEntriesPerUser Int?           @default(1)
+  everyN            Int?
+  winProbability    Float?
+  pushTitle         String?
+  pushBody          String?
+  targetAudience    Json?
+  budget            Float?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+
+  business  Business          @relation(fields: [businessId], references: [id])
+  branches  CampaignBranch[]
+  products  CampaignProduct[]
+  rewards   Reward[]
+  entries   Entry[]
+
+  @@map("campaigns")
+}
+
+model CampaignBranch {
+  campaignId String
+  branchId   String
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, branchId])
+  @@map("campaign_branches")
+}
+
+model CampaignProduct {
+  campaignId  String
+  productId   String
+  minQuantity Int    @default(1)
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@id([campaignId, productId])
+  @@map("campaign_products")
+}
+
+// ---------------------------------------------------------------------------
+// Entries
+// ---------------------------------------------------------------------------
+
+model Entry {
+  id          String      @id @default(cuid())
+  campaignId  String
+  userId      String
+  method      EntryMethod
+  codeHash    String?
+  purchaseRef String?
+  metadata    Json?
+  isValid     Boolean     @default(true)
+  createdAt   DateTime    @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@index([campaignId])
+  @@index([userId])
+  @@map("entries")
+}
+
+// ---------------------------------------------------------------------------
+// Rewards
+// ---------------------------------------------------------------------------
+
+model Reward {
+  id             String   @id @default(cuid())
+  campaignId     String
+  name           String
+  description    String?
+  imageUrl       String?
+  inventory      Int?
+  allocated      Int      @default(0)
+  expiresInHours Int?     @default(24)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  campaign    Campaign     @relation(fields: [campaignId], references: [id])
+  userRewards UserReward[]
+
+  @@map("rewards")
+}
+
+model UserReward {
+  id         String       @id @default(cuid())
+  userId     String
+  rewardId   String
+  status     RewardStatus @default(ACTIVE)
+  code       String       @unique @default(cuid())
+  expiresAt  DateTime?
+  wonAt      DateTime     @default(now())
+  redeemedAt DateTime?
+
+  user       User        @relation(fields: [userId], references: [id])
+  reward     Reward      @relation(fields: [rewardId], references: [id])
+  redemption Redemption?
+
+  @@map("user_rewards")
+}
+
+// ---------------------------------------------------------------------------
+// Redemptions
+// ---------------------------------------------------------------------------
+
+model Redemption {
+  id           String   @id @default(cuid())
+  userRewardId String   @unique
+  branchId     String
+  staffUserId  String?
+  notes        String?
+  redeemedAt   DateTime @default(now())
+
+  userReward UserReward @relation(fields: [userRewardId], references: [id])
+  branch     Branch     @relation(fields: [branchId], references: [id])
+
+  @@map("redemptions")
+}
+
+// ---------------------------------------------------------------------------
+// Notifications
+// ---------------------------------------------------------------------------
+
+model Notification {
+  id        String              @id @default(cuid())
+  userId    String
+  title     String
+  body      String
+  data      Json?
+  channel   NotificationChannel @default(PUSH)
+  status    NotificationStatus  @default(PENDING)
+  readAt    DateTime?
+  sentAt    DateTime?
+  createdAt DateTime            @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+// ---------------------------------------------------------------------------
+// Analytics Event Log
+// ---------------------------------------------------------------------------
+
+model EventLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  businessId String?
+  event      String
+  payload    Json?
+  createdAt  DateTime @default(now())
+
+  user     User?     @relation(fields: [userId], references: [id])
+  business Business? @relation(fields: [businessId], references: [id])
+
+  @@index([event])
+  @@index([businessId])
+  @@map("event_logs")
+}
+
+// ---------------------------------------------------------------------------
+// Fraud
+// ---------------------------------------------------------------------------
+
+model FraudFlag {
+  id         String        @id @default(cuid())
+  userId     String?
+  deviceId   String?
+  reason     String
+  severity   FraudSeverity @default(LOW)
+  metadata   Json?
+  resolvedAt DateTime?
+  createdAt  DateTime      @default(now())
+
+  user User? @relation(fields: [userId], references: [id])
+
+  @@map("fraud_flags")
+}
+
+// ---------------------------------------------------------------------------
+// Billing
+// ---------------------------------------------------------------------------
+
+model Subscription {
+  id         String           @id @default(cuid())
+  businessId String           @unique
+  plan       SubscriptionPlan @default(FREE)
+  startsAt   DateTime         @default(now())
+  endsAt     DateTime?
+  isActive   Boolean          @default(true)
+  stripeId   String?
+
+  business Business  @relation(fields: [businessId], references: [id])
+  invoices  Invoice[]
+
+  @@map("subscriptions")
+}
+
+model Invoice {
+  id             String   @id @default(cuid())
+  subscriptionId String
+  amount         Float
+  currency       String   @default("ILS")
+  paidAt         DateTime?
+  invoiceUrl     String?
+  createdAt      DateTime @default(now())
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id])
+
+  @@map("invoices")
+}
+
+// ---------------------------------------------------------------------------
+// Favorites
+// ---------------------------------------------------------------------------
+
+model FavoriteBusiness {
+  userId     String
+  businessId String
+  createdAt  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, businessId])
+  @@map("favorite_businesses")
+}

@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git init:*)",
+      "Bash(git:*)",
+      "Bash(node:*)",
+      "Bash(/opt/homebrew/bin/brew list:*)",
+      "Bash(/opt/homebrew/bin/flutter:*)",
+      "Bash(/opt/homebrew/bin/brew install:*)",
+      "Bash(export:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" git:*)"
+    ]
+  }
+}
