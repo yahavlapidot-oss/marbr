@@ -8,7 +8,21 @@
       "Bash(/opt/homebrew/bin/flutter:*)",
       "Bash(/opt/homebrew/bin/brew install:*)",
       "Bash(export:*)",
-      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" git:*)"
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" git:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" git commit:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" npx create-next-app@latest:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" echo No:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /opt/homebrew/bin/flutter create:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" npm install:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" cat:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /opt/homebrew/bin/flutter pub:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" /opt/homebrew/bin/flutter analyze:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" npm run:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin\" git add:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npx tsc:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" node_modules/.bin/tsc:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" flutter analyze:*)",
+      "Bash(/Users/yahavlapidot/fvm/default/bin/flutter analyze:*)"
     ]
   }
 }
