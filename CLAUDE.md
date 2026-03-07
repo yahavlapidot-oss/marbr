@@ -6,21 +6,46 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 After each meaningful unit of work, automatically commit and push the changes. No need to ask for confirmation before committing or pushing.
 
-## Commands
+## Product Overview
 
-<!-- Add build, lint, test, and dev commands here. Examples:
-- Build: `npm run build`
-- Test: `npm test`
-- Run single test: `npm test -- --testPathPattern=<filename>`
-- Lint: `npm run lint`
-- Dev server: `npm run dev`
--->
+MrBar is a two-sided promotions, raffles, and notifications platform for physical venues (bars, clubs, restaurants). Businesses launch real-time campaigns (e.g. "buy a Heineken in the next 15 min, enter a raffle for 20 free shots"), customers receive push notifications, scan a QR/enter a code at the POS, and are entered into the raffle or receive an instant reward.
 
 ## Architecture
 
-<!-- Describe the high-level architecture here once the project is established. Include:
-- What the project does
-- Key technologies and frameworks
-- How major components interact
-- Important conventions or patterns used throughout the codebase
+Three separate apps share a common backend:
+
+| App | Tech | Purpose |
+|-----|------|---------|
+| `backend` | Node.js + NestJS | REST API, business logic, queues |
+| `customer-app` | Flutter | iOS + Android customer app |
+| `business-panel` | Next.js | Web dashboard for business owners/staff |
+
+### Backend Services (NestJS modules)
+`auth` · `users` · `businesses` · `branches` · `employees` · `campaigns` · `entries` · `rewards` · `redemptions` · `notifications` · `analytics` · `billing` · `fraud` · `admin`
+
+### Infrastructure
+- **Database:** PostgreSQL
+- **Cache / queues:** Redis + BullMQ
+- **Push notifications:** Firebase (FCM) + APNS
+- **File storage:** S3 / Cloudinary
+- **Maps:** Google Maps / Mapbox
+- **Monitoring:** Sentry + Grafana + PostHog
+
+### Key Domain Concepts
+- **Campaign** – time-boxed promotion with eligibility rules, required product, reward, and a win mechanism (raffle / instant / every-N / weighted odds).
+- **Entry** – a participation event created when a customer scans a dynamic QR or submits a purchase code. Includes duplicate-prevention (hash + TTL + device fingerprint).
+- **Reward / UserReward** – prize allocated to a winner; has inventory cap, expiry window, and a one-time redemption QR.
+- **Redemption** – staff-side action that marks a UserReward as used; validated by branch and short-lived code.
+
+### Auth & Permissions
+- JWT access + refresh tokens, OTP via SMS, Google/Apple social login.
+- RBAC roles: `customer` | `owner` | `manager` | `bartender` | `cashier` | `hostess` | `admin`.
+
+## Commands
+
+<!-- Fill in once the monorepo/workspace is scaffolded. Examples:
+Backend  – cd backend && npm run start:dev
+Panel    – cd business-panel && npm run dev
+Tests    – cd backend && npm test
+Single   – cd backend && npm test -- --testPathPattern=<name>
 -->
