@@ -22,7 +22,18 @@
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npx tsc:*)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" node_modules/.bin/tsc:*)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" flutter analyze:*)",
-      "Bash(/Users/yahavlapidot/fvm/default/bin/flutter analyze:*)"
+      "Bash(/Users/yahavlapidot/fvm/default/bin/flutter analyze:*)",
+      "Bash(xcode-select:*)",
+      "Bash(xcrun simctl:*)",
+      "Bash(docker compose:*)",
+      "Bash(/Applications/Docker.app/Contents/Resources/bin/docker compose:*)",
+      "Bash(/Applications/Docker.app/Contents/Resources/bin/docker ps:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npx prisma:*)",
+      "Bash(curl -s http://localhost:3000/api/v1/health)",
+      "Read(//private/tmp/**)",
+      "Bash(curl:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" node_modules/.bin/prisma generate:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install:*)"
     ]
   }
 }

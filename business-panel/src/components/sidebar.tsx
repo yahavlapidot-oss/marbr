@@ -8,6 +8,7 @@ import {
   Gift,
   Users,
   UserCog,
+  Package,
   BarChart3,
   Settings,
   QrCode,
@@ -22,6 +23,7 @@ import { useAuthStore } from '@/lib/auth-store';
 const nav = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
   { href: '/campaigns', icon: Megaphone, label: 'Campaigns' },
+  { href: '/products', icon: Package, label: 'Products' },
   { href: '/rewards', icon: Gift, label: 'Rewards' },
   { href: '/customers', icon: Users, label: 'Customers' },
   { href: '/employees', icon: UserCog, label: 'Employees' },
