@@ -33,7 +33,8 @@
       "Read(//private/tmp/**)",
       "Bash(curl:*)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" node_modules/.bin/prisma generate:*)",
-      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install:*)"
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install:*)",
+      "Bash(ls:*)"
     ]
   }
 }
