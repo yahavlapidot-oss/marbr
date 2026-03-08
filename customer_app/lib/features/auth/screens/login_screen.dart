@@ -19,6 +19,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _loading = false;
   String? _error;
   bool _usePassword = false;
+  bool _obscure = true;
 
   Future<void> _sendOtp() async {
     final target = _targetCtrl.text.trim();
@@ -58,86 +59,119 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppTheme.bg,
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Spacer(),
-              Row(
-                children: [
-                  const Icon(Icons.sports_bar, color: AppTheme.amber, size: 36),
-                  const SizedBox(width: 10),
-                  Text('MrBar', style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
+          child: SizedBox(
+            height: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.top - 24,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Spacer(flex: 2),
+
+                // Logo
+                Container(
+                  width: 56, height: 56,
+                  decoration: BoxDecoration(
+                    color: AppTheme.gold.withAlpha(20),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppTheme.gold.withAlpha(60)),
+                  ),
+                  child: const Icon(Icons.sports_bar, color: AppTheme.gold, size: 28),
+                ),
+                const SizedBox(height: 20),
+                Text('MrBar',
+                  style: Theme.of(context).textTheme.headlineLarge?.copyWith(
                     color: AppTheme.white,
                     fontWeight: FontWeight.w800,
+                    letterSpacing: -1,
                   )),
-                ],
-              ),
-              const SizedBox(height: 12),
-              Text(
-                'Real-time promos. Instant wins.\nRedeem on the spot.',
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.muted),
-              ),
-              const Spacer(),
-
-              // Toggle
-              Row(
-                children: [
-                  _TabBtn(label: 'Phone / OTP', selected: !_usePassword, onTap: () => setState(() => _usePassword = false)),
-                  const SizedBox(width: 8),
-                  _TabBtn(label: 'Email & Password', selected: _usePassword, onTap: () => setState(() => _usePassword = true)),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              Text(
-                _usePassword ? 'Email' : 'Phone or email',
-                style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppTheme.subtle),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _targetCtrl,
-                keyboardType: _usePassword ? TextInputType.emailAddress : TextInputType.phone,
-                style: const TextStyle(color: AppTheme.white),
-                decoration: InputDecoration(
-                  hintText: _usePassword ? 'you@example.com' : '+972 50 000 0000',
-                  prefixIcon: Icon(_usePassword ? Icons.email_outlined : Icons.phone, color: AppTheme.muted),
-                ),
-              ),
-
-              if (_usePassword) ...[
-                const SizedBox(height: 12),
-                Text('Password', style: Theme.of(context).textTheme.labelLarge?.copyWith(color: AppTheme.subtle)),
                 const SizedBox(height: 8),
-                TextField(
-                  controller: _passwordCtrl,
-                  obscureText: true,
-                  style: const TextStyle(color: AppTheme.white),
-                  decoration: const InputDecoration(
-                    hintText: '••••••••',
-                    prefixIcon: Icon(Icons.lock_outline, color: AppTheme.muted),
+                const Text(
+                  'Real-time promos. Instant wins.\nRedeem on the spot.',
+                  style: TextStyle(color: AppTheme.muted, fontSize: 15, height: 1.5),
+                ),
+
+                const Spacer(flex: 3),
+
+                // Tab selector
+                Container(
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: AppTheme.surface,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: AppTheme.border),
+                  ),
+                  child: Row(
+                    children: [
+                      _TabBtn(label: 'Phone / OTP', selected: !_usePassword,
+                        onTap: () => setState(() => _usePassword = false)),
+                      _TabBtn(label: 'Email & Password', selected: _usePassword,
+                        onTap: () => setState(() => _usePassword = true)),
+                    ],
                   ),
                 ),
-              ],
+                const SizedBox(height: 20),
 
-              if (_error != null) ...[
-                const SizedBox(height: 10),
-                Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
-              ],
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _loading ? null : (_usePassword ? _loginWithPassword : _sendOtp),
-                  child: _loading
-                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                      : Text(_usePassword ? 'Sign In' : 'Send OTP'),
+                // Input: phone/email
+                TextField(
+                  controller: _targetCtrl,
+                  keyboardType: _usePassword ? TextInputType.emailAddress : TextInputType.phone,
+                  style: const TextStyle(color: AppTheme.white),
+                  decoration: InputDecoration(
+                    hintText: _usePassword ? 'you@example.com' : '+972 50 000 0000',
+                    prefixIcon: Icon(
+                      _usePassword ? Icons.email_outlined : Icons.phone_outlined,
+                      color: AppTheme.muted, size: 20),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 32),
-            ],
+
+                if (_usePassword) ...[
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _passwordCtrl,
+                    obscureText: _obscure,
+                    style: const TextStyle(color: AppTheme.white),
+                    decoration: InputDecoration(
+                      hintText: '••••••••',
+                      prefixIcon: const Icon(Icons.lock_outline, color: AppTheme.muted, size: 20),
+                      suffixIcon: GestureDetector(
+                        onTap: () => setState(() => _obscure = !_obscure),
+                        child: Icon(
+                          _obscure ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                          color: AppTheme.muted, size: 20),
+                      ),
+                    ),
+                  ),
+                ],
+
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
+                      const SizedBox(width: 6),
+                      Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                    ],
+                  ),
+                ],
+
+                const SizedBox(height: 20),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _loading ? null : (_usePassword ? _loginWithPassword : _sendOtp),
+                    child: _loading
+                        ? const SizedBox(height: 20, width: 20,
+                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                        : Text(_usePassword ? 'Sign In' : 'Send Code'),
+                  ),
+                ),
+
+                const Spacer(flex: 2),
+              ],
+            ),
           ),
         ),
       ),
@@ -153,22 +187,23 @@ class _TabBtn extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? AppTheme.amber.withAlpha(25) : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: selected ? AppTheme.amber : const Color(0xFF2a2a3a)),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: selected ? AppTheme.amber : AppTheme.muted,
-            fontSize: 13,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
+    return Expanded(
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 150),
+          margin: const EdgeInsets.all(3),
+          decoration: BoxDecoration(
+            color: selected ? AppTheme.gold : Colors.transparent,
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Center(
+            child: Text(label,
+              style: TextStyle(
+                color: selected ? Colors.black : AppTheme.subtle,
+                fontSize: 13,
+                fontWeight: selected ? FontWeight.w700 : FontWeight.w500,
+              )),
           ),
         ),
       ),

@@ -18,65 +18,209 @@ class ProfileScreen extends ConsumerWidget {
     final profile = ref.watch(profileProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Profile')),
+      backgroundColor: AppTheme.bg,
       body: profile.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.amber)),
+        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
         error: (e, _) => Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
-        data: (user) => SingleChildScrollView(
-          padding: const EdgeInsets.all(24),
-          child: Column(
-            children: [
-              CircleAvatar(
-                radius: 44,
-                backgroundColor: AppTheme.amber.withOpacity(0.15),
-                child: Text(
-                  (user['fullName'] as String? ?? 'U').substring(0, 1).toUpperCase(),
-                  style: const TextStyle(color: AppTheme.amber, fontSize: 32, fontWeight: FontWeight.w700),
-                ),
+        data: (user) => _ProfileContent(user: user, ref: ref),
+      ),
+    );
+  }
+}
+
+class _ProfileContent extends StatelessWidget {
+  final Map<String, dynamic> user;
+  final WidgetRef ref;
+  const _ProfileContent({required this.user, required this.ref});
+
+  @override
+  Widget build(BuildContext context) {
+    final initials = ((user['fullName'] as String?)?.isNotEmpty == true)
+        ? (user['fullName'] as String).substring(0, 1).toUpperCase()
+        : 'U';
+    final entriesCount = user['_count']?['entries'] ?? 0;
+    final winsCount = user['_count']?['userRewards'] ?? 0;
+
+    return SafeArea(
+      child: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Header
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 28, 20, 0),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text('Profile',
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                      color: AppTheme.white,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    )),
+                  GestureDetector(
+                    onTap: () => context.go('/settings'),
+                    child: Container(
+                      width: 42, height: 42,
+                      decoration: BoxDecoration(
+                        color: AppTheme.surface,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: AppTheme.border),
+                      ),
+                      child: const Icon(Icons.settings_outlined, color: AppTheme.subtle, size: 20),
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(height: 12),
-              Text(user['fullName'] ?? '', style: const TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w700)),
-              const SizedBox(height: 4),
-              Text(user['email'] ?? user['phone'] ?? '', style: const TextStyle(color: AppTheme.muted)),
-              const SizedBox(height: 32),
-              _tile(context, Icons.history, 'Participation History', '/history'),
-              _tile(context, Icons.notifications_outlined, 'Notifications', '/notifications'),
-              _tile(context, Icons.favorite_outline, 'Favorite Venues', '/favorites'),
-              _tile(context, Icons.settings_outlined, 'Settings', '/settings'),
-              const SizedBox(height: 16),
-              ListTile(
-                tileColor: AppTheme.card,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Colors.redAccent.withOpacity(0.3)),
-                ),
-                leading: const Icon(Icons.logout, color: Colors.redAccent),
-                title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-                onTap: () async {
-                  await const FlutterSecureStorage().deleteAll();
-                  if (context.mounted) context.go('/login');
-                },
+            ),
+
+            const SizedBox(height: 28),
+
+            // Avatar + name
+            Container(
+              width: 80, height: 80,
+              decoration: BoxDecoration(
+                color: AppTheme.gold.withAlpha(20),
+                shape: BoxShape.circle,
+                border: Border.all(color: AppTheme.gold.withAlpha(60), width: 2),
               ),
-            ],
-          ),
+              child: Center(
+                child: Text(initials,
+                  style: const TextStyle(color: AppTheme.gold, fontSize: 32, fontWeight: FontWeight.w800)),
+              ),
+            ),
+            const SizedBox(height: 14),
+            Text(user['fullName'] ?? '',
+              style: const TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w700)),
+            const SizedBox(height: 4),
+            Text(user['email'] ?? user['phone'] ?? '',
+              style: const TextStyle(color: AppTheme.muted, fontSize: 14)),
+
+            const SizedBox(height: 28),
+
+            // Stats row
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Row(
+                children: [
+                  _StatBox(value: '$entriesCount', label: 'RAFFLES\nENTERED', icon: Icons.confirmation_number_outlined),
+                  const SizedBox(width: 12),
+                  _StatBox(value: '$winsCount', label: 'PRIZES\nWON', icon: Icons.emoji_events_outlined),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 28),
+
+            // Menu
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: Text('ACCOUNT',
+                      style: TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                  ),
+                  _MenuTile(icon: Icons.history, label: 'Participation History', onTap: () => context.go('/history')),
+                  _MenuTile(icon: Icons.notifications_outlined, label: 'Notifications', onTap: () => context.go('/notifications')),
+                  _MenuTile(icon: Icons.favorite_outline, label: 'Favorite Venues', onTap: () => context.go('/favorites')),
+
+                  const SizedBox(height: 20),
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 10),
+                    child: Text('MORE',
+                      style: TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                  ),
+                  _MenuTile(icon: Icons.settings_outlined, label: 'Settings', onTap: () => context.go('/settings')),
+                  _MenuTile(
+                    icon: Icons.logout,
+                    label: 'Sign Out',
+                    destructive: true,
+                    onTap: () async {
+                      await const FlutterSecureStorage().deleteAll();
+                      if (context.mounted) context.go('/login');
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 32),
+          ],
         ),
       ),
     );
   }
+}
 
-  Widget _tile(BuildContext context, IconData icon, String label, String route) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 10),
-      child: ListTile(
-        tileColor: AppTheme.card,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-          side: const BorderSide(color: AppTheme.border),
+class _StatBox extends StatelessWidget {
+  final String value;
+  final String label;
+  final IconData icon;
+  const _StatBox({required this.value, required this.label, required this.icon});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 18),
+        decoration: BoxDecoration(
+          color: AppTheme.surface,
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(color: AppTheme.border),
         ),
-        leading: Icon(icon, color: AppTheme.subtle),
-        title: Text(label, style: const TextStyle(color: AppTheme.white)),
-        trailing: const Icon(Icons.chevron_right, color: AppTheme.muted),
-        onTap: () => context.go(route),
+        child: Column(
+          children: [
+            Icon(icon, color: AppTheme.gold, size: 22),
+            const SizedBox(height: 8),
+            Text(value,
+              style: const TextStyle(color: AppTheme.white, fontSize: 24, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 4),
+            Text(label,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: AppTheme.muted, fontSize: 10, letterSpacing: 0.8, height: 1.4)),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _MenuTile extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final bool destructive;
+  const _MenuTile({required this.icon, required this.label, required this.onTap, this.destructive = false});
+
+  @override
+  Widget build(BuildContext context) {
+    final color = destructive ? Colors.redAccent : AppTheme.white;
+    final iconColor = destructive ? Colors.redAccent : AppTheme.subtle;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8),
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: AppTheme.card,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: destructive ? Colors.redAccent.withAlpha(40) : AppTheme.border,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(icon, color: iconColor, size: 20),
+              const SizedBox(width: 14),
+              Expanded(child: Text(label, style: TextStyle(color: color, fontSize: 15, fontWeight: FontWeight.w500))),
+              Icon(Icons.chevron_right, color: destructive ? Colors.redAccent.withAlpha(100) : AppTheme.muted, size: 18),
+            ],
+          ),
+        ),
       ),
     );
   }
