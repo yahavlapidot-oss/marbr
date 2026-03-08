@@ -109,7 +109,8 @@ export class AuthService {
     // TODO: send via Twilio / email provider
     console.log(`OTP for ${dto.target}: ${code}`);
 
-    return { message: 'OTP sent' };
+    const isDev = this.config.get('NODE_ENV') !== 'production';
+    return { message: 'OTP sent', ...(isDev && { devCode: code }) };
   }
 
   async verifyOtp(dto: VerifyOtpDto) {

@@ -34,7 +34,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
       GoRoute(
         path: '/otp',
-        builder: (_, state) => OtpScreen(target: state.extra as String),
+        builder: (_, state) {
+          final extra = state.extra as Map<String, dynamic>;
+          return OtpScreen(
+            target: extra['target'] as String,
+            devCode: extra['devCode'] as String?,
+          );
+        },
       ),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),

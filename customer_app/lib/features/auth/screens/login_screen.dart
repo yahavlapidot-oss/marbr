@@ -21,8 +21,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (target.isEmpty) return;
     setState(() { _loading = true; _error = null; });
     try {
-      await createDio().post('/auth/otp/send', data: {'target': target});
-      if (mounted) context.push('/otp', extra: target);
+      final res = await createDio().post('/auth/otp/send', data: {'target': target});
+      final devCode = res.data['devCode'] as String?;
+      if (mounted) context.push('/otp', extra: {'target': target, 'devCode': devCode});
     } catch (e) {
       setState(() => _error = 'Failed to send OTP. Try again.');
     } finally {

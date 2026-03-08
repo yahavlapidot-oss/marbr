@@ -6,7 +6,8 @@ import '../../../core/theme.dart';
 
 class OtpScreen extends StatefulWidget {
   final String target;
-  const OtpScreen({super.key, required this.target});
+  final String? devCode;
+  const OtpScreen({super.key, required this.target, this.devCode});
 
   @override
   State<OtpScreen> createState() => _OtpScreenState();
@@ -50,6 +51,24 @@ class _OtpScreenState extends State<OtpScreen> {
             Text('Enter the 6-digit code sent to', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.muted)),
             const SizedBox(height: 4),
             Text(widget.target, style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w700, fontSize: 18)),
+            if (widget.devCode != null) ...[
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                decoration: BoxDecoration(
+                  color: AppTheme.amber.withAlpha(30),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: AppTheme.amber.withAlpha(80)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.developer_mode, color: AppTheme.amber, size: 16),
+                    const SizedBox(width: 8),
+                    Text('Dev code: ${widget.devCode}', style: const TextStyle(color: AppTheme.amber, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ),
+            ],
             const SizedBox(height: 32),
             TextField(
               controller: _otpCtrl,
