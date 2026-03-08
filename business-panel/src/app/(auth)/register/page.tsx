@@ -42,7 +42,6 @@ export default function RegisterPage() {
         fullName: data.fullName,
         email: data.email,
         password: data.password,
-        role: 'OWNER',
       });
       const { user, accessToken, refreshToken } = authRes.data;
       localStorage.setItem('accessToken', accessToken);
