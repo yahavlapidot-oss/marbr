@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
@@ -18,6 +19,46 @@ class _OtpScreenState extends State<OtpScreen> {
   final _storage = const FlutterSecureStorage();
   bool _loading = false;
   String? _error;
+  int _resendCooldown = 0;
+  Timer? _cooldownTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startCooldown(30);
+  }
+
+  @override
+  void dispose() {
+    _otpCtrl.dispose();
+    _cooldownTimer?.cancel();
+    super.dispose();
+  }
+
+  void _startCooldown(int seconds) {
+    setState(() => _resendCooldown = seconds);
+    _cooldownTimer?.cancel();
+    _cooldownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+      if (_resendCooldown <= 1) {
+        t.cancel();
+        if (mounted) setState(() => _resendCooldown = 0);
+      } else {
+        if (mounted) setState(() => _resendCooldown--);
+      }
+    });
+  }
+
+  Future<void> _resend() async {
+    setState(() { _loading = true; _error = null; });
+    try {
+      await createDio().post('/auth/otp/send', data: {'target': widget.target});
+      _startCooldown(60);
+    } catch (_) {
+      setState(() => _error = 'Failed to resend. Try again.');
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
 
   Future<void> _verify() async {
     final code = _otpCtrl.text.trim();
@@ -55,12 +96,11 @@ class _OtpScreenState extends State<OtpScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-
             const Text('Check your messages',
               style: TextStyle(color: AppTheme.white, fontSize: 22, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            Text('Enter the 6-digit code sent to',
-              style: const TextStyle(color: AppTheme.muted, fontSize: 14)),
+            const Text('Enter the 6-digit code sent to',
+              style: TextStyle(color: AppTheme.muted, fontSize: 14)),
             const SizedBox(height: 4),
             Text(widget.target,
               style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w700, fontSize: 16)),
@@ -126,11 +166,14 @@ class _OtpScreenState extends State<OtpScreen> {
 
             const SizedBox(height: 20),
             Center(
-              child: TextButton(
-                onPressed: () => context.pop(),
-                child: const Text("Didn't receive a code? Go back",
-                  style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
-              ),
+              child: _resendCooldown > 0
+                  ? Text('Resend in ${_resendCooldown}s',
+                      style: const TextStyle(color: AppTheme.muted, fontSize: 13))
+                  : TextButton(
+                      onPressed: _loading ? null : _resend,
+                      child: const Text('Resend code',
+                        style: TextStyle(color: AppTheme.gold, fontSize: 13, fontWeight: FontWeight.w600)),
+                    ),
             ),
           ],
         ),

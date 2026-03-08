@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { Loader2, CheckCircle2, XCircle, QrCode } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -30,12 +31,15 @@ export default function RedeemPage() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
 
+  const { data: branches } = useQuery({
+    queryKey: ['branches', businessId],
+    queryFn: () => api.get(`/branches?businessId=${businessId}`).then((r) => r.data),
+    enabled: !!businessId,
+  });
+
   const lookup = async () => {
     if (!code.trim()) return;
-    setLoading(true);
-    setError('');
-    setReward(null);
-    setSuccess(false);
+    setLoading(true); setError(''); setReward(null); setSuccess(false);
     try {
       const res = await api.get(`/staff/redeem/check/${code.trim()}`);
       setReward(res.data);
@@ -48,13 +52,10 @@ export default function RedeemPage() {
 
   const redeem = async () => {
     if (!reward || !branchId) return;
-    setLoading(true);
-    setError('');
+    setLoading(true); setError('');
     try {
       await api.post('/staff/redeem', { code: reward.code, branchId });
-      setSuccess(true);
-      setReward(null);
-      setCode('');
+      setSuccess(true); setReward(null); setCode(''); setBranchId('');
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'Redemption failed');
     } finally {
@@ -139,12 +140,17 @@ export default function RedeemPage() {
             {reward.status === 'ACTIVE' && (
               <>
                 <div className="space-y-1.5">
-                  <Label>Branch ID (required)</Label>
-                  <Input
-                    placeholder="Branch ID"
+                  <Label>Branch</Label>
+                  <select
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
-                  />
+                    className="w-full rounded-lg border border-[#2a2a38] bg-[#1a1a24] px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
+                  >
+                    <option value="">Select branch...</option>
+                    {(branches ?? []).map((b: any) => (
+                      <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                  </select>
                 </div>
                 <Button
                   className="w-full"

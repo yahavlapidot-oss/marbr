@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
@@ -61,10 +62,7 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
               labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               dividerColor: Colors.transparent,
-              tabs: const [
-                Tab(text: 'Active'),
-                Tab(text: 'History'),
-              ],
+              tabs: const [Tab(text: 'Active'), Tab(text: 'History')],
             ),
           ),
         ),
@@ -75,7 +73,6 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
         data: (list) {
           final active = list.where((r) => r['status'] == 'ACTIVE').toList();
           final history = list.where((r) => r['status'] != 'ACTIVE').toList();
-
           return TabBarView(
             controller: _tabs,
             children: [
@@ -126,7 +123,6 @@ class _RewardsList extends StatelessWidget {
         ),
       );
     }
-
     return RefreshIndicator(
       color: AppTheme.gold,
       onRefresh: onRefresh,
@@ -142,19 +138,108 @@ class _RewardsList extends StatelessWidget {
   }
 }
 
-class _RewardCard extends StatelessWidget {
+class _RewardCard extends StatefulWidget {
   final Map<String, dynamic> reward;
   const _RewardCard({required this.reward});
 
   @override
+  State<_RewardCard> createState() => _RewardCardState();
+}
+
+class _RewardCardState extends State<_RewardCard> {
+  bool _copied = false;
+
+  void _copyCode(String code) async {
+    await Clipboard.setData(ClipboardData(text: code));
+    setState(() => _copied = true);
+    await Future.delayed(const Duration(seconds: 2));
+    if (mounted) setState(() => _copied = false);
+  }
+
+  void _showRedeemSheet(BuildContext context) {
+    final code = widget.reward['code'] as String? ?? '';
+    final r = widget.reward['reward'] as Map<String, dynamic>? ?? {};
+    final campaign = r['campaign'] as Map<String, dynamic>? ?? {};
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: AppTheme.surface,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(width: 40, height: 4, decoration: BoxDecoration(
+              color: AppTheme.border, borderRadius: BorderRadius.circular(2))),
+            const SizedBox(height: 20),
+            const Icon(Icons.emoji_events, color: AppTheme.gold, size: 40),
+            const SizedBox(height: 12),
+            Text(r['name'] ?? 'Reward',
+              style: const TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w800)),
+            if (campaign['name'] != null) ...[
+              const SizedBox(height: 4),
+              Text(campaign['name'],
+                style: const TextStyle(color: AppTheme.muted, fontSize: 14)),
+            ],
+            const SizedBox(height: 24),
+            const Text('SHOW THIS CODE TO STAFF',
+              style: TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 20),
+              decoration: BoxDecoration(
+                color: AppTheme.bg,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppTheme.gold.withAlpha(60)),
+              ),
+              child: Column(
+                children: [
+                  Text(code,
+                    style: const TextStyle(
+                      color: AppTheme.gold, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 6)),
+                  const SizedBox(height: 6),
+                  const Text('Tap below to copy',
+                    style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Clipboard.setData(ClipboardData(text: code));
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: const Text('Code copied to clipboard'),
+                      backgroundColor: AppTheme.gold,
+                      behavior: SnackBarBehavior.floating,
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.copy, size: 18),
+                label: const Text('COPY CODE'),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final status = reward['status'] as String? ?? '';
-    final r = reward['reward'] as Map<String, dynamic>? ?? {};
+    final status = widget.reward['status'] as String? ?? '';
+    final r = widget.reward['reward'] as Map<String, dynamic>? ?? {};
     final campaign = r['campaign'] as Map<String, dynamic>? ?? {};
     final isActive = status == 'ACTIVE';
     final isRedeemed = status == 'REDEEMED';
-
-    final expiresAt = DateTime.tryParse(reward['expiresAt'] as String? ?? '');
+    final expiresAt = DateTime.tryParse((widget.reward['expiresAt'] as String?) ?? '');
     final timeLeft = expiresAt != null ? expiresAt.difference(DateTime.now()) : null;
     final isExpiringSoon = timeLeft != null && timeLeft.inHours < 24 && !timeLeft.isNegative;
 
@@ -162,9 +247,7 @@ class _RewardCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppTheme.card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: isActive ? AppTheme.gold.withAlpha(60) : AppTheme.border,
-        ),
+        border: Border.all(color: isActive ? AppTheme.gold.withAlpha(60) : AppTheme.border),
       ),
       child: Column(
         children: [
@@ -201,11 +284,8 @@ class _RewardCard extends StatelessWidget {
             ),
           ),
 
-          if (isActive && reward['code'] != null) ...[
-            Container(
-              height: 0.5,
-              color: AppTheme.border,
-            ),
+          if (isActive && widget.reward['code'] != null) ...[
+            Container(height: 0.5, color: AppTheme.border),
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -217,40 +297,46 @@ class _RewardCard extends StatelessWidget {
                         children: [
                           const Icon(Icons.timer_outlined, color: Color(0xFFF97316), size: 14),
                           const SizedBox(width: 6),
-                          Text('Expires in ${timeLeft.inHours}h ${timeLeft.inMinutes % 60}m',
+                          Text('Expires in ${timeLeft!.inHours}h ${timeLeft.inMinutes % 60}m',
                             style: const TextStyle(color: Color(0xFFF97316), fontSize: 12, fontWeight: FontWeight.w600)),
                         ],
                       ),
                     ),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    decoration: BoxDecoration(
-                      color: AppTheme.bg,
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: AppTheme.gold.withAlpha(40)),
-                    ),
-                    child: Column(
-                      children: [
-                        const Text('REDEMPTION CODE',
-                          style: TextStyle(color: AppTheme.muted, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
-                        const SizedBox(height: 6),
-                        Text(reward['code'],
-                          style: const TextStyle(
-                            color: AppTheme.gold,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 3,
-                          )),
-                      ],
+                  // Code with copy tap
+                  GestureDetector(
+                    onTap: () => _copyCode(widget.reward['code']),
+                    child: Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      decoration: BoxDecoration(
+                        color: AppTheme.bg,
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: AppTheme.gold.withAlpha(40)),
+                      ),
+                      child: Column(
+                        children: [
+                          const Text('REDEMPTION CODE',
+                            style: TextStyle(color: AppTheme.muted, fontSize: 10, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                          const SizedBox(height: 6),
+                          Text(widget.reward['code'],
+                            style: const TextStyle(
+                              color: AppTheme.gold, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 3)),
+                          const SizedBox(height: 4),
+                          Text(_copied ? '✓ Copied!' : 'Tap to copy',
+                            style: TextStyle(
+                              color: _copied ? const Color(0xFF22C55E) : AppTheme.muted,
+                              fontSize: 11)),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
                   SizedBox(
                     width: double.infinity,
-                    child: ElevatedButton(
-                      onPressed: () {},
-                      child: const Text('REDEEM NOW'),
+                    child: ElevatedButton.icon(
+                      onPressed: () => _showRedeemSheet(context),
+                      icon: const Icon(Icons.qr_code, size: 18),
+                      label: const Text('REDEEM NOW'),
                     ),
                   ),
                 ],
@@ -285,23 +371,11 @@ class _StatusBadge extends StatelessWidget {
     Color color;
     String label;
     switch (status) {
-      case 'ACTIVE':
-        color = const Color(0xFF22C55E);
-        label = 'ACTIVE';
-        break;
-      case 'REDEEMED':
-        color = AppTheme.muted;
-        label = 'REDEEMED';
-        break;
-      case 'EXPIRED':
-        color = Colors.redAccent;
-        label = 'EXPIRED';
-        break;
-      default:
-        color = AppTheme.muted;
-        label = status;
+      case 'ACTIVE': color = const Color(0xFF22C55E); label = 'ACTIVE'; break;
+      case 'REDEEMED': color = AppTheme.muted; label = 'REDEEMED'; break;
+      case 'EXPIRED': color = Colors.redAccent; label = 'EXPIRED'; break;
+      default: color = AppTheme.muted; label = status;
     }
-
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(

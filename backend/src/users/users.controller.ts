@@ -62,6 +62,15 @@ export class UsersController {
     return this.usersService.getFavorites(user.id);
   }
 
+  @Patch('password')
+  @ApiOperation({ summary: 'Change password' })
+  changePassword(
+    @CurrentUser() user: { id: string },
+    @Body() body: { currentPassword: string; newPassword: string },
+  ) {
+    return this.usersService.changePassword(user.id, body.currentPassword, body.newPassword);
+  }
+
   @Patch('favorites/:businessId')
   @ApiOperation({ summary: 'Toggle a business as favorite' })
   toggleFavorite(

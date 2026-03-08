@@ -10,16 +10,8 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { formatDateTime } from '@/lib/utils';
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  trend,
-}: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  trend?: string;
+function StatCard({ title, value, icon: Icon, sub }: {
+  title: string; value: string | number; icon: React.ElementType; sub?: string;
 }) {
   return (
     <Card>
@@ -31,18 +23,14 @@ function StatCard({
           </div>
         </div>
         <div className="text-3xl font-bold text-white mb-1">{value}</div>
-        {trend && <p className="text-xs text-green-400">{trend}</p>}
+        {sub && <p className="text-xs text-[#6b6b80]">{sub}</p>}
       </CardContent>
     </Card>
   );
 }
 
 const STATUS_VARIANT: Record<string, 'active' | 'paused' | 'ended' | 'draft' | 'scheduled'> = {
-  ACTIVE: 'active',
-  PAUSED: 'paused',
-  ENDED: 'ended',
-  DRAFT: 'draft',
-  SCHEDULED: 'scheduled',
+  ACTIVE: 'active', PAUSED: 'paused', ENDED: 'ended', DRAFT: 'draft', SCHEDULED: 'scheduled',
 };
 
 export default function DashboardPage() {
@@ -50,13 +38,18 @@ export default function DashboardPage() {
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', businessId],
-    queryFn: () =>
-      api.get(`/businesses/${businessId}/campaigns`).then((r) => r.data),
+    queryFn: () => api.get(`/businesses/${businessId}/campaigns`).then((r) => r.data),
+    enabled: !!businessId,
+  });
+
+  const { data: analytics } = useQuery({
+    queryKey: ['analytics', businessId],
+    queryFn: () => api.get(`/analytics/business/${businessId}`).then((r) => r.data),
     enabled: !!businessId,
   });
 
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];
-  const totalEntries = campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
+  const totalEntries = analytics?.totalEntries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
 
   return (
     <div className="space-y-8">
@@ -77,8 +70,12 @@ export default function DashboardPage() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Active Campaigns" value={active.length} icon={Megaphone} />
         <StatCard title="Total Entries" value={totalEntries} icon={Users} />
-        <StatCard title="Rewards Issued" value="—" icon={Gift} />
-        <StatCard title="Conversion Rate" value="—" icon={TrendingUp} />
+        <StatCard title="Rewards Issued" value={analytics?.totalWinners ?? '—'} icon={Gift} />
+        <StatCard
+          title="Conversion Rate"
+          value={analytics?.conversionRate != null ? `${analytics.conversionRate.toFixed(1)}%` : '—'}
+          icon={TrendingUp}
+        />
       </div>
 
       {/* Active campaigns */}
@@ -112,9 +109,7 @@ export default function DashboardPage() {
                       {c._count?.entries ?? 0} entries
                     </p>
                   </div>
-                  <Badge variant={STATUS_VARIANT[c.status] ?? 'secondary'}>
-                    {c.status}
-                  </Badge>
+                  <Badge variant={STATUS_VARIANT[c.status] ?? 'secondary'}>{c.status}</Badge>
                 </Link>
               ))}
             </div>

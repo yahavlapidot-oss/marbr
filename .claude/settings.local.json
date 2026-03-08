@@ -34,7 +34,11 @@
       "Bash(curl:*)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" node_modules/.bin/prisma generate:*)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm install:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "Bash(chmod +x:*)",
+      "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm run:*)",
+      "Bash(flutter devices:*)",
+      "Bash(flutter emulators:*)"
     ]
   }
 }

@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
+import * as bcrypt from 'bcrypt';
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateUserDto } from './dto/update-user.dto';
 
@@ -22,6 +23,7 @@ export class UsersService {
         marketingConsent: true,
         isVerified: true,
         createdAt: true,
+        _count: { select: { entries: true, userRewards: true } },
       },
     });
 
@@ -90,11 +92,23 @@ export class UsersService {
     });
   }
 
+  async changePassword(userId: string, currentPassword: string, newPassword: string) {
+    const user = await this.prisma.user.findUnique({ where: { id: userId }, select: { passwordHash: true } });
+    if (!user?.passwordHash) throw new UnauthorizedException('No password set');
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) throw new UnauthorizedException('Current password is incorrect');
+    const hash = await bcrypt.hash(newPassword, 10);
+    await this.prisma.user.update({ where: { id: userId }, data: { passwordHash: hash } });
+    return { message: 'Password changed' };
+  }
+
   async getFavorites(userId: string) {
     return this.prisma.favoriteBusiness.findMany({
       where: { userId },
       include: {
-        // eslint-disable-next-line @typescript-eslint/no-require-imports
+        business: {
+          select: { id: true, name: true, description: true, logoUrl: true, type: true },
+        },
       },
     });
   }
