@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Git Workflow
 
-After each meaningful unit of work, automatically commit and push the changes. No need to ask for confirmation before committing or pushing.
+After each meaningful unit of work, automatically commit AND push to origin main. No need to ask for confirmation before committing or pushing.
 
 ## Product Overview
 
