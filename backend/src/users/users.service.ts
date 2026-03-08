@@ -103,14 +103,12 @@ export class UsersService {
   }
 
   async getFavorites(userId: string) {
-    return this.prisma.favoriteBusiness.findMany({
-      where: { userId },
-      include: {
-        business: {
-          select: { id: true, name: true, description: true, logoUrl: true, type: true },
-        },
-      },
+    const favs = await this.prisma.favoriteBusiness.findMany({ where: { userId } });
+    const businesses = await this.prisma.business.findMany({
+      where: { id: { in: favs.map((f) => f.businessId) } },
+      select: { id: true, name: true, description: true, logoUrl: true, type: true },
     });
+    return favs.map((f) => ({ ...f, business: businesses.find((b) => b.id === f.businessId) }));
   }
 
   async toggleFavorite(userId: string, businessId: string) {
