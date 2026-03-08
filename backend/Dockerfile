@@ -19,6 +19,7 @@ COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
 COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 COPY prisma ./prisma
 COPY prisma.config.ts ./
+COPY start.sh ./
 
 EXPOSE 3000
 CMD ["sh", "start.sh"]
