@@ -41,56 +41,95 @@ class _OtpScreenState extends State<OtpScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Verify')),
+      backgroundColor: AppTheme.bg,
+      appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, size: 18),
+          onPressed: () => context.pop(),
+        ),
+        title: const Text('Verify'),
+      ),
       body: Padding(
         padding: const EdgeInsets.all(24),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const SizedBox(height: 32),
-            Text('Enter the 6-digit code sent to', style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: AppTheme.muted)),
+            const SizedBox(height: 16),
+
+            const Text('Check your messages',
+              style: TextStyle(color: AppTheme.white, fontSize: 22, fontWeight: FontWeight.w800)),
+            const SizedBox(height: 8),
+            Text('Enter the 6-digit code sent to',
+              style: const TextStyle(color: AppTheme.muted, fontSize: 14)),
             const SizedBox(height: 4),
-            Text(widget.target, style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w700, fontSize: 18)),
+            Text(widget.target,
+              style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w700, fontSize: 16)),
+
             if (widget.devCode != null) ...[
-              const SizedBox(height: 12),
+              const SizedBox(height: 16),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
                 decoration: BoxDecoration(
-                  color: AppTheme.amber.withAlpha(30),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppTheme.amber.withAlpha(80)),
+                  color: AppTheme.gold.withAlpha(20),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: AppTheme.gold.withAlpha(60)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.developer_mode, color: AppTheme.amber, size: 16),
+                    const Icon(Icons.developer_mode, color: AppTheme.gold, size: 16),
                     const SizedBox(width: 8),
-                    Text('Dev code: ${widget.devCode}', style: const TextStyle(color: AppTheme.amber, fontWeight: FontWeight.bold)),
+                    Text('Dev code: ${widget.devCode}',
+                      style: const TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w700, fontSize: 14)),
                   ],
                 ),
               ),
             ],
-            const SizedBox(height: 32),
+
+            const SizedBox(height: 36),
+
             TextField(
               controller: _otpCtrl,
               keyboardType: TextInputType.number,
               maxLength: 6,
-              style: const TextStyle(color: AppTheme.white, fontSize: 28, letterSpacing: 8),
+              style: const TextStyle(color: AppTheme.white, fontSize: 32, letterSpacing: 12, fontWeight: FontWeight.w700),
               textAlign: TextAlign.center,
-              decoration: const InputDecoration(counterText: '', hintText: '------'),
+              decoration: const InputDecoration(
+                counterText: '',
+                hintText: '------',
+                hintStyle: TextStyle(color: AppTheme.muted, letterSpacing: 8, fontSize: 28),
+              ),
               onChanged: (v) { if (v.length == 6) _verify(); },
             ),
+
             if (_error != null) ...[
-              const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+              const SizedBox(height: 14),
+              Row(
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.redAccent, size: 16),
+                  const SizedBox(width: 6),
+                  Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+                ],
+              ),
             ],
-            const SizedBox(height: 24),
+
+            const SizedBox(height: 28),
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _loading ? null : _verify,
                 child: _loading
-                    ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                    : const Text('Verify'),
+                    ? const SizedBox(height: 20, width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
+                    : const Text('VERIFY CODE'),
+              ),
+            ),
+
+            const SizedBox(height: 20),
+            Center(
+              child: TextButton(
+                onPressed: () => context.pop(),
+                child: const Text("Didn't receive a code? Go back",
+                  style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
               ),
             ),
           ],

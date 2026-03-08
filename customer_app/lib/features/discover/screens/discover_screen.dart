@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../campaigns/widgets/campaign_card.dart';
 
 final discoverCampaignsProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await createDio().get('/campaigns/active');
@@ -17,39 +17,90 @@ class DiscoverScreen extends ConsumerWidget {
     final campaigns = ref.watch(discoverCampaignsProvider);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Discover')),
-      body: campaigns.when(
-        loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.amber)),
-        error: (e, _) => Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
-        data: (list) => RefreshIndicator(
-          color: AppTheme.amber,
+      backgroundColor: AppTheme.bg,
+      body: SafeArea(
+        child: RefreshIndicator(
+          color: AppTheme.gold,
           onRefresh: () => ref.refresh(discoverCampaignsProvider.future),
-          child: list.isEmpty
-              ? const Center(child: Text('No active campaigns right now', style: TextStyle(color: AppTheme.muted)))
-              : ListView.separated(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: list.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 10),
-                  itemBuilder: (_, i) {
-                    final c = list[i] as Map<String, dynamic>;
-                    final business = c['business'] as Map<String, dynamic>?;
-                    return ListTile(
-                      tileColor: AppTheme.card,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: AppTheme.border),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 28, 20, 20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Discover',
+                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: AppTheme.white,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.5,
+                        )),
+                      const SizedBox(height: 4),
+                      const Text('All live campaigns near you',
+                        style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
+                      const SizedBox(height: 20),
+                      // Search bar placeholder
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        decoration: BoxDecoration(
+                          color: AppTheme.surface,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: AppTheme.border),
+                        ),
+                        child: const Row(
+                          children: [
+                            Icon(Icons.search, color: AppTheme.muted, size: 18),
+                            SizedBox(width: 10),
+                            Text('Search campaigns or venues...',
+                              style: TextStyle(color: AppTheme.muted, fontSize: 14)),
+                          ],
+                        ),
                       ),
-                      leading: CircleAvatar(
-                        backgroundColor: AppTheme.amber.withOpacity(0.15),
-                        child: const Icon(Icons.local_bar, color: AppTheme.amber),
-                      ),
-                      title: Text(c['name'] ?? '', style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w600)),
-                      subtitle: Text(business?['name'] ?? '', style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
-                      trailing: const Icon(Icons.chevron_right, color: AppTheme.muted),
-                      onTap: () => context.push('/campaign/${c['id']}'),
-                    );
-                  },
+                    ],
+                  ),
                 ),
+              ),
+
+              campaigns.when(
+                loading: () => const SliverFillRemaining(
+                  child: Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
+                ),
+                error: (e, _) => SliverFillRemaining(
+                  child: Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
+                ),
+                data: (list) => list.isEmpty
+                    ? const SliverFillRemaining(
+                        child: Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.explore_outlined, color: AppTheme.muted, size: 48),
+                              SizedBox(height: 12),
+                              Text('No campaigns right now',
+                                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+                              SizedBox(height: 4),
+                              Text('Check back soon',
+                                style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : SliverPadding(
+                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                        sliver: SliverList(
+                          delegate: SliverChildBuilderDelegate(
+                            (_, i) => Padding(
+                              padding: const EdgeInsets.only(bottom: 12),
+                              child: CampaignCard(campaign: list[i] as Map<String, dynamic>),
+                            ),
+                            childCount: list.length,
+                          ),
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
