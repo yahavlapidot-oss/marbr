@@ -5,6 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
+import '../features/auth/screens/register_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/discover/screens/discover_screen.dart';
 import '../features/campaigns/screens/campaign_detail_screen.dart';
@@ -20,6 +21,8 @@ import '../features/shell/shell_screen.dart';
 /// Holds auth token in memory and notifies GoRouter when it changes.
 class AuthNotifier extends ChangeNotifier {
   static const _storage = FlutterSecureStorage();
+  static AuthNotifier? instance;
+
   String? _token;
   bool _initialized = false;
 
@@ -27,6 +30,7 @@ class AuthNotifier extends ChangeNotifier {
   bool get initialized => _initialized;
 
   AuthNotifier() {
+    instance = this;
     _load();
   }
 
@@ -60,13 +64,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuth = auth.isAuthenticated;
       final isAuthRoute =
           state.matchedLocation.startsWith('/login') ||
-          state.matchedLocation.startsWith('/otp');
+          state.matchedLocation.startsWith('/otp') ||
+          state.matchedLocation.startsWith('/register');
       if (!isAuth && !isAuthRoute) return '/login';
       if (isAuth && isAuthRoute) return '/home';
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
+      GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
       GoRoute(
         path: '/otp',
         builder: (_, state) {

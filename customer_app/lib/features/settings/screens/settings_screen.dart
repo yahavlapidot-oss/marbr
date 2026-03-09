@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
+import '../../../core/router.dart';
 import '../../../core/theme.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
@@ -90,7 +90,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               child: _tile(Icons.logout, 'Sign Out', color: Colors.redAccent,
                 onTap: () async {
                   await const FlutterSecureStorage().deleteAll();
-                  if (context.mounted) context.go('/login');
+                  ref.read(authNotifierProvider).clear();
                 }),
             ),
           ],

@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'router.dart' show AuthNotifier;
 
 const _baseUrl = 'https://marbr-production.up.railway.app/api/v1';
 
@@ -45,6 +46,7 @@ Dio createDio() {
         } catch (_) {
           isRefreshing = false;
           await _storage.deleteAll();
+          AuthNotifier.instance?.clear();
         }
       }
       handler.next(error);

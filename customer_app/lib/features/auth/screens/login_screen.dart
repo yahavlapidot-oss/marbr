@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
+import 'package:dio/dio.dart';
 import '../../../core/api_client.dart';
 import '../../../core/router.dart';
 import '../../../core/theme.dart';
@@ -22,6 +23,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   bool _usePassword = false;
   bool _obscure = true;
 
+  String _parseError(DioException e) {
+    final data = e.response?.data;
+    final msg = data is Map ? data['message']?.toString() : null;
+    final status = e.response?.statusCode;
+    if (status == 401 || status == 403) {
+      if (msg != null && msg.toLowerCase().contains('deactivated')) {
+        return 'Your account has been deactivated. Contact support.';
+      }
+      return 'Invalid email or password.';
+    }
+    if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
+      return 'Request timed out. Try again.';
+    }
+    if (e.type == DioExceptionType.connectionError) {
+      return 'No connection. Check your internet.';
+    }
+    return msg ?? 'Something went wrong. Try again.';
+  }
+
   Future<void> _sendOtp() async {
     final target = _targetCtrl.text.trim();
     if (target.isEmpty) return;
@@ -30,8 +50,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final res = await createDio().post('/auth/otp/send', data: {'target': target});
       final devCode = res.data['devCode'] as String?;
       if (mounted) context.push('/otp', extra: {'target': target, 'devCode': devCode});
-    } catch (e) {
-      setState(() => _error = 'Failed to send OTP. Try again.');
+    } on DioException catch (e) {
+      setState(() => _error = _parseError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -50,8 +70,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await _storage.write(key: 'accessToken', value: res.data['accessToken']);
       await _storage.write(key: 'refreshToken', value: res.data['refreshToken']);
       if (mounted) ref.read(authNotifierProvider).setToken(res.data['accessToken'] as String);
-    } catch (e) {
-      setState(() => _error = 'Invalid email or password.');
+    } on DioException catch (e) {
+      setState(() => _error = _parseError(e));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -167,6 +187,22 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ? const SizedBox(height: 20, width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
                         : Text(_usePassword ? 'Sign In' : 'Send Code'),
+                  ),
+                ),
+
+                const SizedBox(height: 16),
+                Center(
+                  child: GestureDetector(
+                    onTap: () => context.go('/register'),
+                    child: RichText(
+                      text: const TextSpan(
+                        text: "Don't have an account? ",
+                        style: TextStyle(color: AppTheme.muted, fontSize: 14),
+                        children: [
+                          TextSpan(text: 'Sign up', style: TextStyle(color: AppTheme.gold, fontWeight: FontWeight.w700)),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
 

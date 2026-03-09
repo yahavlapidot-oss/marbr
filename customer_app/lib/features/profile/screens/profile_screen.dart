@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
+import '../../../core/router.dart' show authNotifierProvider;
 import '../../../core/theme.dart';
 
 final profileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
@@ -139,7 +140,7 @@ class _ProfileContent extends StatelessWidget {
                     destructive: true,
                     onTap: () async {
                       await const FlutterSecureStorage().deleteAll();
-                      if (context.mounted) context.go('/login');
+                      ref.read(authNotifierProvider).clear();
                     },
                   ),
                 ],

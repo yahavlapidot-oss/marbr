@@ -57,7 +57,12 @@ export default function RegisterPage() {
 
       router.push('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Registration failed');
+      const msg: string = err?.response?.data?.message ?? '';
+      const status: number = err?.response?.status ?? 0;
+      if (!navigator.onLine) { setError('No connection. Check your internet.'); return; }
+      if (err?.code === 'ECONNABORTED') { setError('Request timed out. Try again.'); return; }
+      if (status === 409) { setError('An account with this email already exists.'); return; }
+      setError(msg || 'Registration failed. Try again.');
     }
   };
 
