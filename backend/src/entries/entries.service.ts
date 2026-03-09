@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ConflictException,
 } from '@nestjs/common';
 import { CampaignStatus, CampaignType, EntryMethod } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -22,7 +21,8 @@ export class EntriesService {
   // ─── Staff: generate a time-limited QR for a campaign ───────────────────────
   async generateQr(campaignId: string, branchId: string): Promise<{ qrDataUrl: string; token: string }> {
     const secret = this.config.get<string>('JWT_ACCESS_SECRET', 'qr-secret');
-    const token = jwt.sign({ campaignId, branchId, ts: Date.now() }, secret, { expiresIn: '5m' });
+    // 65s expiry aligns with 60s auto-rotation in the business panel
+    const token = jwt.sign({ campaignId, branchId, ts: Date.now() }, secret, { expiresIn: '65s' });
     const qrDataUrl = await QRCode.toDataURL(token, { width: 300, margin: 2 });
     return { qrDataUrl, token };
   }
@@ -30,15 +30,17 @@ export class EntriesService {
   // ─── Customer: submit entry ──────────────────────────────────────────────────
   async createEntry(userId: string, dto: ScanEntryDto) {
     let campaignId = dto.campaignId;
+    let branchId: string | undefined;
 
-    // Verify JWT-signed QR codes and extract campaignId from the token payload
+    // Verify JWT-signed QR codes and extract campaignId + branchId from the token payload
     if (dto.code) {
       const secret = this.config.get<string>('JWT_ACCESS_SECRET', 'qr-secret');
       try {
-        const decoded = jwt.verify(dto.code, secret) as { campaignId?: string };
+        const decoded = jwt.verify(dto.code, secret) as { campaignId?: string; branchId?: string };
         if (decoded.campaignId) campaignId = decoded.campaignId;
+        if (decoded.branchId) branchId = decoded.branchId;
       } catch {
-        throw new BadRequestException('QR code is invalid or expired');
+        throw new BadRequestException('QR code is invalid or expired — ask staff for a new one');
       }
     }
 
@@ -51,16 +53,15 @@ export class EntriesService {
     this.assertCampaignActive(campaign);
     await this.assertEligible(userId, campaign);
 
+    // Geolocation fraud check — customer must be within 500m of the branch
+    if (branchId) {
+      await this.assertNearBranch(branchId, dto.lat, dto.lng);
+    }
+
+    // Store hash for audit trail only — multiple users can scan the same rotating QR
     const codeHash = dto.code
       ? crypto.createHash('sha256').update(dto.code).digest('hex')
       : null;
-
-    if (codeHash) {
-      const duplicate = await this.prisma.entry.findFirst({
-        where: { campaignId, codeHash },
-      });
-      if (duplicate) throw new ConflictException('This code has already been used');
-    }
 
     const entry = await this.prisma.entry.create({
       data: {
@@ -74,7 +75,29 @@ export class EntriesService {
     });
 
     const userReward = await this.processWinEngine(userId, campaign, entry.id);
-    return { entry, reward: userReward ?? null };
+    return { entry, reward: userReward ?? null, campaign: { name: campaign.name } };
+  }
+
+  // ─── Geolocation check: customer must be within 500m of branch ──────────────
+  private async assertNearBranch(branchId: string, lat?: number, lng?: number) {
+    if (!lat || !lng) return; // no location provided — skip check
+    const branch = await this.prisma.branch.findUnique({ where: { id: branchId } });
+    if (!branch?.lat || !branch?.lng) return; // branch has no coords configured
+    const dist = this.haversineMeters(lat, lng, branch.lat, branch.lng);
+    if (dist > 500) {
+      throw new BadRequestException('You must be at the venue to participate');
+    }
+  }
+
+  private haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6_371_000;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   }
 
   private assertCampaignActive(campaign: { status: CampaignStatus; startsAt: Date | null; endsAt: Date | null }) {

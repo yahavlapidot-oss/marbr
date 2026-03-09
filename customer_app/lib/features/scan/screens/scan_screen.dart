@@ -16,54 +16,75 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   final MobileScannerController _ctrl = MobileScannerController();
   bool _processing = false;
   String? _result;
+  String? _subtitle;
   bool _success = false;
+  bool _won = false;
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_processing) return;
     final code = capture.barcodes.firstOrNull?.rawValue;
     if (code == null) return;
 
-    setState(() { _processing = true; _result = null; });
+    setState(() { _processing = true; _result = null; _subtitle = null; });
     _ctrl.stop();
 
     try {
       final res = await createDio().post('/entries', data: {
-        'campaignId': code, // backend extracts real campaignId from JWT if code is a QR token
+        'campaignId': code,
         'method': 'QR_SCAN',
         'code': code,
       });
 
       final reward = res.data['reward'];
+      final campaignName = res.data['campaign']?['name'] as String?;
+      final rewardName = reward?['reward']?['name'] as String?;
+
       setState(() {
         _success = true;
-        _result = reward != null
-            ? 'You won: ${reward['reward']?['name'] ?? 'a reward'}!'
-            : 'Entry recorded! Good luck!';
+        _won = reward != null;
+        _result = reward != null ? 'You won!' : "You're In!";
+        _subtitle = reward != null
+            ? rewardName ?? 'You got a reward!'
+            : campaignName != null
+                ? 'Entered: $campaignName'
+                : 'Good luck!';
       });
     } catch (e) {
       String msg = 'Could not process this code. Try again.';
       if (e is DioException) {
         final data = e.response?.data;
-        if (data is Map && data['message'] != null) {
-          msg = data['message'].toString();
-        } else if (e.response?.statusCode != null) {
-          msg = 'Server error ${e.response!.statusCode}';
+        final serverMsg = data is Map ? data['message']?.toString() : null;
+        if (serverMsg != null) {
+          // Map known backend messages to friendly copy
+          if (serverMsg.contains('invalid or expired')) {
+            msg = 'Code expired — ask staff for a new one.';
+          } else if (serverMsg.contains('Entry limit')) {
+            msg = "You've already entered this campaign.";
+          } else if (serverMsg.contains('venue')) {
+            msg = "You must be at the venue to participate.";
+          } else if (serverMsg.contains('not active')) {
+            msg = 'This campaign is not active right now.';
+          } else {
+            msg = serverMsg;
+          }
         }
       }
       setState(() {
         _success = false;
-        _result = msg;
+        _won = false;
+        _result = 'Oops!';
+        _subtitle = msg;
       });
-      await Future.delayed(const Duration(seconds: 2));
+      await Future.delayed(const Duration(seconds: 3));
       if (mounted) {
-        setState(() { _processing = false; _result = null; });
+        setState(() { _processing = false; _result = null; _subtitle = null; });
         _ctrl.start();
       }
     }
   }
 
   void _reset() {
-    setState(() { _processing = false; _result = null; _success = false; });
+    setState(() { _processing = false; _result = null; _subtitle = null; _success = false; _won = false; });
     _ctrl.start();
   }
 
@@ -195,33 +216,43 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   }
 
   Widget _resultView() {
+    final iconColor = _won
+        ? AppTheme.gold
+        : _success
+            ? const Color(0xFF22C55E)
+            : Colors.redAccent;
+    final icon = _won
+        ? Icons.emoji_events
+        : _success
+            ? Icons.check_circle_outline
+            : Icons.error_outline;
+
     return SafeArea(
       child: Padding(
         padding: const EdgeInsets.all(32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            // Result icon
             Container(
               width: 100, height: 100,
               decoration: BoxDecoration(
-                color: (_success ? const Color(0xFF22C55E) : Colors.redAccent).withAlpha(20),
+                color: iconColor.withAlpha(20),
                 shape: BoxShape.circle,
               ),
-              child: Icon(
-                _success ? Icons.check_circle_outline : Icons.error_outline,
-                color: _success ? const Color(0xFF22C55E) : Colors.redAccent,
-                size: 52,
-              ),
+              child: Icon(icon, color: iconColor, size: 52),
             ),
             const SizedBox(height: 28),
             Text(
-              _success ? (_result!.contains('won') ? 'Congratulations!' : 'You\'re In!') : 'Oops!',
-              style: const TextStyle(color: AppTheme.white, fontSize: 26, fontWeight: FontWeight.w800),
+              _result ?? '',
+              style: TextStyle(
+                color: _won ? AppTheme.gold : AppTheme.white,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+              ),
             ),
             const SizedBox(height: 10),
             Text(
-              _result!,
+              _subtitle ?? '',
               textAlign: TextAlign.center,
               style: const TextStyle(color: AppTheme.subtle, fontSize: 16, height: 1.5),
             ),
