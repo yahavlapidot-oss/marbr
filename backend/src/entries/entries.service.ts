@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
+  ConflictException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { CampaignStatus, CampaignType, EntryMethod } from '@prisma/client';
 import * as crypto from 'crypto';
@@ -53,6 +55,9 @@ export class EntriesService {
     this.assertCampaignActive(campaign);
     await this.assertEligible(userId, campaign);
 
+    // One active campaign per user — check if user is enrolled in a different active campaign
+    await this.assertNotInAnotherCampaign(userId, campaignId);
+
     // Geolocation fraud check — customer must be within 500m of the branch
     if (branchId) {
       await this.assertNearBranch(branchId, dto.lat, dto.lng);
@@ -63,19 +68,59 @@ export class EntriesService {
       ? crypto.createHash('sha256').update(dto.code).digest('hex')
       : null;
 
-    const entry = await this.prisma.entry.create({
-      data: {
-        campaignId,
-        userId,
-        method: dto.method,
-        codeHash,
-        purchaseRef: dto.purchaseRef,
-        metadata: { lat: dto.lat, lng: dto.lng },
+    const [entry] = await this.prisma.$transaction([
+      this.prisma.entry.create({
+        data: {
+          campaignId,
+          userId,
+          method: dto.method,
+          codeHash,
+          purchaseRef: dto.purchaseRef,
+          metadata: { lat: dto.lat, lng: dto.lng },
+        },
+      }),
+      this.prisma.user.update({
+        where: { id: userId },
+        data: { currentCampaignId: campaignId },
+      }),
+    ]);
+
+    const userReward = await this.processWinEngine(userId, campaign, entry.id);
+    return { entry, reward: userReward ?? null, campaign: { id: campaign.id, name: campaign.name, type: campaign.type } };
+  }
+
+  // ─── Get user's current active campaign ─────────────────────────────────────
+  async getActiveCampaign(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currentCampaignId: true },
+    });
+    if (!user?.currentCampaignId) return null;
+
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: user.currentCampaignId },
+      select: {
+        id: true, name: true, type: true, status: true, endsAt: true,
+        business: { select: { id: true, name: true } },
       },
     });
 
-    const userReward = await this.processWinEngine(userId, campaign, entry.id);
-    return { entry, reward: userReward ?? null, campaign: { name: campaign.name } };
+    // Auto-clear if campaign is no longer active
+    if (!campaign || campaign.status === 'ENDED' || campaign.status === 'CANCELLED') {
+      await this.prisma.user.update({ where: { id: userId }, data: { currentCampaignId: null } });
+      return null;
+    }
+
+    return campaign;
+  }
+
+  // ─── Leave current campaign ──────────────────────────────────────────────────
+  async leaveActiveCampaign(userId: string) {
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { currentCampaignId: null },
+    });
+    return { success: true };
   }
 
   // ─── Geolocation check: customer must be within 500m of branch ──────────────
@@ -108,6 +153,28 @@ export class EntriesService {
       throw new BadRequestException('Campaign has not started yet');
     if (campaign.endsAt && campaign.endsAt < now)
       throw new BadRequestException('Campaign has ended');
+  }
+
+  private async assertNotInAnotherCampaign(userId: string, campaignId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { currentCampaignId: true },
+    });
+    if (!user?.currentCampaignId || user.currentCampaignId === campaignId) return;
+
+    // Check if the campaign they're in is still active (auto-clear if ended)
+    const activeCampaign = await this.prisma.campaign.findUnique({
+      where: { id: user.currentCampaignId },
+      select: { name: true, status: true },
+    });
+    if (!activeCampaign || activeCampaign.status === 'ENDED' || activeCampaign.status === 'CANCELLED') {
+      await this.prisma.user.update({ where: { id: userId }, data: { currentCampaignId: null } });
+      return;
+    }
+
+    throw new ConflictException(
+      `You are already participating in "${activeCampaign.name}". Leave it first to join another campaign.`,
+    );
   }
 
   private async assertEligible(userId: string, campaign: { id: string; maxEntriesPerUser: number | null }) {

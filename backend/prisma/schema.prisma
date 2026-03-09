@@ -109,10 +109,11 @@ model User {
   isActive         Boolean   @default(true)
   isVerified       Boolean   @default(false)
   marketingConsent Boolean   @default(false)
-  city             String?
-  avatarUrl        String?
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
+  city              String?
+  avatarUrl         String?
+  currentCampaignId String?   @map("current_campaign_id")
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   devices          UserDevice[]
   entries          Entry[]

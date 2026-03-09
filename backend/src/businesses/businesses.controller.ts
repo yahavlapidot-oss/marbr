@@ -42,9 +42,11 @@ export class BusinessesController {
   }
 
   @Get(':id/campaigns')
-  @ApiOperation({ summary: 'Get all campaigns for a business' })
-  getCampaigns(@Param('id') id: string) {
-    return this.svc.getCampaigns(id);
+  @UseGuards(RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.BARTENDER, UserRole.CASHIER, UserRole.HOSTESS, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get all campaigns for a business (own business only)' })
+  getCampaigns(@Param('id') id: string, @CurrentUser() user: { id: string }) {
+    return this.svc.getCampaigns(id, user.id);
   }
 
   @Get(':id/customers')

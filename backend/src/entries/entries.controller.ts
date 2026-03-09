@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { UserRole } from '@prisma/client';
 import { EntriesService } from './entries.service';
@@ -19,6 +19,18 @@ export class EntriesController {
   @ApiOperation({ summary: 'Submit a campaign entry (scan or manual code)' })
   createEntry(@CurrentUser() user: { id: string }, @Body() dto: ScanEntryDto) {
     return this.svc.createEntry(user.id, dto);
+  }
+
+  @Get('active')
+  @ApiOperation({ summary: "Get the user's current active campaign enrollment" })
+  getActiveCampaign(@CurrentUser() user: { id: string }) {
+    return this.svc.getActiveCampaign(user.id);
+  }
+
+  @Delete('active')
+  @ApiOperation({ summary: 'Leave the current active campaign' })
+  leaveActiveCampaign(@CurrentUser() user: { id: string }) {
+    return this.svc.leaveActiveCampaign(user.id);
   }
 
   @Get(':id/status')

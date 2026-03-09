@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
@@ -19,13 +20,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   String? _subtitle;
   bool _success = false;
   bool _won = false;
+  bool _isConflict = false;
 
   Future<void> _onDetect(BarcodeCapture capture) async {
     if (_processing) return;
     final code = capture.barcodes.firstOrNull?.rawValue;
     if (code == null) return;
 
-    setState(() { _processing = true; _result = null; _subtitle = null; });
+    setState(() { _processing = true; _result = null; _subtitle = null; _isConflict = false; });
     _ctrl.stop();
 
     try {
@@ -36,8 +38,18 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       });
 
       final reward = res.data['reward'];
-      final campaignName = res.data['campaign']?['name'] as String?;
+      final campaignData = res.data['campaign'] as Map<String, dynamic>?;
+      final campaignName = campaignData?['name'] as String?;
+      final campaignType = campaignData?['type'] as String?;
+      final campaignId = campaignData?['id'] as String?;
       final rewardName = reward?['reward']?['name'] as String?;
+
+      // SNAKE campaigns: navigate to snake screen instead of showing generic result
+      if (campaignType == 'SNAKE' && campaignId != null) {
+        _reset();
+        if (mounted) context.push('/game/snake/$campaignId');
+        return;
+      }
 
       setState(() {
         _success = true;
@@ -51,11 +63,11 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       });
     } catch (e) {
       String msg = 'Could not process this code. Try again.';
+      bool isConflict = false;
       if (e is DioException) {
         final data = e.response?.data;
         final serverMsg = data is Map ? data['message']?.toString() : null;
         if (serverMsg != null) {
-          // Map known backend messages to friendly copy
           if (serverMsg.contains('invalid or expired')) {
             msg = 'Code expired — ask staff for a new one.';
           } else if (serverMsg.contains('Entry limit')) {
@@ -64,6 +76,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             msg = "You must be at the venue to participate.";
           } else if (serverMsg.contains('not active')) {
             msg = 'This campaign is not active right now.';
+          } else if (serverMsg.contains('already participating')) {
+            msg = serverMsg;
+            isConflict = true;
           } else {
             msg = serverMsg;
           }
@@ -72,19 +87,29 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       setState(() {
         _success = false;
         _won = false;
-        _result = 'Oops!';
+        _isConflict = isConflict;
+        _result = isConflict ? 'Already In A Campaign' : 'Oops!';
         _subtitle = msg;
       });
-      await Future.delayed(const Duration(seconds: 3));
-      if (mounted) {
-        setState(() { _processing = false; _result = null; _subtitle = null; });
-        _ctrl.start();
+      if (!isConflict) {
+        await Future.delayed(const Duration(seconds: 3));
+        if (mounted) {
+          setState(() { _processing = false; _result = null; _subtitle = null; });
+          _ctrl.start();
+        }
       }
     }
   }
 
+  Future<void> _leaveAndReset() async {
+    try {
+      await createDio().delete('/entries/active');
+    } catch (_) {}
+    _reset();
+  }
+
   void _reset() {
-    setState(() { _processing = false; _result = null; _subtitle = null; _success = false; _won = false; });
+    setState(() { _processing = false; _result = null; _subtitle = null; _success = false; _won = false; _isConflict = false; });
     _ctrl.start();
   }
 
@@ -220,12 +245,16 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         ? AppTheme.gold
         : _success
             ? const Color(0xFF22C55E)
-            : Colors.redAccent;
+            : _isConflict
+                ? Colors.orangeAccent
+                : Colors.redAccent;
     final icon = _won
         ? Icons.emoji_events
         : _success
             ? Icons.check_circle_outline
-            : Icons.error_outline;
+            : _isConflict
+                ? Icons.swap_horiz_outlined
+                : Icons.error_outline;
 
     return SafeArea(
       child: Padding(
@@ -246,25 +275,44 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               _result ?? '',
               style: TextStyle(
                 color: _won ? AppTheme.gold : AppTheme.white,
-                fontSize: 28,
+                fontSize: 26,
                 fontWeight: FontWeight.w800,
               ),
+              textAlign: TextAlign.center,
             ),
             const SizedBox(height: 10),
             Text(
               _subtitle ?? '',
               textAlign: TextAlign.center,
-              style: const TextStyle(color: AppTheme.subtle, fontSize: 16, height: 1.5),
+              style: const TextStyle(color: AppTheme.subtle, fontSize: 15, height: 1.5),
             ),
             const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _reset,
-                icon: const Icon(Icons.qr_code_scanner, size: 18),
-                label: const Text('SCAN AGAIN'),
+            if (_isConflict) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _leaveAndReset,
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent.withAlpha(200)),
+                  child: const Text('LEAVE CURRENT CAMPAIGN & SCAN'),
+                ),
               ),
-            ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: OutlinedButton(
+                  onPressed: _reset,
+                  child: const Text('CANCEL'),
+                ),
+              ),
+            ] else
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: _reset,
+                  icon: const Icon(Icons.qr_code_scanner, size: 18),
+                  label: const Text('SCAN AGAIN'),
+                ),
+              ),
           ],
         ),
       ),
