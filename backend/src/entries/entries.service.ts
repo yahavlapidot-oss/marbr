@@ -29,8 +29,21 @@ export class EntriesService {
 
   // ─── Customer: submit entry ──────────────────────────────────────────────────
   async createEntry(userId: string, dto: ScanEntryDto) {
+    let campaignId = dto.campaignId;
+
+    // Verify JWT-signed QR codes and extract campaignId from the token payload
+    if (dto.code) {
+      const secret = this.config.get<string>('JWT_ACCESS_SECRET', 'qr-secret');
+      try {
+        const decoded = jwt.verify(dto.code, secret) as { campaignId?: string };
+        if (decoded.campaignId) campaignId = decoded.campaignId;
+      } catch {
+        throw new BadRequestException('QR code is invalid or expired');
+      }
+    }
+
     const campaign = await this.prisma.campaign.findUnique({
-      where: { id: dto.campaignId },
+      where: { id: campaignId },
       include: { rewards: true },
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
@@ -38,30 +51,20 @@ export class EntriesService {
     this.assertCampaignActive(campaign);
     await this.assertEligible(userId, campaign);
 
-    // Verify JWT-signed QR codes
-    if (dto.code) {
-      const secret = this.config.get<string>('JWT_ACCESS_SECRET', 'qr-secret');
-      try {
-        jwt.verify(dto.code, secret);
-      } catch {
-        throw new BadRequestException('QR code is invalid or expired');
-      }
-    }
-
     const codeHash = dto.code
       ? crypto.createHash('sha256').update(dto.code).digest('hex')
       : null;
 
     if (codeHash) {
       const duplicate = await this.prisma.entry.findFirst({
-        where: { campaignId: dto.campaignId, codeHash },
+        where: { campaignId, codeHash },
       });
       if (duplicate) throw new ConflictException('This code has already been used');
     }
 
     const entry = await this.prisma.entry.create({
       data: {
-        campaignId: dto.campaignId,
+        campaignId,
         userId,
         method: dto.method,
         codeHash,

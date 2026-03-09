@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -28,11 +27,8 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     _ctrl.stop();
 
     try {
-      final campaignId = _extractCampaignId(code);
-      debugPrint('[SCAN] raw code length=${code.length} campaignId=$campaignId');
-
       final res = await createDio().post('/entries', data: {
-        'campaignId': campaignId,
+        'campaignId': code, // backend extracts real campaignId from JWT if code is a QR token
         'method': 'QR_SCAN',
         'code': code,
       });
@@ -45,14 +41,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             : 'Entry recorded! Good luck!';
       });
     } catch (e) {
-      final campaignId = _extractCampaignId(code);
       String msg = 'Could not process this code. Try again.';
       if (e is DioException) {
         final data = e.response?.data;
         if (data is Map && data['message'] != null) {
-          msg = '${data['message']} [id: $campaignId]';
+          msg = data['message'].toString();
         } else if (e.response?.statusCode != null) {
-          msg = 'Server error ${e.response!.statusCode} [id: $campaignId]';
+          msg = 'Server error ${e.response!.statusCode}';
         }
       }
       setState(() {
@@ -65,20 +60,6 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _ctrl.start();
       }
     }
-  }
-
-  /// Extracts campaignId from either a JWT QR (business panel) or legacy "id:..." format.
-  String _extractCampaignId(String code) {
-    final parts = code.split('.');
-    if (parts.length == 3) {
-      try {
-        final payload = base64Url.normalize(parts[1]);
-        final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)));
-        return decoded['campaignId'] as String;
-      } catch (_) {}
-    }
-    // Fallback for plain campaignId or "campaignId:extra" format
-    return code.split(':').first;
   }
 
   void _reset() {
