@@ -38,7 +38,10 @@
       "Bash(chmod +x:*)",
       "Bash(PATH=\"/opt/homebrew/bin:$PATH\" npm run:*)",
       "Bash(flutter devices:*)",
-      "Bash(flutter emulators:*)"
+      "Bash(flutter emulators:*)",
+      "Bash(pgrep:*)",
+      "Bash(flutter run:*)",
+      "Bash(flutter doctor:*)"
     ]
   }
 }
