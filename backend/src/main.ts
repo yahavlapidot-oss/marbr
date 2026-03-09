@@ -16,8 +16,9 @@ async function bootstrap() {
     }),
   );
 
+  const allowedOrigins = process.env.ALLOWED_ORIGINS?.split(',') ?? ['*'];
   app.enableCors({
-    origin: process.env.ALLOWED_ORIGINS?.split(',') ?? '*',
+    origin: allowedOrigins.includes('*') ? '*' : allowedOrigins,
     credentials: true,
   });
 

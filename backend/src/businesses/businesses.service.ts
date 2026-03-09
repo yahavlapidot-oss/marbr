@@ -8,10 +8,13 @@ export class BusinessesService {
 
   async create(ownerId: string, dto: CreateBusinessDto) {
     const business = await this.prisma.business.create({ data: { ...dto } });
-    await this.prisma.employee.create({
-      data: { userId: ownerId, businessId: business.id, role: 'OWNER', acceptedAt: new Date() },
-    });
-    await this.prisma.subscription.create({ data: { businessId: business.id } });
+    await Promise.all([
+      this.prisma.employee.create({
+        data: { userId: ownerId, businessId: business.id, role: 'OWNER', acceptedAt: new Date() },
+      }),
+      this.prisma.subscription.create({ data: { businessId: business.id } }),
+      this.prisma.user.update({ where: { id: ownerId }, data: { role: 'OWNER' } }),
+    ]);
     return business;
   }
 
