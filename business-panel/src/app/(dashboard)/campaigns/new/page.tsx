@@ -50,7 +50,12 @@ export default function NewCampaignPage() {
   const onSubmit = async (data: FormData) => {
     setError('');
     try {
-      await api.post(`/campaigns?businessId=${businessId}`, data);
+      const payload: any = { ...data };
+      if (!payload.startsAt) delete payload.startsAt;
+      else payload.startsAt = new Date(payload.startsAt).toISOString();
+      if (!payload.endsAt) delete payload.endsAt;
+      else payload.endsAt = new Date(payload.endsAt).toISOString();
+      await api.post(`/campaigns?businessId=${businessId}`, payload);
       router.push('/campaigns');
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'Failed to create campaign');
