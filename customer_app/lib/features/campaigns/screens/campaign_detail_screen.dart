@@ -179,7 +179,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                 child: SizedBox(
                   width: double.infinity,
                   child: ElevatedButton.icon(
-                    onPressed: () => context.push('/scan'),
+                    onPressed: () => context.go('/scan'),
                     icon: const Icon(Icons.qr_code_scanner, size: 20),
                     label: const Text('SCAN QR TO ENTER'),
                   ),

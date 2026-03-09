@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -26,8 +27,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     _ctrl.stop();
 
     try {
-      final parts = code.split(':');
-      final campaignId = parts.isNotEmpty ? parts[0] : code;
+      final campaignId = _extractCampaignId(code);
 
       final res = await createDio().post('/entries', data: {
         'campaignId': campaignId,
@@ -53,6 +53,20 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _ctrl.start();
       }
     }
+  }
+
+  /// Extracts campaignId from either a JWT QR (business panel) or legacy "id:..." format.
+  String _extractCampaignId(String code) {
+    final parts = code.split('.');
+    if (parts.length == 3) {
+      try {
+        final payload = base64Url.normalize(parts[1]);
+        final decoded = jsonDecode(utf8.decode(base64Url.decode(payload)));
+        return decoded['campaignId'] as String;
+      } catch (_) {}
+    }
+    // Fallback for plain campaignId or "campaignId:extra" format
+    return code.split(':').first;
   }
 
   void _reset() {
