@@ -25,8 +25,8 @@ export class AnalyticsService {
     return {
       campaigns,
       totals: { entries: totalEntries, winners: totalWinners, redemptions: totalRedemptions },
-      conversionRate: totalEntries > 0 ? ((totalWinners / totalEntries) * 100).toFixed(1) : '0',
-      redemptionRate: totalWinners > 0 ? ((totalRedemptions / totalWinners) * 100).toFixed(1) : '0',
+      conversionRate: totalEntries > 0 ? (totalWinners / totalEntries) * 100 : 0,
+      redemptionRate: totalWinners > 0 ? (totalRedemptions / totalWinners) * 100 : 0,
     };
   }
 
