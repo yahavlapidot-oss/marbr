@@ -29,6 +29,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
 
     try {
       final campaignId = _extractCampaignId(code);
+      debugPrint('[SCAN] raw code length=${code.length} campaignId=$campaignId');
 
       final res = await createDio().post('/entries', data: {
         'campaignId': campaignId,
@@ -44,13 +45,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             : 'Entry recorded! Good luck!';
       });
     } catch (e) {
+      final campaignId = _extractCampaignId(code);
       String msg = 'Could not process this code. Try again.';
       if (e is DioException) {
         final data = e.response?.data;
         if (data is Map && data['message'] != null) {
-          msg = data['message'].toString();
+          msg = '${data['message']} [id: $campaignId]';
         } else if (e.response?.statusCode != null) {
-          msg = 'Server error ${e.response!.statusCode}';
+          msg = 'Server error ${e.response!.statusCode} [id: $campaignId]';
         }
       }
       setState(() {
