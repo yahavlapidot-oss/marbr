@@ -7,6 +7,7 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as twilio from 'twilio';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto, SendOtpDto, VerifyOtpDto } from './dto/login.dto';
@@ -106,10 +107,22 @@ export class AuthService {
       data: { target: dto.target, code, expiresAt },
     });
 
-    // TODO: send via Twilio / email provider
-    console.log(`OTP for ${dto.target}: ${code}`);
-
     const isDev = this.config.get('NODE_ENV') !== 'production';
+
+    if (!isDev) {
+      const sid = this.config.get<string>('TWILIO_ACCOUNT_SID');
+      const token = this.config.get<string>('TWILIO_AUTH_TOKEN');
+      const from = this.config.get<string>('TWILIO_FROM_NUMBER');
+      const client = twilio.default(sid, token);
+      await client.messages.create({
+        body: `Your MrBar verification code is: ${code}`,
+        from,
+        to: dto.target,
+      });
+    } else {
+      console.log(`[DEV] OTP for ${dto.target}: ${code}`);
+    }
+
     return { message: 'OTP sent', ...(isDev && { devCode: code }) };
   }
 
