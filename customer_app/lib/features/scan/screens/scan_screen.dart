@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -43,9 +44,18 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
             : 'Entry recorded! Good luck!';
       });
     } catch (e) {
+      String msg = 'Could not process this code. Try again.';
+      if (e is DioException) {
+        final data = e.response?.data;
+        if (data is Map && data['message'] != null) {
+          msg = data['message'].toString();
+        } else if (e.response?.statusCode != null) {
+          msg = 'Server error ${e.response!.statusCode}';
+        }
+      }
       setState(() {
         _success = false;
-        _result = 'Could not process this code. Try again.';
+        _result = msg;
       });
       await Future.delayed(const Duration(seconds: 2));
       if (mounted) {
