@@ -2,7 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
-const _baseUrl = 'http://10.0.2.2:3000/api/v1';
+const _baseUrl = 'https://marbr-production.up.railway.app/api/v1';
 
 final _storage = FlutterSecureStorage();
 
