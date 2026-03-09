@@ -50,6 +50,7 @@ enum CampaignType {
   INSTANT_WIN
   EVERY_N
   WEIGHTED_ODDS
+  SNAKE
 }
 
 enum EntryMethod {
@@ -121,6 +122,7 @@ model User {
   eventLogs        EventLog[]
   fraudFlags       FraudFlag[]
   employeeProfiles Employee[]
+  gameScores       GameScore[]
 
   @@map("users")
 }
@@ -276,11 +278,12 @@ model Campaign {
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
 
-  business  Business          @relation(fields: [businessId], references: [id])
-  branches  CampaignBranch[]
-  products  CampaignProduct[]
-  rewards   Reward[]
-  entries   Entry[]
+  business    Business          @relation(fields: [businessId], references: [id])
+  branches    CampaignBranch[]
+  products    CampaignProduct[]
+  rewards     Reward[]
+  entries     Entry[]
+  gameScores  GameScore[]
 
   @@map("campaigns")
 }
@@ -329,6 +332,27 @@ model Entry {
   @@index([campaignId])
   @@index([userId])
   @@map("entries")
+}
+
+// ---------------------------------------------------------------------------
+// Game Scores (Snake campaign)
+// ---------------------------------------------------------------------------
+
+model GameScore {
+  id         String   @id @default(cuid())
+  campaignId String
+  userId     String
+  score      Int
+  foodEaten  Int
+  durationMs Int
+  playedAt   DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+
+  @@unique([campaignId, userId])
+  @@index([campaignId, score(sort: Desc)])
+  @@map("game_scores")
 }
 
 // ---------------------------------------------------------------------------

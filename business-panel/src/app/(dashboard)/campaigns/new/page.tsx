@@ -17,12 +17,14 @@ import { useAuthStore } from '@/lib/auth-store';
 
 const schema = z.object({
   name: z.string().min(2),
-  type: z.enum(['RAFFLE', 'INSTANT_WIN', 'EVERY_N', 'WEIGHTED_ODDS']),
+  type: z.enum(['RAFFLE', 'INSTANT_WIN', 'EVERY_N', 'WEIGHTED_ODDS', 'SNAKE']),
   startsAt: z.string().optional(),
   endsAt: z.string().optional(),
   maxEntriesPerUser: z.number().int().min(1),
   everyN: z.number().int().min(2).optional(),
   winProbability: z.number().min(0).max(1).optional(),
+  topN: z.number().int().min(1).optional(),
+  rewardName: z.string().optional(),
   pushTitle: z.string().optional(),
   pushBody: z.string().optional(),
 });
@@ -42,10 +44,11 @@ export default function NewCampaignPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { type: 'RAFFLE', maxEntriesPerUser: 1 },
+    defaultValues: { type: 'RAFFLE', maxEntriesPerUser: 1, topN: 3, rewardName: 'Winner Prize' },
   });
 
   const campaignType = watch('type');
+  const isSnake = campaignType === 'SNAKE';
 
   const onSubmit = async (data: FormData) => {
     setError('');
@@ -55,7 +58,27 @@ export default function NewCampaignPage() {
       else payload.startsAt = new Date(payload.startsAt).toISOString();
       if (!payload.endsAt) delete payload.endsAt;
       else payload.endsAt = new Date(payload.endsAt).toISOString();
-      await api.post(`/campaigns?businessId=${businessId}`, payload);
+
+      const topN = payload.topN;
+      const rewardName = payload.rewardName;
+      delete payload.topN;
+      delete payload.rewardName;
+
+      if (isSnake) {
+        payload.maxEntriesPerUser = 1; // enforced for snake
+      }
+
+      const res = await api.post(`/campaigns?businessId=${businessId}`, payload);
+      const campaignId = res.data.id;
+
+      // For SNAKE: auto-create reward with inventory = topN
+      if (isSnake && campaignId) {
+        await api.post(`/rewards/campaign/${campaignId}`, {
+          name: rewardName || 'Winner Prize',
+          inventory: topN ?? 3,
+        });
+      }
+
       router.push('/campaigns');
     } catch (err: any) {
       setError(err.response?.data?.message ?? 'Failed to create campaign');
@@ -72,7 +95,7 @@ export default function NewCampaignPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold text-white">New Campaign</h1>
-          <p className="text-[#6b6b80] text-sm">Create a promotion or raffle</p>
+          <p className="text-[#6b6b80] text-sm">Create a promotion or game</p>
         </div>
       </div>
 
@@ -82,7 +105,7 @@ export default function NewCampaignPage() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>Campaign Name *</Label>
-              <Input placeholder="e.g. Happy Hour Raffle" {...register('name')} />
+              <Input placeholder="e.g. Happy Hour Snake" {...register('name')} />
               {errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
             </div>
 
@@ -100,9 +123,30 @@ export default function NewCampaignPage() {
                   <SelectItem value="INSTANT_WIN">Instant Win</SelectItem>
                   <SelectItem value="EVERY_N">Every N Entries Wins</SelectItem>
                   <SelectItem value="WEIGHTED_ODDS">Weighted Odds</SelectItem>
+                  <SelectItem value="SNAKE">🐍 Snake Leaderboard</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {isSnake && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 space-y-3">
+                <p className="text-amber-400 text-sm font-medium">🐍 Snake Game Campaign</p>
+                <p className="text-[#6b6b80] text-xs">
+                  Customers play Snake on their phone. One game per player. Top scorers win when the campaign ends.
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>Number of winners</Label>
+                    <Input type="number" min={1} placeholder="3" {...register('topN', { valueAsNumber: true })} />
+                    <p className="text-[#6b6b80] text-xs">Top N scores win the reward</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>Reward name</Label>
+                    <Input placeholder="Free drinks" {...register('rewardName')} />
+                  </div>
+                </div>
+              </div>
+            )}
 
             {campaignType === 'EVERY_N' && (
               <div className="space-y-1.5">
@@ -118,10 +162,12 @@ export default function NewCampaignPage() {
               </div>
             )}
 
-            <div className="space-y-1.5">
-              <Label>Max entries per user</Label>
-              <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} />
-            </div>
+            {!isSnake && (
+              <div className="space-y-1.5">
+                <Label>Max entries per user</Label>
+                <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} />
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -133,7 +179,7 @@ export default function NewCampaignPage() {
               <Input type="datetime-local" {...register('startsAt')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Ends at</Label>
+              <Label>Ends at {isSnake && <span className="text-amber-400">(required for Snake)</span>}</Label>
               <Input type="datetime-local" {...register('endsAt')} />
             </div>
           </CardContent>
@@ -144,11 +190,11 @@ export default function NewCampaignPage() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>Title</Label>
-              <Input placeholder="🍺 Happy Hour is live!" {...register('pushTitle')} />
+              <Input placeholder={isSnake ? '🐍 Snake challenge is live!' : '🍺 Happy Hour is live!'} {...register('pushTitle')} />
             </div>
             <div className="space-y-1.5">
               <Label>Message</Label>
-              <Input placeholder="Buy a Heineken and enter to win 20 free shots!" {...register('pushBody')} />
+              <Input placeholder={isSnake ? 'Play Snake and top the leaderboard to win!' : 'Buy a Heineken and enter to win!'} {...register('pushBody')} />
             </div>
           </CardContent>
         </Card>

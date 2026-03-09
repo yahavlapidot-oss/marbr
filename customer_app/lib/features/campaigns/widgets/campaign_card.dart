@@ -96,8 +96,19 @@ class CampaignCard extends StatelessWidget {
                     color: AppTheme.gold,
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: const Text('Enter Now',
-                    style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (campaign['type'] == 'SNAKE') ...[
+                        const Text('🐍', style: TextStyle(fontSize: 13)),
+                        const SizedBox(width: 4),
+                        const Text('Play Now',
+                          style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                      ] else
+                        const Text('Enter Now',
+                          style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                    ],
+                  ),
                 ),
               ],
             ),

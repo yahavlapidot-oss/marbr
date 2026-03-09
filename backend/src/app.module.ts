@@ -19,6 +19,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { BillingModule } from './billing/billing.module';
 import { FraudModule } from './fraud/fraud.module';
 import { AdminModule } from './admin/admin.module';
+import { GameModule } from './game/game.module';
 
 @Module({
   controllers: [AppController],
@@ -42,6 +43,7 @@ import { AdminModule } from './admin/admin.module';
     BillingModule,
     FraudModule,
     AdminModule,
+    GameModule,
   ],
 })
 export class AppModule {}

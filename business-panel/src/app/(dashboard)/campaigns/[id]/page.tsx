@@ -2,8 +2,8 @@
 
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import { ArrowLeft, Loader2, Users, Trophy, CheckCircle, TrendingUp, Plus, Shuffle } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { ArrowLeft, Loader2, Users, Trophy, CheckCircle, TrendingUp, Plus, Shuffle, Gamepad2, Medal } from 'lucide-react';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,13 @@ export default function CampaignDetailPage() {
     enabled: !!id,
   });
 
+  const { data: leaderboardData, refetch: refetchLeaderboard } = useQuery({
+    queryKey: ['snake-leaderboard', id],
+    queryFn: () => api.get(`/game/snake/${id}/leaderboard`).then((r) => r.data),
+    enabled: !!id && !!data?.campaign && data.campaign.type === 'SNAKE',
+    refetchInterval: 10_000,
+  });
+
   const addReward = useMutation({
     mutationFn: (payload: any) => api.post(`/rewards/campaign/${id}`, payload),
     onSuccess: () => {
@@ -65,6 +72,14 @@ export default function CampaignDetailPage() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-analytics', id] }),
   });
 
+  const drawSnakeWinners = useMutation({
+    mutationFn: () => api.post(`/game/snake/${id}/draw`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaign-analytics', id] });
+      qc.invalidateQueries({ queryKey: ['snake-leaderboard', id] });
+    },
+  });
+
   if (isLoading) {
     return (
       <div className="flex justify-center py-24">
@@ -76,6 +91,9 @@ export default function CampaignDetailPage() {
   const { campaign, stats } = data ?? {};
   const rewards: any[] = rewardsData ?? [];
   const isRaffle = campaign?.type === 'RAFFLE';
+  const isSnake = campaign?.type === 'SNAKE';
+  const leaderboard: any[] = leaderboardData?.leaderboard ?? [];
+  const totalPlayers: number = leaderboardData?.totalPlayers ?? 0;
 
   return (
     <div className="space-y-6">
@@ -142,6 +160,83 @@ export default function CampaignDetailPage() {
             )}
           </CardContent>
         </Card>
+      )}
+
+      {/* Snake leaderboard + draw */}
+      {isSnake && (
+        <>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Gamepad2 className="h-4 w-4 text-amber-500" />
+                Live Leaderboard
+                <span className="text-xs text-[#6b6b80] font-normal ml-1">({totalPlayers} players · auto-refreshes)</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {leaderboard.length === 0 ? (
+                <p className="text-center text-[#6b6b80] py-6">No scores yet</p>
+              ) : (
+                <div className="divide-y divide-[#2a2a38]">
+                  {leaderboard.map((entry: any) => (
+                    <div key={entry.userId} className="flex items-center gap-4 py-3">
+                      <span className={`text-lg font-bold w-6 text-center ${
+                        entry.rank === 1 ? 'text-yellow-400' :
+                        entry.rank === 2 ? 'text-slate-300' :
+                        entry.rank === 3 ? 'text-amber-600' : 'text-[#6b6b80]'
+                      }`}>
+                        {entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : entry.rank}
+                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">{entry.name}</p>
+                        <p className="text-xs text-[#6b6b80]">{entry.foodEaten} foods eaten</p>
+                      </div>
+                      <span className="text-amber-500 font-bold">{entry.score.toLocaleString()}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-4 w-4 text-amber-500" />
+                Draw Snake Winners
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-[#6b6b80] mb-4">
+                Award the top scorers with the configured prize. Only available after the campaign ends.
+              </p>
+              <Button
+                onClick={() => drawSnakeWinners.mutate()}
+                disabled={drawSnakeWinners.isPending || campaign?.status !== 'ENDED'}
+                variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
+              >
+                {drawSnakeWinners.isPending
+                  ? <Loader2 className="h-4 w-4 animate-spin" />
+                  : <Medal className="h-4 w-4" />
+                }
+                {campaign?.status === 'ENDED' ? 'Draw Winners Now' : 'Campaign must be ended'}
+              </Button>
+              {drawSnakeWinners.isSuccess && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-green-400 font-medium">✓ Winners drawn!</p>
+                  {drawSnakeWinners.data?.data?.winners?.map((w: any) => (
+                    <div key={w.userId} className="text-sm text-[#a1a1b5]">
+                      #{w.rank} {w.name} — {w.score.toLocaleString()} pts
+                    </div>
+                  ))}
+                </div>
+              )}
+              {drawSnakeWinners.isError && (
+                <p className="text-sm text-red-400 mt-3">Failed to draw winners. Try again.</p>
+              )}
+            </CardContent>
+          </Card>
+        </>
       )}
 
       {/* Rewards */}

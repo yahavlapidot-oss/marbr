@@ -178,11 +178,17 @@ class CampaignDetailScreen extends ConsumerWidget {
                 ),
                 child: SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: () => context.go('/scan'),
-                    icon: const Icon(Icons.qr_code_scanner, size: 20),
-                    label: const Text('SCAN QR TO ENTER'),
-                  ),
+                  child: c['type'] == 'SNAKE'
+                    ? ElevatedButton.icon(
+                        onPressed: () => context.push('/game/snake/$id'),
+                        icon: const Text('🐍', style: TextStyle(fontSize: 18)),
+                        label: const Text('PLAY SNAKE'),
+                      )
+                    : ElevatedButton.icon(
+                        onPressed: () => context.go('/scan'),
+                        icon: const Icon(Icons.qr_code_scanner, size: 20),
+                        label: const Text('SCAN QR TO ENTER'),
+                      ),
                 ),
               ),
             ],
