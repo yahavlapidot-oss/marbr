@@ -13,11 +13,14 @@ import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 
+const BUSINESS_TYPES = ['BAR', 'PUB', 'CLUB', 'RESTAURANT', 'ENTERTAINMENT', 'FESTIVAL'] as const;
+
 const schema = z.object({
   fullName: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(8),
   businessName: z.string().min(2),
+  businessType: z.enum(BUSINESS_TYPES),
 });
 
 type FormData = z.infer<typeof schema>;
@@ -49,7 +52,7 @@ export default function RegisterPage() {
       setAuth(user, accessToken, refreshToken);
 
       // 2. Create business
-      const bizRes = await api.post('/businesses', { name: data.businessName });
+      const bizRes = await api.post('/businesses', { name: data.businessName, type: data.businessType });
       setBusinessId(bizRes.data.id);
 
       router.push('/dashboard');
@@ -95,6 +98,19 @@ export default function RegisterPage() {
               <Label>Business Name</Label>
               <Input placeholder="My Bar" {...register('businessName')} />
               {errors.businessName && <p className="text-xs text-red-400">{errors.businessName.message}</p>}
+            </div>
+
+            <div className="space-y-1.5">
+              <Label>Business Type</Label>
+              <select
+                {...register('businessType')}
+                className="w-full rounded-md border border-[#2a2a38] bg-[#0f0f13] px-3 py-2 text-sm text-white"
+              >
+                {BUSINESS_TYPES.map((t) => (
+                  <option key={t} value={t}>{t.charAt(0) + t.slice(1).toLowerCase()}</option>
+                ))}
+              </select>
+              {errors.businessType && <p className="text-xs text-red-400">{errors.businessType.message}</p>}
             </div>
 
             {error && (
