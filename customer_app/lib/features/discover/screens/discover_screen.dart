@@ -1,27 +1,22 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
-
-final discoverCampaignsProvider = FutureProvider<List<dynamic>>((ref) async {
-  final res = await createDio().get('/campaigns/active');
-  return res.data as List;
-});
 
 class DiscoverScreen extends ConsumerWidget {
   const DiscoverScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final campaigns = ref.watch(discoverCampaignsProvider);
+    final campaigns = ref.watch(activeCampaignsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: SafeArea(
         child: RefreshIndicator(
           color: AppTheme.gold,
-          onRefresh: () => ref.refresh(discoverCampaignsProvider.future),
+          onRefresh: () => ref.refresh(activeCampaignsProvider.future),
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(
@@ -67,7 +62,20 @@ class DiscoverScreen extends ConsumerWidget {
                   child: Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
                 ),
                 error: (e, _) => SliverFillRemaining(
-                  child: Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
+                  child: Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
+                        const SizedBox(height: 12),
+                        const Text('Could not load campaigns',
+                          style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+                        const SizedBox(height: 4),
+                        const Text('Pull down to retry',
+                          style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                      ],
+                    ),
+                  ),
                 ),
                 data: (list) => list.isEmpty
                     ? const SliverFillRemaining(

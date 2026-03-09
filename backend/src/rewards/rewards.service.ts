@@ -47,7 +47,12 @@ export class RewardsService {
       where: { campaignId, isValid: true },
     });
 
-    const shuffled = entries.sort(() => Math.random() - 0.5);
+    // Fisher-Yates shuffle (unbiased)
+    const shuffled = [...entries];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
     const winners = shuffled.slice(0, winnersCount);
 
     await Promise.all(

@@ -28,13 +28,13 @@ export default function RewardsPage() {
 
   const { data: rewards, isLoading } = useQuery({
     queryKey: ['rewards', selectedCampaign],
-    queryFn: () => api.get(`/rewards?campaignId=${selectedCampaign}`).then((r) => r.data),
+    queryFn: () => api.get(`/rewards/campaign/${selectedCampaign}`).then((r) => r.data),
     enabled: !!selectedCampaign,
   });
 
   const filtered = rewards?.filter((r: any) => {
     const q = search.toLowerCase();
-    return !q || r.user?.name?.toLowerCase().includes(q) || r.code?.toLowerCase().includes(q);
+    return !q || r.user?.fullName?.toLowerCase().includes(q) || r.code?.toLowerCase().includes(q);
   });
 
   return (
@@ -92,7 +92,7 @@ export default function RewardsPage() {
                 {filtered?.map((r: any) => (
                   <tr key={r.id} className="border-b border-[#2a2a3a] last:border-0">
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium">{r.user?.name ?? r.user?.email ?? '—'}</p>
+                      <p className="text-white font-medium">{r.user?.fullName ?? r.user?.email ?? '—'}</p>
                     </td>
                     <td className="px-4 py-3 text-[#6b6b80]">{r.reward?.name ?? '—'}</td>
                     <td className="px-4 py-3">

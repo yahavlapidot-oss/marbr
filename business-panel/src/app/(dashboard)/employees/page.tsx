@@ -41,11 +41,13 @@ export default function EmployeesPage() {
   const invite = useMutation({
     mutationFn: (data: any) => api.post(`/employees?businessId=${businessId}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['employees'] }); setShowForm(false); reset(); },
+    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to invite employee'),
   });
 
   const revoke = useMutation({
     mutationFn: (id: string) => api.delete(`/employees/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
+    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to revoke employee'),
   });
 
   return (
@@ -126,7 +128,7 @@ export default function EmployeesPage() {
                       <div className="flex items-center gap-2">
                         <UserCircle2 className="h-5 w-5 text-[#6b6b80]" />
                         <div>
-                          <p className="text-white font-medium">{e.user?.name ?? e.user?.email}</p>
+                          <p className="text-white font-medium">{e.user?.fullName ?? e.user?.email}</p>
                           <p className="text-[#6b6b80] text-xs">{e.user?.email}</p>
                         </div>
                       </div>

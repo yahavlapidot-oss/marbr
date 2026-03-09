@@ -29,8 +29,9 @@ export default function QrPage() {
   });
 
   const generate = useMutation({
-    mutationFn: () => api.post('/entries/qr/generate', { campaignId, branchId }).then((r) => r.data),
+    mutationFn: () => api.post('/entries/qr/generate', {}, { params: { campaignId, branchId } }).then((r) => r.data),
     onSuccess: (data) => setQrDataUrl(data.qrDataUrl),
+    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to generate QR code'),
   });
 
   const download = () => {

@@ -26,7 +26,22 @@ class FavoritesScreen extends ConsumerWidget {
       ),
       body: favs.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
-        error: (e, _) => Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
+              const SizedBox(height: 12),
+              const Text('Could not load favorites',
+                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => ref.refresh(favoritesProvider),
+                child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
+              ),
+            ],
+          ),
+        ),
         data: (list) {
           if (list.isEmpty) {
             return const Center(

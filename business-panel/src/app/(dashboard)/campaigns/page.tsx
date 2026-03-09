@@ -33,6 +33,7 @@ export default function CampaignsPage() {
     mutationFn: ({ id, action }: { id: string; action: string }) =>
       api.patch(`/campaigns/${id}/${action}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaigns'] }),
+    onError: (err: any) => alert(err?.response?.data?.message ?? 'Action failed'),
   });
 
   return (

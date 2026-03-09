@@ -69,7 +69,22 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
       ),
       body: rewards.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
-        error: (e, _) => Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
+        error: (e, _) => Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
+              const SizedBox(height: 12),
+              const Text('Could not load rewards',
+                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 8),
+              TextButton(
+                onPressed: () => ref.refresh(myRewardsProvider),
+                child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
+              ),
+            ],
+          ),
+        ),
         data: (list) {
           final active = list.where((r) => r['status'] == 'ACTIVE').toList();
           final history = list.where((r) => r['status'] != 'ACTIVE').toList();
@@ -240,7 +255,7 @@ class _RewardCardState extends State<_RewardCard> {
     final isActive = status == 'ACTIVE';
     final isRedeemed = status == 'REDEEMED';
     final expiresAt = DateTime.tryParse((widget.reward['expiresAt'] as String?) ?? '');
-    final timeLeft = expiresAt != null ? expiresAt.difference(DateTime.now()) : null;
+    final timeLeft = expiresAt?.difference(DateTime.now());
     final isExpiringSoon = timeLeft != null && timeLeft.inHours < 24 && !timeLeft.isNegative;
 
     return Container(
@@ -297,7 +312,7 @@ class _RewardCardState extends State<_RewardCard> {
                         children: [
                           const Icon(Icons.timer_outlined, color: Color(0xFFF97316), size: 14),
                           const SizedBox(width: 6),
-                          Text('Expires in ${timeLeft!.inHours}h ${timeLeft.inMinutes % 60}m',
+                          Text('Expires in ${timeLeft.inHours}h ${timeLeft.inMinutes % 60}m',
                             style: const TextStyle(color: Color(0xFFF97316), fontSize: 12, fontWeight: FontWeight.w600)),
                         ],
                       ),

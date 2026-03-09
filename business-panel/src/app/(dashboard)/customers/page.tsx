@@ -20,7 +20,7 @@ export default function CustomersPage() {
 
   const filtered = customers?.filter((c: any) => {
     const q = search.toLowerCase();
-    return !q || c.name?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone?.includes(q);
+    return !q || c.fullName?.toLowerCase().includes(q) || c.email?.toLowerCase().includes(q) || c.phone?.includes(q);
   });
 
   return (
@@ -70,7 +70,7 @@ export default function CustomersPage() {
                 {filtered?.map((c: any) => (
                   <tr key={c.id} className="border-b border-[#2a2a3a] last:border-0">
                     <td className="px-4 py-3">
-                      <p className="text-white font-medium">{c.name ?? '—'}</p>
+                      <p className="text-white font-medium">{c.fullName ?? '—'}</p>
                       <p className="text-[#6b6b80] text-xs">{c.email ?? '—'}</p>
                     </td>
                     <td className="px-4 py-3 text-[#6b6b80]">{c.phone ?? '—'}</td>
