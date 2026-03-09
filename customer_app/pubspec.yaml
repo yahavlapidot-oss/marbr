@@ -15,7 +15,7 @@ dependencies:
   flutter_riverpod: ^2.6.1
 
   # Navigation
-  go_router: ^14.6.2
+  go_router: 14.6.2
 
   # HTTP
   dio: ^5.7.0

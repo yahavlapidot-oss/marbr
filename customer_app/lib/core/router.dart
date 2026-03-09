@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -16,13 +17,47 @@ import '../features/history/screens/history_screen.dart';
 import '../features/settings/screens/settings_screen.dart';
 import '../features/shell/shell_screen.dart';
 
+/// Holds auth token in memory and notifies GoRouter when it changes.
+class AuthNotifier extends ChangeNotifier {
+  static const _storage = FlutterSecureStorage();
+  String? _token;
+  bool _initialized = false;
+
+  bool get isAuthenticated => _token != null;
+  bool get initialized => _initialized;
+
+  AuthNotifier() {
+    _load();
+  }
+
+  Future<void> _load() async {
+    _token = await _storage.read(key: 'accessToken');
+    _initialized = true;
+    notifyListeners();
+  }
+
+  Future<void> setToken(String token) async {
+    _token = token;
+    notifyListeners();
+  }
+
+  Future<void> clear() async {
+    _token = null;
+    notifyListeners();
+  }
+}
+
+final authNotifierProvider = ChangeNotifierProvider<AuthNotifier>((_) => AuthNotifier());
+
 final routerProvider = Provider<GoRouter>((ref) {
+  final auth = ref.watch(authNotifierProvider);
+
   return GoRouter(
     initialLocation: '/home',
-    redirect: (context, state) async {
-      const storage = FlutterSecureStorage();
-      final token = await storage.read(key: 'accessToken');
-      final isAuth = token != null;
+    refreshListenable: auth,
+    redirect: (context, state) {
+      if (!auth.initialized) return null;
+      final isAuth = auth.isAuthenticated;
       final isAuthRoute =
           state.matchedLocation.startsWith('/login') ||
           state.matchedLocation.startsWith('/otp');
@@ -31,7 +66,7 @@ final routerProvider = Provider<GoRouter>((ref) {
       return null;
     },
     routes: [
-      GoRoute(path: '/login', builder: (_, __) => const LoginScreen()),
+      GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
       GoRoute(
         path: '/otp',
         builder: (_, state) {
@@ -45,15 +80,15 @@ final routerProvider = Provider<GoRouter>((ref) {
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [
-          GoRoute(path: '/home', builder: (_, __) => const HomeScreen()),
-          GoRoute(path: '/discover', builder: (_, __) => const DiscoverScreen()),
-          GoRoute(path: '/scan', builder: (_, __) => const ScanScreen()),
-          GoRoute(path: '/rewards', builder: (_, __) => const MyRewardsScreen()),
-          GoRoute(path: '/profile', builder: (_, __) => const ProfileScreen()),
-          GoRoute(path: '/notifications', builder: (_, __) => const NotificationsScreen()),
-          GoRoute(path: '/favorites', builder: (_, __) => const FavoritesScreen()),
-          GoRoute(path: '/history', builder: (_, __) => const HistoryScreen()),
-          GoRoute(path: '/settings', builder: (_, __) => const SettingsScreen()),
+          GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
+          GoRoute(path: '/discover', builder: (_, _) => const DiscoverScreen()),
+          GoRoute(path: '/scan', builder: (_, _) => const ScanScreen()),
+          GoRoute(path: '/rewards', builder: (_, _) => const MyRewardsScreen()),
+          GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
+          GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
+          GoRoute(path: '/favorites', builder: (_, _) => const FavoritesScreen()),
+          GoRoute(path: '/history', builder: (_, _) => const HistoryScreen()),
+          GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
         ],
       ),
       GoRoute(

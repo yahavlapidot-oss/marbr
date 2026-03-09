@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
+import '../../../core/router.dart';
 import '../../../core/theme.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -48,7 +49,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       });
       await _storage.write(key: 'accessToken', value: res.data['accessToken']);
       await _storage.write(key: 'refreshToken', value: res.data['refreshToken']);
-      if (mounted) context.go('/home');
+      if (mounted) ref.read(authNotifierProvider).setToken(res.data['accessToken'] as String);
     } catch (e) {
       setState(() => _error = 'Invalid email or password.');
     } finally {
