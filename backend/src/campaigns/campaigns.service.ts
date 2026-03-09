@@ -70,7 +70,6 @@ export class CampaignsService {
       where: {
         status: CampaignStatus.ACTIVE,
         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
-        AND: [{ OR: [{ startsAt: null }, { startsAt: { lte: now } }] }],
       },
       include: {
         business: { select: { id: true, name: true, logoUrl: true } },
