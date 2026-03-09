@@ -50,7 +50,7 @@ class AuthNotifier extends ChangeNotifier {
 final authNotifierProvider = ChangeNotifierProvider<AuthNotifier>((_) => AuthNotifier());
 
 final routerProvider = Provider<GoRouter>((ref) {
-  final auth = ref.watch(authNotifierProvider);
+  final auth = ref.read(authNotifierProvider);
 
   return GoRouter(
     initialLocation: '/home',
