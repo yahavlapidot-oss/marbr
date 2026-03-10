@@ -114,14 +114,20 @@ function BillingContent() {
       .finally(() => setLoading(false));
   }, [businessId]);
 
+  const parseApiError = (err: any): string => {
+    const msg = err?.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(', ');
+    return msg || err?.message || 'Something went wrong. Please try again.';
+  };
+
   const handleUpgrade = async (plan: string) => {
     if (!businessId) return;
     setUpgrading(plan);
     try {
       const { data } = await api.post(`/billing/checkout?businessId=${businessId}`, { plan });
       window.location.href = data.url;
-    } catch {
-      showToast('Failed to start checkout. Please try again.', 'error');
+    } catch (err: any) {
+      showToast(parseApiError(err), 'error');
       setUpgrading(null);
     }
   };
@@ -131,8 +137,8 @@ function BillingContent() {
     try {
       const { data } = await api.post(`/billing/portal?businessId=${businessId}`);
       window.open(data.url, '_blank');
-    } catch {
-      showToast('Failed to open billing portal.', 'error');
+    } catch (err: any) {
+      showToast(parseApiError(err), 'error');
     }
   };
 

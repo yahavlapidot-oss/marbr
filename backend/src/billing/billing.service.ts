@@ -31,7 +31,7 @@ export class BillingService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
   ) {
-    this.stripe = new Stripe(this.config.get<string>('STRIPE_SECRET_KEY') ?? 'sk_test_placeholder');
+    this.stripe = new Stripe(this.config.get<string>('STRIPE_SECRET_KEY') || 'sk_test_placeholder');
   }
 
   async getSubscription(businessId: string) {

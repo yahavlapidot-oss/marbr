@@ -10,6 +10,7 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
+import { IsIn, IsString } from 'class-validator';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -17,6 +18,8 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { BillingService } from './billing.service';
 
 class CheckoutDto {
+  @IsString()
+  @IsIn(['STARTER', 'GROWTH', 'ENTERPRISE'])
   plan: 'STARTER' | 'GROWTH' | 'ENTERPRISE';
 }
 
