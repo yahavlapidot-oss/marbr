@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "856803828836",
+    "project_id": "mrbar-3ddae",
+    "storage_bucket": "mrbar-3ddae.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:856803828836:android:88f350493150e738bcab71",
+        "android_client_info": {
+          "package_name": "com.mrbar.customerApp"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBa-Uppi0kSZQzQfkTCLWIzdsEKPdgFCQM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
