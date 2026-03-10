@@ -16,6 +16,7 @@ import {
   Building2,
   LogOut,
   Beer,
+  CreditCard,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/auth-store';
@@ -31,6 +32,7 @@ const nav = [
   { href: '/qr', icon: QrCode, label: 'QR Generator' },
   { href: '/redeem', icon: ScanLine, label: 'Redeem' },
   { href: '/branches', icon: Building2, label: 'Branches' },
+  { href: '/billing', icon: CreditCard, label: 'Billing' },
   { href: '/settings', icon: Settings, label: 'Settings' },
 ];
 

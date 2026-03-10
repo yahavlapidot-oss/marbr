@@ -1,0 +1,367 @@
+'use client';
+
+import { useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
+import { CreditCard, Check, ExternalLink, Download, Zap, Crown } from 'lucide-react';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/lib/auth-store';
+import { formatCurrency, formatDate } from '@/lib/utils';
+
+interface Subscription {
+  id: string;
+  plan: 'FREE' | 'STARTER' | 'GROWTH' | 'ENTERPRISE';
+  isActive: boolean;
+  startsAt: string;
+  currentPeriodEnd: string | null;
+  stripeSubscriptionId: string | null;
+  invoices: Invoice[];
+}
+
+interface Invoice {
+  id: string;
+  amount: number;
+  currency: string;
+  paidAt: string | null;
+  invoiceUrl: string | null;
+  createdAt: string;
+}
+
+const PLANS = [
+  {
+    key: 'FREE',
+    name: 'Free',
+    price: 0,
+    campaigns: 1,
+    features: ['1 active campaign', 'Basic dashboard', 'QR code scanning', 'Manual redemption'],
+    cta: null,
+  },
+  {
+    key: 'STARTER',
+    name: 'Starter',
+    price: 149,
+    campaigns: 5,
+    features: [
+      '5 active campaigns',
+      'Snake game campaigns',
+      'Full analytics',
+      'Push notifications',
+      'Priority support',
+    ],
+    cta: 'Upgrade to Starter',
+    highlight: false,
+  },
+  {
+    key: 'GROWTH',
+    name: 'Growth',
+    price: 349,
+    campaigns: 20,
+    features: [
+      '20 active campaigns',
+      'Everything in Starter',
+      'Analytics export',
+      'Multi-branch support',
+      'Custom branding',
+    ],
+    cta: 'Upgrade to Growth',
+    highlight: true,
+  },
+  {
+    key: 'ENTERPRISE',
+    name: 'Enterprise',
+    price: 999,
+    campaigns: -1,
+    features: [
+      'Unlimited campaigns',
+      'Everything in Growth',
+      'Dedicated account manager',
+      'SLA guarantee',
+      'Custom integrations',
+    ],
+    cta: 'Upgrade to Enterprise',
+    highlight: false,
+  },
+] as const;
+
+const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'ENTERPRISE'];
+
+function BillingContent() {
+  const { businessId } = useAuthStore();
+  const searchParams = useSearchParams();
+  const [sub, setSub] = useState<Subscription | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [upgrading, setUpgrading] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const showToast = (message: string, type: 'success' | 'error' = 'success') => {
+    setToast({ message, type });
+    setTimeout(() => setToast(null), 4000);
+  };
+
+  useEffect(() => {
+    if (searchParams.get('success') === 'true') {
+      showToast('Subscription updated successfully!', 'success');
+    } else if (searchParams.get('cancelled') === 'true') {
+      showToast('Checkout cancelled.', 'error');
+    }
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (!businessId) return;
+    api
+      .get(`/billing/subscription?businessId=${businessId}`)
+      .then((r) => setSub(r.data))
+      .catch(() => showToast('Failed to load subscription', 'error'))
+      .finally(() => setLoading(false));
+  }, [businessId]);
+
+  const handleUpgrade = async (plan: string) => {
+    if (!businessId) return;
+    setUpgrading(plan);
+    try {
+      const { data } = await api.post(`/billing/checkout?businessId=${businessId}`, { plan });
+      window.location.href = data.url;
+    } catch {
+      showToast('Failed to start checkout. Please try again.', 'error');
+      setUpgrading(null);
+    }
+  };
+
+  const handleManage = async () => {
+    if (!businessId) return;
+    try {
+      const { data } = await api.post(`/billing/portal?businessId=${businessId}`);
+      window.open(data.url, '_blank');
+    } catch {
+      showToast('Failed to open billing portal.', 'error');
+    }
+  };
+
+  const currentPlanIndex = PLAN_ORDER.indexOf(sub?.plan ?? 'FREE');
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="w-8 h-8 border-2 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8 max-w-5xl">
+      {/* Toast */}
+      {toast && (
+        <div
+          className={`fixed top-6 right-6 z-50 px-4 py-3 rounded-lg text-sm font-medium shadow-lg ${
+            toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+          }`}
+        >
+          {toast.message}
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-white">Billing & Plans</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">Manage your subscription and invoices</p>
+        </div>
+        {sub?.stripeSubscriptionId && (
+          <button
+            onClick={handleManage}
+            className="flex items-center gap-2 px-4 py-2 bg-[#1e1e2e] border border-[#2a2a38] text-[#a1a1b5] rounded-lg hover:text-white hover:border-[#3a3a4e] transition-colors text-sm"
+          >
+            <ExternalLink className="h-4 w-4" />
+            Manage Subscription
+          </button>
+        )}
+      </div>
+
+      {/* Current Plan */}
+      {sub && (
+        <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl p-6">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="p-2 bg-amber-500/10 rounded-lg">
+              <CreditCard className="h-5 w-5 text-amber-400" />
+            </div>
+            <div>
+              <p className="text-xs text-[#6b6b80] uppercase tracking-wider font-medium">Current Plan</p>
+              <div className="flex items-center gap-2 mt-0.5">
+                <span className="text-xl font-bold text-white">{sub.plan}</span>
+                <span
+                  className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                    sub.isActive
+                      ? 'bg-green-500/15 text-green-400'
+                      : 'bg-red-500/15 text-red-400'
+                  }`}
+                >
+                  {sub.isActive ? 'Active' : 'Inactive'}
+                </span>
+              </div>
+            </div>
+          </div>
+          {sub.currentPeriodEnd && (
+            <p className="text-sm text-[#6b6b80]">
+              Renews on <span className="text-white">{formatDate(sub.currentPeriodEnd)}</span>
+            </p>
+          )}
+        </div>
+      )}
+
+      {/* Plans */}
+      <div>
+        <h2 className="text-lg font-semibold text-white mb-4">Plans</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          {PLANS.map((plan) => {
+            const isCurrent = sub?.plan === plan.key;
+            const isDowngrade = PLAN_ORDER.indexOf(plan.key) < currentPlanIndex;
+            const isHighlight = plan.key === 'GROWTH';
+
+            return (
+              <div
+                key={plan.key}
+                className={`relative rounded-xl border p-5 flex flex-col ${
+                  isHighlight
+                    ? 'border-amber-500/50 bg-amber-500/5'
+                    : isCurrent
+                    ? 'border-[#3a3a4e] bg-[#1e1e2e]'
+                    : 'border-[#2a2a38] bg-[#1a1a24]'
+                }`}
+              >
+                {isHighlight && (
+                  <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
+                    <span className="flex items-center gap-1 bg-amber-500 text-black text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      <Crown className="h-3 w-3" />
+                      Popular
+                    </span>
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <div className="flex items-center gap-1.5 mb-1">
+                    {plan.key === 'ENTERPRISE' && <Zap className="h-4 w-4 text-amber-400" />}
+                    <span className="font-semibold text-white">{plan.name}</span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-2xl font-bold text-white">
+                      {plan.price === 0 ? 'Free' : `₪${plan.price}`}
+                    </span>
+                    {plan.price > 0 && <span className="text-xs text-[#6b6b80]">/mo</span>}
+                  </div>
+                </div>
+
+                <ul className="space-y-2 flex-1 mb-5">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-[#a1a1b5]">
+                      <Check className="h-3.5 w-3.5 text-green-400 mt-0.5 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+
+                {isCurrent ? (
+                  <div className="text-center text-sm font-medium text-[#6b6b80] py-2 border border-[#2a2a38] rounded-lg">
+                    Current Plan
+                  </div>
+                ) : plan.key === 'FREE' || isDowngrade ? (
+                  <div className="text-center text-xs text-[#6b6b80] py-2">
+                    {plan.key === 'FREE' ? 'Downgrade via portal' : 'Contact us to downgrade'}
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => handleUpgrade(plan.key)}
+                    disabled={upgrading === plan.key}
+                    className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
+                      isHighlight
+                        ? 'bg-amber-500 text-black hover:bg-amber-400'
+                        : 'bg-[#2a2a38] text-white hover:bg-[#3a3a4e]'
+                    } disabled:opacity-50`}
+                  >
+                    {upgrading === plan.key ? 'Loading…' : plan.cta}
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* Invoice History */}
+      {sub && sub.invoices.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-white mb-4">Invoice History</h2>
+          <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl overflow-hidden">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#2a2a38]">
+                  <th className="text-left px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
+                    Date
+                  </th>
+                  <th className="text-left px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
+                    Amount
+                  </th>
+                  <th className="text-left px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-right px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
+                    Invoice
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a2a38]">
+                {sub.invoices.map((inv) => (
+                  <tr key={inv.id} className="hover:bg-[#1e1e2e] transition-colors">
+                    <td className="px-5 py-3.5 text-[#a1a1b5]">{formatDate(inv.createdAt)}</td>
+                    <td className="px-5 py-3.5 text-white font-medium">
+                      {formatCurrency(inv.amount, inv.currency)}
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span
+                        className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                          inv.paidAt
+                            ? 'bg-green-500/15 text-green-400'
+                            : 'bg-yellow-500/15 text-yellow-400'
+                        }`}
+                      >
+                        {inv.paidAt ? 'Paid' : 'Pending'}
+                      </span>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      {inv.invoiceUrl ? (
+                        <a
+                          href={inv.invoiceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors"
+                        >
+                          <Download className="h-3.5 w-3.5" />
+                          Download
+                        </a>
+                      ) : (
+                        <span className="text-[#6b6b80]">—</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {sub && sub.invoices.length === 0 && (
+        <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl p-8 text-center">
+          <CreditCard className="h-8 w-8 text-[#3a3a4e] mx-auto mb-3" />
+          <p className="text-[#6b6b80] text-sm">No invoices yet</p>
+        </div>
+      )}
+    </div>
+  );
+}
+
+export default function BillingPage() {
+  return (
+    <Suspense>
+      <BillingContent />
+    </Suspense>
+  );
+}

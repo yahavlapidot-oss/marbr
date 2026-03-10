@@ -480,13 +480,15 @@ model FraudFlag {
 // ---------------------------------------------------------------------------
 
 model Subscription {
-  id         String           @id @default(cuid())
-  businessId String           @unique
-  plan       SubscriptionPlan @default(FREE)
-  startsAt   DateTime         @default(now())
-  endsAt     DateTime?
-  isActive   Boolean          @default(true)
-  stripeId   String?
+  id                   String           @id @default(cuid())
+  businessId           String           @unique
+  plan                 SubscriptionPlan @default(FREE)
+  startsAt             DateTime         @default(now())
+  endsAt               DateTime?
+  isActive             Boolean          @default(true)
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  currentPeriodEnd     DateTime?
 
   business Business  @relation(fields: [businessId], references: [id])
   invoices  Invoice[]

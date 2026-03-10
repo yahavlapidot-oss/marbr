@@ -5,9 +5,10 @@ import {
   ForbiddenException,
   Logger,
 } from '@nestjs/common';
-import { CampaignStatus, UserRole } from '@prisma/client';
+import { CampaignStatus, CampaignType, SubscriptionPlan, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { PLAN_LIMITS } from '../billing/billing.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 
 @Injectable()
@@ -20,6 +21,8 @@ export class CampaignsService {
   ) {}
 
   async create(businessId: string, dto: CreateCampaignDto) {
+    await this.enforcePlanLimits(businessId, dto.type as CampaignType);
+
     const campaign = await this.prisma.campaign.create({
       data: {
         businessId,
@@ -134,6 +137,37 @@ export class CampaignsService {
         redemptionRate: rewardCount > 0 ? (redemptionCount / rewardCount) * 100 : 0,
       },
     };
+  }
+
+  private async enforcePlanLimits(businessId: string, type: CampaignType) {
+    const sub = await this.prisma.subscription.findUnique({ where: { businessId } });
+    const plan = sub?.plan ?? SubscriptionPlan.FREE;
+    const limit = PLAN_LIMITS[plan];
+
+    // SNAKE campaigns require at least STARTER
+    if (type === CampaignType.SNAKE && plan === SubscriptionPlan.FREE) {
+      throw new ForbiddenException({
+        message: 'Snake campaigns require the STARTER plan or higher',
+        requiredPlan: SubscriptionPlan.STARTER,
+        currentPlan: plan,
+      });
+    }
+
+    if (limit < Infinity) {
+      const activeCount = await this.prisma.campaign.count({
+        where: {
+          businessId,
+          status: { in: [CampaignStatus.ACTIVE, CampaignStatus.SCHEDULED, CampaignStatus.PAUSED] },
+        },
+      });
+      if (activeCount >= limit) {
+        throw new ForbiddenException({
+          message: `Campaign limit reached for your ${plan} plan (max ${limit} active campaigns)`,
+          currentPlan: plan,
+          limit,
+        });
+      }
+    }
   }
 
   private validateTransition(current: CampaignStatus, next: CampaignStatus) {
