@@ -3,14 +3,21 @@ import {
   NotFoundException,
   BadRequestException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { CampaignStatus, UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { NotificationsService } from '../notifications/notifications.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 
 @Injectable()
 export class CampaignsService {
-  constructor(private readonly prisma: PrismaService) {}
+  private readonly logger = new Logger(CampaignsService.name);
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly notifications: NotificationsService,
+  ) {}
 
   async create(businessId: string, dto: CreateCampaignDto) {
     const campaign = await this.prisma.campaign.create({
@@ -88,10 +95,19 @@ export class CampaignsService {
 
     this.validateTransition(campaign.status, status);
 
-    return this.prisma.campaign.update({
+    const updated = await this.prisma.campaign.update({
       where: { id },
       data: { status },
     });
+
+    // Auto-notify nearby customers when campaign goes live
+    if (status === CampaignStatus.ACTIVE) {
+      this.notifications.sendNearbyNotification(id).catch((err) =>
+        this.logger.error(`Failed to send campaign notification for ${id}`, err),
+      );
+    }
+
+    return updated;
   }
 
   async getAnalytics(id: string) {

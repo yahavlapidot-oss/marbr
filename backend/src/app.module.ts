@@ -20,6 +20,7 @@ import { BillingModule } from './billing/billing.module';
 import { FraudModule } from './fraud/fraud.module';
 import { AdminModule } from './admin/admin.module';
 import { GameModule } from './game/game.module';
+import { DevicesModule } from './devices/devices.module';
 
 @Module({
   controllers: [AppController],
@@ -44,6 +45,7 @@ import { GameModule } from './game/game.module';
     FraudModule,
     AdminModule,
     GameModule,
+    DevicesModule,
   ],
 })
 export class AppModule {}

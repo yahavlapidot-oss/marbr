@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
+import '../../../core/device_service.dart';
 import '../../../core/router.dart';
 import '../../../core/theme.dart';
 
@@ -100,6 +101,8 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       await _storage.write(key: 'accessToken', value: res.data['accessToken']);
       await _storage.write(key: 'refreshToken', value: res.data['refreshToken']);
       if (mounted) ref.read(authNotifierProvider).setToken(res.data['accessToken'] as String);
+      // Register device for push notifications (fire and forget)
+      DeviceService().registerDevice();
     } on DioException catch (e) {
       _attempts++;
       final data = e.response?.data;

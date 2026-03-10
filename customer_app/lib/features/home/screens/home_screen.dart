@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
+import '../../../core/device_service.dart';
 import '../../../core/theme.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
@@ -12,8 +13,31 @@ final activeCampaignEnrollmentProvider = FutureProvider.autoDispose<Map<String, 
   return Map<String, dynamic>.from(res.data);
 });
 
-class HomeScreen extends ConsumerWidget {
+class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
+
+  @override
+  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends ConsumerState<HomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Ask for location permission once on first open
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      DeviceService().requestLocationPermission().then((granted) {
+        if (granted) DeviceService().registerDevice();
+      });
+    });
+  }
+
+  // Ask for location permission once — improves nearby notification targeting
+  void _requestLocationIfNeeded() {
+    DeviceService().requestLocationPermission().then((granted) {
+      if (granted) DeviceService().registerDevice();
+    });
+  }
 
   Future<void> _confirmLeave(BuildContext context, WidgetRef ref, String campaignName) async {
     final confirmed = await showDialog<bool>(
@@ -45,7 +69,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final campaigns = ref.watch(activeCampaignsProvider);
     final enrollment = ref.watch(activeCampaignEnrollmentProvider);
 

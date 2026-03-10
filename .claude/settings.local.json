@@ -41,7 +41,14 @@
       "Bash(flutter emulators:*)",
       "Bash(pgrep:*)",
       "Bash(flutter run:*)",
-      "Bash(flutter doctor:*)"
+      "Bash(flutter doctor:*)",
+      "WebFetch(domain:marbr-production.up.railway.app)",
+      "Bash(pod install:*)",
+      "Bash(sudo xattr:*)",
+      "Bash(flutter:*)",
+      "Bash(xargs:*)",
+      "Bash(git add:*)",
+      "Bash(python3:*)"
     ]
   }
 }

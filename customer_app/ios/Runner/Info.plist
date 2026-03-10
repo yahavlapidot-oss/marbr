@@ -4,6 +4,15 @@
 <dict>
 	<key>NSCameraUsageDescription</key>
 	<string>MrBar needs camera access to scan QR codes at the bar.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>MrBar uses your location to show you nearby campaigns and notify you when a bar near you has a live promotion.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>MrBar uses your location to notify you about live promotions at nearby bars.</string>
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>fetch</string>
+		<string>remote-notification</string>
+	</array>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>

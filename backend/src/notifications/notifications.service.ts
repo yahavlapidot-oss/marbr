@@ -73,6 +73,77 @@ export class NotificationsService {
     }
   }
 
+  // ─── Notify customers nearby when a campaign goes ACTIVE ───────────────────
+  async sendNearbyNotification(campaignId: string) {
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id: campaignId },
+      include: {
+        business: true,
+        branches: { include: { branch: { select: { lat: true, lng: true } } } },
+      },
+    });
+    if (!campaign) return;
+
+    const title = campaign.pushTitle ?? `${campaign.business.name} has a live promotion!`;
+    const body = campaign.pushBody ?? 'Open MrBar to join now 🍺';
+
+    // Get branch coordinates that have location set
+    const branchCoords = campaign.branches
+      .map((cb) => cb.branch)
+      .filter((b): b is { lat: number; lng: number } => b.lat != null && b.lng != null);
+
+    // Devices seen in the last 3 hours with a location and FCM token
+    const recentDevices = await this.prisma.userDevice.findMany({
+      where: {
+        fcmToken: { not: null },
+        lastLat: { not: null },
+        lastLng: { not: null },
+        lastSeenAt: { gt: new Date(Date.now() - 3 * 60 * 60 * 1000) },
+      },
+      select: { userId: true, lastLat: true, lastLng: true },
+    });
+
+    // Keep users within 500m of any branch
+    const nearbyUserIds = new Set<string>();
+    for (const device of recentDevices) {
+      for (const branch of branchCoords) {
+        if (this.haversineMeters(device.lastLat!, device.lastLng!, branch.lat, branch.lng) <= 500) {
+          nearbyUserIds.add(device.userId);
+          break;
+        }
+      }
+    }
+
+    // Also include users who favorited the business (they're interested even if not nearby)
+    const favorites = await this.prisma.favoriteBusiness.findMany({
+      where: { businessId: campaign.businessId },
+      select: { userId: true },
+    });
+    favorites.forEach((f) => nearbyUserIds.add(f.userId));
+
+    if (nearbyUserIds.size === 0) return;
+
+    this.logger.log(`Sending campaign notification to ${nearbyUserIds.size} users for campaign ${campaignId}`);
+
+    return this.sendPush({
+      userIds: Array.from(nearbyUserIds),
+      title,
+      body,
+      data: { campaignId, type: 'campaign_active', businessName: campaign.business.name },
+    });
+  }
+
+  private haversineMeters(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6_371_000;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const dLat = toRad(lat2 - lat1);
+    const dLng = toRad(lng2 - lng1);
+    const a =
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+    return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  }
+
   async sendCampaignNotification(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },

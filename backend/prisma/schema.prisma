@@ -138,6 +138,8 @@ model UserDevice {
   deviceModel String?
   osVersion   String?
   appVersion  String?
+  lastLat     Float?
+  lastLng     Float?
   lastSeenAt  DateTime @default(now())
   createdAt   DateTime @default(now())
 
