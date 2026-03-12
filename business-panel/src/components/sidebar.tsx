@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Megaphone,
@@ -20,6 +21,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/auth-store';
+import { api } from '@/lib/api';
 
 const nav = [
   { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
@@ -38,7 +40,17 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, business, logout } = useAuthStore();
+  const { user, businessId, business: storedBusiness, logout } = useAuthStore();
+
+  // Always fetch fresh business data from the server so logo is never stale
+  const { data: fetchedBusiness } = useQuery({
+    queryKey: ['business-sidebar', businessId],
+    queryFn: () => api.get(`/businesses/${businessId}`).then((r) => r.data),
+    enabled: !!businessId,
+    staleTime: 60_000,
+  });
+
+  const business = fetchedBusiness ?? storedBusiness;
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-[#2a2a38] bg-[#0f0f13]">
