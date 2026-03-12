@@ -73,6 +73,15 @@ export class CampaignsController {
     return this.campaignsService.update(id, dto);
   }
 
+  @Post(':id/duplicate')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Duplicate a campaign as a new DRAFT' })
+  duplicate(@Param('id') id: string) {
+    return this.campaignsService.duplicate(id);
+  }
+
   @Patch(':id/publish')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)

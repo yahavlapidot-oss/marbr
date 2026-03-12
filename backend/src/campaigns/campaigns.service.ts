@@ -94,6 +94,43 @@ export class CampaignsService {
     });
   }
 
+  async duplicate(id: string) {
+    const src = await this.prisma.campaign.findUnique({
+      where: { id },
+      include: { branches: true, products: true, rewards: true },
+    });
+    if (!src) throw new NotFoundException('Campaign not found');
+
+    return this.prisma.campaign.create({
+      data: {
+        businessId: src.businessId,
+        name: `${src.name} (copy)`,
+        description: src.description,
+        type: src.type,
+        status: 'DRAFT',
+        startsAt: null,
+        endsAt: src.endsAt,
+        maxEntries: src.maxEntries,
+        maxEntriesPerUser: src.maxEntriesPerUser,
+        everyN: src.everyN,
+        winProbability: src.winProbability,
+        pushTitle: src.pushTitle,
+        pushBody: src.pushBody,
+        budget: src.budget,
+        branches: src.branches.length
+          ? { create: src.branches.map((b) => ({ branchId: b.branchId })) }
+          : undefined,
+        products: src.products.length
+          ? { create: src.products.map((p) => ({ productId: p.productId, minQuantity: p.minQuantity })) }
+          : undefined,
+        rewards: src.rewards.length
+          ? { create: src.rewards.map((r) => ({ name: r.name, description: r.description, inventory: r.inventory, expiresInHours: r.expiresInHours })) }
+          : undefined,
+      },
+      include: { branches: true, products: true, rewards: true },
+    });
+  }
+
   async findByBusiness(businessId: string) {
     return this.prisma.campaign.findMany({
       where: { businessId },

@@ -1,7 +1,8 @@
 'use client';
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Play, Pause, StopCircle, Loader2, BarChart2 } from 'lucide-react';
+import { Plus, Play, Pause, StopCircle, Loader2, BarChart2, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -33,7 +34,16 @@ export default function CampaignsPage() {
     mutationFn: ({ id, action }: { id: string; action: string }) =>
       api.patch(`/campaigns/${id}/${action}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['campaigns'] }),
-    onError: (err: any) => alert(err?.response?.data?.message ?? 'Action failed'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Action failed'),
+  });
+
+  const duplicate = useMutation({
+    mutationFn: (id: string) => api.post(`/campaigns/${id}/duplicate`),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success(`"${res.data.name}" created as a draft`);
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Duplicate failed'),
   });
 
   return (
@@ -151,6 +161,15 @@ export default function CampaignsPage() {
                             <StopCircle className="h-4 w-4 text-red-400" />
                           </Button>
                         )}
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          title="Duplicate"
+                          onClick={() => duplicate.mutate(c.id)}
+                          disabled={duplicate.isPending}
+                        >
+                          <Copy className="h-4 w-4 text-[#6b6b80]" />
+                        </Button>
                         <Button variant="ghost" size="icon" title="Analytics" asChild>
                           <Link href={`/campaigns/${c.id}`}>
                             <BarChart2 className="h-4 w-4 text-[#6b6b80]" />
