@@ -10,6 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { NotificationsService } from '../notifications/notifications.service';
 import { PLAN_LIMITS } from '../billing/billing.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { UpdateCampaignDto } from './dto/update-campaign.dto';
 
 @Injectable()
 export class CampaignsService {
@@ -66,6 +67,33 @@ export class CampaignsService {
     return campaign;
   }
 
+  async update(id: string, dto: UpdateCampaignDto) {
+    const campaign = await this.prisma.campaign.findUnique({ where: { id } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    if (
+      campaign.status === CampaignStatus.ENDED ||
+      campaign.status === CampaignStatus.CANCELLED
+    ) {
+      throw new BadRequestException('Cannot edit a finished or cancelled campaign');
+    }
+
+    return this.prisma.campaign.update({
+      where: { id },
+      data: {
+        ...(dto.name !== undefined && { name: dto.name }),
+        ...(dto.description !== undefined && { description: dto.description || null }),
+        ...(dto.startsAt !== undefined && { startsAt: dto.startsAt ? new Date(dto.startsAt) : null }),
+        ...(dto.endsAt !== undefined && { endsAt: dto.endsAt ? new Date(dto.endsAt) : null }),
+        ...(dto.maxEntriesPerUser !== undefined && { maxEntriesPerUser: dto.maxEntriesPerUser }),
+        ...(dto.everyN !== undefined && { everyN: dto.everyN }),
+        ...(dto.winProbability !== undefined && { winProbability: dto.winProbability }),
+        ...(dto.pushTitle !== undefined && { pushTitle: dto.pushTitle || null }),
+        ...(dto.pushBody !== undefined && { pushBody: dto.pushBody || null }),
+        ...(dto.budget !== undefined && { budget: dto.budget }),
+      },
+    });
+  }
+
   async findByBusiness(businessId: string) {
     return this.prisma.campaign.findMany({
       where: { businessId },
@@ -114,14 +142,16 @@ export class CampaignsService {
   }
 
   async getAnalytics(id: string) {
-    const [campaign, entryCount, rewardCount, redemptionCount] = await Promise.all([
+    const [campaign, entryCount, rewardCount, redemptionCount, recentEntries] = await Promise.all([
       this.prisma.campaign.findUnique({ where: { id } }),
       this.prisma.entry.count({ where: { campaignId: id, isValid: true } }),
-      this.prisma.userReward.count({
-        where: { reward: { campaignId: id } },
-      }),
-      this.prisma.redemption.count({
-        where: { userReward: { reward: { campaignId: id } } },
+      this.prisma.userReward.count({ where: { reward: { campaignId: id } } }),
+      this.prisma.redemption.count({ where: { userReward: { reward: { campaignId: id } } } }),
+      this.prisma.entry.findMany({
+        where: { campaignId: id, isValid: true },
+        include: { user: { select: { id: true, fullName: true, phone: true, email: true } } },
+        orderBy: { createdAt: 'desc' },
+        take: 50,
       }),
     ]);
 
@@ -136,6 +166,7 @@ export class CampaignsService {
         conversionRate: entryCount > 0 ? (rewardCount / entryCount) * 100 : 0,
         redemptionRate: rewardCount > 0 ? (redemptionCount / rewardCount) * 100 : 0,
       },
+      recentEntries,
     };
   }
 

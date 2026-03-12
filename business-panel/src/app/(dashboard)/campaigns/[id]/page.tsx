@@ -3,7 +3,14 @@
 import { useParams } from 'next/navigation';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Loader2, Users, Trophy, CheckCircle, TrendingUp, Plus, Shuffle, Gamepad2, Medal, QrCode, Download, Maximize2, X } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
+import {
+  ArrowLeft, Loader2, Users, Trophy, CheckCircle, TrendingUp,
+  Plus, Shuffle, Gamepad2, Medal, QrCode, Download, Maximize2, X,
+  Play, Pause, StopCircle, Pencil, ChevronDown, ChevronUp,
+  Hash, ScanLine, MapPin, CreditCard,
+} from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,8 +25,30 @@ import { formatDateTime } from '@/lib/utils';
 const ROTATE_EVERY = 60;
 
 const STATUS_VARIANT: Record<string, any> = {
-  ACTIVE: 'active', PAUSED: 'paused', ENDED: 'ended', DRAFT: 'draft', SCHEDULED: 'scheduled',
+  ACTIVE: 'active', PAUSED: 'paused', ENDED: 'ended', DRAFT: 'draft', SCHEDULED: 'scheduled', CANCELLED: 'destructive',
 };
+
+const METHOD_LABEL: Record<string, string> = {
+  QR_SCAN: 'QR Scan', MANUAL_CODE: 'Code', CHECKIN: 'Check-in', POS_CALLBACK: 'POS',
+};
+const METHOD_ICON: Record<string, React.ElementType> = {
+  QR_SCAN: QrCode, MANUAL_CODE: Hash, CHECKIN: MapPin, POS_CALLBACK: CreditCard,
+};
+
+function formatTimeAgo(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const mins = Math.floor(diff / 60000);
+  if (mins < 1) return 'just now';
+  if (mins < 60) return `${mins}m ago`;
+  const hours = Math.floor(mins / 60);
+  if (hours < 24) return `${hours}h ago`;
+  return `${Math.floor(hours / 24)}d ago`;
+}
+
+function toDatetimeLocal(iso?: string | null): string {
+  if (!iso) return '';
+  return new Date(iso).toISOString().slice(0, 16);
+}
 
 function StatTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
   return (
@@ -35,13 +64,26 @@ function StatTile({ icon: Icon, label, value }: { icon: React.ElementType; label
   );
 }
 
+type EditForm = {
+  name: string;
+  description: string;
+  startsAt: string;
+  endsAt: string;
+  maxEntriesPerUser: number;
+  everyN: number;
+  winProbability: number;
+  pushTitle: string;
+  pushBody: string;
+};
+
 export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const businessId = useAuthStore((s) => s.businessId);
 
-  // Reward state
+  // UI state
   const [showAddReward, setShowAddReward] = useState(false);
+  const [showEdit, setShowEdit] = useState(false);
   const [rewardName, setRewardName] = useState('');
   const [rewardDesc, setRewardDesc] = useState('');
   const [rewardInventory, setRewardInventory] = useState('1');
@@ -54,6 +96,10 @@ export default function CampaignDetailPage() {
   const [kiosk, setKiosk] = useState(false);
   const rotateRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Edit form
+  const { register, reset, watch: watchEdit } = useForm<EditForm>();
+  const campaignType = useRef('');
 
   const { data, isLoading } = useQuery({
     queryKey: ['campaign-analytics', id],
@@ -72,11 +118,71 @@ export default function CampaignDetailPage() {
     enabled: !!businessId,
   });
 
-  const { data: leaderboardData, refetch: refetchLeaderboard } = useQuery({
+  const { data: leaderboardData } = useQuery({
     queryKey: ['snake-leaderboard', id],
     queryFn: () => api.get(`/game/snake/${id}/leaderboard`).then((r) => r.data),
     enabled: !!id && !!data?.campaign && data.campaign.type === 'SNAKE',
     refetchInterval: 10_000,
+  });
+
+  // Pre-populate edit form when campaign loads
+  useEffect(() => {
+    if (data?.campaign) {
+      const c = data.campaign;
+      campaignType.current = c.type;
+      reset({
+        name: c.name ?? '',
+        description: c.description ?? '',
+        startsAt: toDatetimeLocal(c.startsAt),
+        endsAt: toDatetimeLocal(c.endsAt),
+        maxEntriesPerUser: c.maxEntriesPerUser ?? 1,
+        everyN: c.everyN ?? 2,
+        winProbability: c.winProbability ?? 0.1,
+        pushTitle: c.pushTitle ?? '',
+        pushBody: c.pushBody ?? '',
+      });
+    }
+  }, [data?.campaign, reset]);
+
+  const invalidate = () => qc.invalidateQueries({ queryKey: ['campaign-analytics', id] });
+
+  const transition = useMutation({
+    mutationFn: (action: string) => api.patch(`/campaigns/${id}/${action}`),
+    onSuccess: (_, action) => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      const labels: Record<string, string> = {
+        publish: 'Campaign is now live!',
+        pause: 'Campaign paused.',
+        resume: 'Campaign resumed.',
+        end: 'Campaign ended.',
+      };
+      toast.success(labels[action] ?? 'Updated');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Action failed'),
+  });
+
+  const editMutation = useMutation({
+    mutationFn: (formData: EditForm) => {
+      const payload: Record<string, any> = {};
+      if (formData.name) payload.name = formData.name;
+      if (formData.description !== undefined) payload.description = formData.description;
+      payload.startsAt = formData.startsAt || '';
+      payload.endsAt = formData.endsAt || '';
+      if (formData.pushTitle !== undefined) payload.pushTitle = formData.pushTitle;
+      if (formData.pushBody !== undefined) payload.pushBody = formData.pushBody;
+      if (campaignType.current !== 'SNAKE') payload.maxEntriesPerUser = formData.maxEntriesPerUser;
+      if (campaignType.current === 'EVERY_N') payload.everyN = formData.everyN;
+      if (campaignType.current === 'WEIGHTED_ODDS') payload.winProbability = formData.winProbability;
+      return api.patch(`/campaigns/${id}`, payload);
+    },
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ['campaigns'] });
+      toast.success('Campaign updated');
+      setShowEdit(false);
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Update failed'),
   });
 
   const addReward = useMutation({
@@ -85,12 +191,25 @@ export default function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ['rewards', id] });
       setShowAddReward(false);
       setRewardName(''); setRewardDesc(''); setRewardInventory('1');
+      toast.success('Prize added');
     },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to add prize'),
   });
 
   const drawWinners = useMutation({
     mutationFn: (count: number) => api.post(`/rewards/campaign/${id}/draw`, { count }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['campaign-analytics', id] }),
+    onSuccess: () => { invalidate(); toast.success('Winners drawn!'); },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Draw failed'),
+  });
+
+  const drawSnakeWinners = useMutation({
+    mutationFn: () => api.post(`/game/snake/${id}/draw`),
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ['snake-leaderboard', id] });
+      toast.success('Winners drawn!');
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Draw failed'),
   });
 
   // QR generation
@@ -98,7 +217,7 @@ export default function CampaignDetailPage() {
     mutationFn: () =>
       api.post('/entries/qr/generate', {}, { params: { campaignId: id, branchId } }).then((r) => r.data),
     onSuccess: (data) => { setQrDataUrl(data.qrDataUrl); setCountdown(ROTATE_EVERY); },
-    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to generate QR'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to generate QR'),
   });
 
   const stopRotation = useCallback(() => {
@@ -125,14 +244,6 @@ export default function CampaignDetailPage() {
 
   const circumference = 2 * Math.PI * 24;
   const dashOffset = circumference * (1 - countdown / ROTATE_EVERY);
-
-  const drawSnakeWinners = useMutation({
-    mutationFn: () => api.post(`/game/snake/${id}/draw`),
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['campaign-analytics', id] });
-      qc.invalidateQueries({ queryKey: ['snake-leaderboard', id] });
-    },
-  });
 
   if (isLoading) {
     return (
@@ -176,31 +287,93 @@ export default function CampaignDetailPage() {
     );
   }
 
-  const { campaign, stats } = data ?? {};
+  const { campaign, stats, recentEntries } = data ?? {};
   const rewards: any[] = rewardsData ?? [];
+  const entries: any[] = recentEntries ?? [];
   const isRaffle = campaign?.type === 'RAFFLE';
   const isSnake = campaign?.type === 'SNAKE';
+  const isEveryN = campaign?.type === 'EVERY_N';
+  const isWeightedOdds = campaign?.type === 'WEIGHTED_ODDS';
   const leaderboard: any[] = leaderboardData?.leaderboard ?? [];
   const totalPlayers: number = leaderboardData?.totalPlayers ?? 0;
+  const canEdit = campaign?.status && !['ENDED', 'CANCELLED'].includes(campaign.status);
+  const isPending = transition.isPending;
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon" asChild>
+    <div className="space-y-6 max-w-4xl">
+      {/* Header */}
+      <div className="flex items-start gap-3">
+        <Button variant="ghost" size="icon" asChild className="mt-0.5 shrink-0">
           <Link href="/campaigns"><ArrowLeft className="h-4 w-4" /></Link>
         </Button>
-        <div className="flex-1">
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-white">{campaign?.name}</h1>
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold text-white truncate">{campaign?.name}</h1>
             <Badge variant={STATUS_VARIANT[campaign?.status]}>{campaign?.status}</Badge>
           </div>
           <p className="text-[#6b6b80] text-sm mt-1">
-            {campaign?.type?.replace('_', ' ')}
+            {campaign?.type?.replace(/_/g, ' ')}
             {campaign?.startsAt && ` · Starts ${formatDateTime(campaign.startsAt)}`}
             {campaign?.endsAt && ` · Ends ${formatDateTime(campaign.endsAt)}`}
           </p>
         </div>
       </div>
+
+      {/* Status controls */}
+      {campaign?.status && (
+        <div className="flex items-center gap-2 flex-wrap">
+          {campaign.status === 'DRAFT' && (
+            <Button onClick={() => transition.mutate('publish')} disabled={isPending} className="bg-green-600 hover:bg-green-500">
+              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+              Publish Campaign
+            </Button>
+          )}
+          {campaign.status === 'ACTIVE' && (
+            <>
+              <Button variant="outline" onClick={() => transition.mutate('pause')} disabled={isPending}>
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
+                Pause
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm('End this campaign? This cannot be undone.')) transition.mutate('end');
+                }}
+                disabled={isPending}
+                className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              >
+                <StopCircle className="h-4 w-4" />
+                End Campaign
+              </Button>
+            </>
+          )}
+          {campaign.status === 'PAUSED' && (
+            <>
+              <Button onClick={() => transition.mutate('resume')} disabled={isPending} className="bg-green-600 hover:bg-green-500">
+                {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                Resume
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  if (confirm('End this campaign? This cannot be undone.')) transition.mutate('end');
+                }}
+                disabled={isPending}
+                className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
+              >
+                <StopCircle className="h-4 w-4" />
+                End Campaign
+              </Button>
+            </>
+          )}
+          {(campaign.status === 'ENDED' || campaign.status === 'CANCELLED') && (
+            <div className="flex items-center gap-2 text-sm text-[#6b6b80]">
+              <CheckCircle className="h-4 w-4" />
+              Campaign {campaign.status.toLowerCase()} — no further actions available
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -210,42 +383,98 @@ export default function CampaignDetailPage() {
         <StatTile icon={TrendingUp} label="Conversion" value={`${stats?.conversionRate?.toFixed(1) ?? 0}%`} />
       </div>
 
+      {/* Edit Campaign */}
+      {canEdit && (
+        <Card>
+          <CardHeader
+            className="cursor-pointer select-none"
+            onClick={() => setShowEdit((v) => !v)}
+          >
+            <div className="flex items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-amber-500" />
+                Edit Campaign
+              </CardTitle>
+              {showEdit ? <ChevronUp className="h-4 w-4 text-[#6b6b80]" /> : <ChevronDown className="h-4 w-4 text-[#6b6b80]" />}
+            </div>
+          </CardHeader>
+          {showEdit && (
+            <CardContent className="space-y-4 pt-0">
+              <div className="space-y-1.5">
+                <Label>Campaign Name</Label>
+                <Input {...register('name')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Description</Label>
+                <Input placeholder="Optional description" {...register('description')} />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>Starts at</Label>
+                  <Input type="datetime-local" {...register('startsAt')} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>Ends at</Label>
+                  <Input type="datetime-local" {...register('endsAt')} />
+                </div>
+              </div>
+              {!isSnake && (
+                <div className="space-y-1.5">
+                  <Label>Max entries per user</Label>
+                  <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} className="w-40" />
+                </div>
+              )}
+              {isEveryN && (
+                <div className="space-y-1.5">
+                  <Label>Win every N entries</Label>
+                  <Input type="number" min={2} {...register('everyN', { valueAsNumber: true })} className="w-40" />
+                </div>
+              )}
+              {isWeightedOdds && (
+                <div className="space-y-1.5">
+                  <Label>Win probability (0–1)</Label>
+                  <Input type="number" step="0.01" min={0} max={1} {...register('winProbability', { valueAsNumber: true })} className="w-40" />
+                </div>
+              )}
+              <div className="space-y-1.5">
+                <Label>Push notification title</Label>
+                <Input placeholder="e.g. 🍺 Happy Hour is live!" {...register('pushTitle')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Push notification message</Label>
+                <Input placeholder="e.g. Buy a Heineken and enter to win!" {...register('pushBody')} />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <Button
+                  onClick={() => editMutation.mutate(watchEdit() as EditForm)}
+                  disabled={editMutation.isPending}
+                >
+                  {editMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
+                  Save Changes
+                </Button>
+                <Button variant="ghost" onClick={() => setShowEdit(false)}>Cancel</Button>
+              </div>
+            </CardContent>
+          )}
+        </Card>
+      )}
+
       {/* Raffle draw */}
       {isRaffle && (
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4 text-amber-500" /> Draw Winners</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-[#6b6b80] mb-4">
-              Randomly select winners from all entries. Each draw is final.
-            </p>
+            <p className="text-sm text-[#6b6b80] mb-4">Randomly select winners from all entries. Each draw is final.</p>
             <div className="flex items-end gap-3">
               <div className="space-y-1.5">
                 <Label>Number of winners</Label>
-                <Input
-                  type="number"
-                  min="1"
-                  value={drawCount}
-                  onChange={(e) => setDrawCount(e.target.value)}
-                  className="w-32"
-                />
+                <Input type="number" min="1" value={drawCount} onChange={(e) => setDrawCount(e.target.value)} className="w-32" />
               </div>
-              <Button
-                onClick={() => drawWinners.mutate(parseInt(drawCount) || 1)}
-                disabled={drawWinners.isPending}
-              >
-                {drawWinners.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <Shuffle className="h-4 w-4" />
-                }
+              <Button onClick={() => drawWinners.mutate(parseInt(drawCount) || 1)} disabled={drawWinners.isPending}>
+                {drawWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shuffle className="h-4 w-4" />}
                 Draw Now
               </Button>
             </div>
-            {drawWinners.isSuccess && (
-              <p className="text-sm text-green-400 mt-3">✓ Winners drawn successfully!</p>
-            )}
-            {drawWinners.isError && (
-              <p className="text-sm text-red-400 mt-3">Failed to draw winners. Try again.</p>
-            )}
           </CardContent>
         </Card>
       )}
@@ -269,9 +498,7 @@ export default function CampaignDetailPage() {
                   {leaderboard.map((entry: any) => (
                     <div key={entry.userId} className="flex items-center gap-4 py-3">
                       <span className={`text-lg font-bold w-6 text-center ${
-                        entry.rank === 1 ? 'text-yellow-400' :
-                        entry.rank === 2 ? 'text-slate-300' :
-                        entry.rank === 3 ? 'text-amber-600' : 'text-[#6b6b80]'
+                        entry.rank === 1 ? 'text-yellow-400' : entry.rank === 2 ? 'text-slate-300' : entry.rank === 3 ? 'text-amber-600' : 'text-[#6b6b80]'
                       }`}>
                         {entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : entry.rank}
                       </span>
@@ -286,28 +513,19 @@ export default function CampaignDetailPage() {
               )}
             </CardContent>
           </Card>
-
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-4 w-4 text-amber-500" />
-                Draw Snake Winners
-              </CardTitle>
+              <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Draw Snake Winners</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-[#6b6b80] mb-4">
-                Award the top scorers with the configured prize. Only available after the campaign ends.
-              </p>
+              <p className="text-sm text-[#6b6b80] mb-4">Award the top scorers. Only available after the campaign ends.</p>
               <Button
                 onClick={() => drawSnakeWinners.mutate()}
                 disabled={drawSnakeWinners.isPending || campaign?.status !== 'ENDED'}
                 variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
               >
-                {drawSnakeWinners.isPending
-                  ? <Loader2 className="h-4 w-4 animate-spin" />
-                  : <Medal className="h-4 w-4" />
-                }
-                {campaign?.status === 'ENDED' ? 'Draw Winners Now' : 'Campaign must be ended'}
+                {drawSnakeWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
+                {campaign?.status === 'ENDED' ? 'Draw Winners Now' : 'Campaign must be ended first'}
               </Button>
               {drawSnakeWinners.isSuccess && (
                 <div className="mt-4 space-y-2">
@@ -319,9 +537,6 @@ export default function CampaignDetailPage() {
                   ))}
                 </div>
               )}
-              {drawSnakeWinners.isError && (
-                <p className="text-sm text-red-400 mt-3">Failed to draw winners. Try again.</p>
-              )}
             </CardContent>
           </Card>
         </>
@@ -329,7 +544,7 @@ export default function CampaignDetailPage() {
 
       {/* QR Code */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><QrCode className="h-4 w-4 text-amber-500" /> Generate QR Code</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><QrCode className="h-4 w-4 text-amber-500" /> QR Code</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label>Branch</Label>
@@ -339,23 +554,15 @@ export default function CampaignDetailPage() {
               className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
             >
               <option value="">Select branch…</option>
-              {branches?.map((b: any) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
+              {branches?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
-
-          <Button
-            className="w-full"
-            disabled={!branchId || generateQr.isPending}
-            onClick={() => generateQr.mutate()}
-          >
+          <Button className="w-full" disabled={!branchId || generateQr.isPending} onClick={() => generateQr.mutate()}>
             {generateQr.isPending
               ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating…</>
               : <><QrCode className="h-4 w-4 mr-2" /> {qrDataUrl ? 'Regenerate' : 'Generate QR'}</>
             }
           </Button>
-
           {qrDataUrl && (
             <div className="flex flex-col items-center gap-4 pt-2">
               <div className="relative">
@@ -369,7 +576,6 @@ export default function CampaignDetailPage() {
                     strokeLinecap="round" transform="rotate(-90 122 122)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
                 </svg>
               </div>
-
               <div className="flex items-center gap-2">
                 <svg className="w-7 h-7" viewBox="0 0 52 52">
                   <circle cx="26" cy="26" r="24" fill="none" stroke="#2a2a3a" strokeWidth="3" />
@@ -380,7 +586,6 @@ export default function CampaignDetailPage() {
                 </svg>
                 <span className="text-[#6b6b80] text-sm">Auto-refreshes in {countdown}s</span>
               </div>
-
               <div className="flex gap-2 w-full">
                 <Button variant="outline" className="flex-1" onClick={() => setKiosk(true)}>
                   <Maximize2 className="h-4 w-4 mr-1" /> Kiosk
@@ -389,22 +594,66 @@ export default function CampaignDetailPage() {
                   <Download className="h-4 w-4 mr-1" /> Download
                 </Button>
               </div>
-
-              <p className="text-[#6b6b80] text-xs text-center">
-                Multiple customers can scan the same code. Rotates every 60s — screenshots expire.
-              </p>
+              <p className="text-[#6b6b80] text-xs text-center">Multiple customers can scan the same code. Rotates every 60s.</p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Rewards */}
+      {/* Recent Entries */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <ScanLine className="h-4 w-4 text-amber-500" />
+            Recent Entries
+            <span className="text-xs text-[#6b6b80] font-normal ml-1">(last {entries.length})</span>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-0">
+          {entries.length === 0 ? (
+            <p className="text-center text-[#6b6b80] py-10 text-sm">No entries yet</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-[#2a2a38]">
+                    {['Customer', 'Method', 'Time'].map((h) => (
+                      <th key={h} className="px-5 py-3 text-left text-xs font-medium text-[#6b6b80] uppercase">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#2a2a38]">
+                  {entries.map((e: any) => {
+                    const MethodIcon = METHOD_ICON[e.method] ?? Hash;
+                    return (
+                      <tr key={e.id} className="hover:bg-[#1e1e2e] transition-colors">
+                        <td className="px-5 py-3">
+                          <p className="text-sm font-medium text-white">{e.user?.fullName ?? 'Unknown'}</p>
+                          <p className="text-xs text-[#6b6b80]">{e.user?.email ?? e.user?.phone ?? ''}</p>
+                        </td>
+                        <td className="px-5 py-3">
+                          <div className="flex items-center gap-1.5">
+                            <MethodIcon className="h-3.5 w-3.5 text-[#6b6b80]" />
+                            <span className="text-sm text-[#a1a1b5]">{METHOD_LABEL[e.method] ?? e.method}</span>
+                          </div>
+                        </td>
+                        <td className="px-5 py-3 text-sm text-[#6b6b80]">{formatTimeAgo(e.createdAt)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Prizes / Rewards */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Prizes / Rewards</CardTitle>
           <Button size="sm" onClick={() => setShowAddReward(!showAddReward)}>
-            <Plus className="h-4 w-4" />
-            Add Prize
+            <Plus className="h-4 w-4" /> Add Prize
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -427,11 +676,7 @@ export default function CampaignDetailPage() {
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={() => addReward.mutate({
-                    name: rewardName,
-                    description: rewardDesc || undefined,
-                    inventory: parseInt(rewardInventory) || 1,
-                  })}
+                  onClick={() => addReward.mutate({ name: rewardName, description: rewardDesc || undefined, inventory: parseInt(rewardInventory) || 1 })}
                   disabled={!rewardName || addReward.isPending}
                 >
                   {addReward.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Prize'}
@@ -440,9 +685,8 @@ export default function CampaignDetailPage() {
               </div>
             </div>
           )}
-
           {rewards.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-6">No prizes added yet</p>
+            <p className="text-center text-[#6b6b80] py-6 text-sm">No prizes added yet</p>
           ) : (
             <div className="divide-y divide-[#2a2a38]">
               {rewards.map((r: any) => (
@@ -462,10 +706,16 @@ export default function CampaignDetailPage() {
         </CardContent>
       </Card>
 
-      {/* Campaign details */}
+      {/* Campaign config (read-only) */}
       <Card>
-        <CardHeader><CardTitle>Campaign Details</CardTitle></CardHeader>
+        <CardHeader><CardTitle>Configuration</CardTitle></CardHeader>
         <CardContent className="space-y-3">
+          {campaign?.description && (
+            <div>
+              <p className="text-xs text-[#6b6b80] mb-1">Description</p>
+              <p className="text-sm text-[#a1a1b5]">{campaign.description}</p>
+            </div>
+          )}
           {campaign?.pushTitle && (
             <div>
               <p className="text-xs text-[#6b6b80] mb-1">Push Notification</p>
@@ -476,10 +726,12 @@ export default function CampaignDetailPage() {
             </div>
           )}
           <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-[#6b6b80]">Max entries / user</p>
-              <p className="text-white">{campaign?.maxEntriesPerUser ?? 1}</p>
-            </div>
+            {!isSnake && (
+              <div>
+                <p className="text-[#6b6b80]">Max entries / user</p>
+                <p className="text-white">{campaign?.maxEntriesPerUser ?? 1}</p>
+              </div>
+            )}
             {campaign?.everyN && (
               <div>
                 <p className="text-[#6b6b80]">Every N</p>

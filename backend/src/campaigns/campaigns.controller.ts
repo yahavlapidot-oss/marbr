@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger'
 import { CampaignStatus, UserRole } from '@prisma/client';
 import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
+import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -61,6 +62,15 @@ export class CampaignsController {
     @Query('businessId') businessId: string,
   ) {
     return this.campaignsService.create(businessId, dto);
+  }
+
+  @Patch(':id')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Update campaign fields' })
+  update(@Param('id') id: string, @Body() dto: UpdateCampaignDto) {
+    return this.campaignsService.update(id, dto);
   }
 
   @Patch(':id/publish')
