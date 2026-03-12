@@ -49,6 +49,14 @@ export const useAuthStore = create<AuthState>()(
     }),
     {
       name: 'mrbar-auth',
+      // Don't persist _hasHydrated — it's always false on first render
+      partialize: (state) => ({
+        user: state.user,
+        accessToken: state.accessToken,
+        refreshToken: state.refreshToken,
+        businessId: state.businessId,
+        business: state.business,
+      }),
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },

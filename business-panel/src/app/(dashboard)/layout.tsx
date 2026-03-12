@@ -10,13 +10,21 @@ import { api } from '@/lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, businessId, _hasHydrated } = useAuthStore();
+  const { user, businessId, _hasHydrated, setBusiness } = useAuthStore();
   const [showBanner, setShowBanner] = useState(false);
 
   // Wait for Zustand to rehydrate from localStorage before deciding to redirect
   useEffect(() => {
     if (_hasHydrated && !user) router.push('/login');
   }, [_hasHydrated, user, router]);
+
+  // Re-fetch business data on every mount so logo/name stay fresh after refresh
+  useEffect(() => {
+    if (!_hasHydrated || !businessId) return;
+    api.get('/businesses/my').then((r) => {
+      if (r.data?.[0]) setBusiness(r.data[0]);
+    }).catch(() => {});
+  }, [_hasHydrated, businessId, setBusiness]);
 
   useEffect(() => {
     if (!businessId) return;
