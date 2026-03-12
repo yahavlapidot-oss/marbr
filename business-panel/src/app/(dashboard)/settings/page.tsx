@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Loader2, Save, Upload, X } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -120,9 +121,37 @@ export default function SettingsPage() {
 
   const update = useMutation({
     mutationFn: (data: BusinessForm) => api.patch(`/businesses/${businessId}`, data),
-    onSuccess: (res) => {
+    onSuccess: (res, submitted) => {
       qc.invalidateQueries({ queryKey: ['business', businessId] });
+      qc.invalidateQueries({ queryKey: ['business-sidebar', businessId] });
       setBusiness(res.data);
+
+      // Build a human-readable list of what changed
+      const prev = business ?? {};
+      const labels: Record<keyof BusinessForm, string> = {
+        name: 'Business name',
+        description: 'Description',
+        logoUrl: 'Logo',
+        coverUrl: 'Cover photo',
+        email: 'Email',
+        phone: 'Phone',
+        website: 'Website',
+      };
+      const changed = (Object.keys(labels) as (keyof BusinessForm)[]).filter(
+        (k) => submitted[k] !== (prev as any)[k],
+      );
+
+      toast.success('Changes saved!', {
+        description: changed.length
+          ? `Updated: ${changed.map((k) => labels[k]).join(', ')}`
+          : 'Your business profile is up to date.',
+        duration: 4000,
+      });
+    },
+    onError: (err: any) => {
+      toast.error('Failed to save', {
+        description: err?.response?.data?.message ?? 'Something went wrong. Try again.',
+      });
     },
   });
 
@@ -192,9 +221,6 @@ export default function SettingsPage() {
         </CardContent>
       </Card>
 
-      {update.isSuccess && (
-        <p className="text-green-400 text-sm text-right">Changes saved successfully.</p>
-      )}
     </div>
   );
 }

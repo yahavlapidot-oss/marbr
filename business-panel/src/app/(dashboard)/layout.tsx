@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Zap, X } from 'lucide-react';
+import { Toaster } from 'sonner';
 import { Sidebar } from '@/components/sidebar';
 import { useAuthStore } from '@/lib/auth-store';
 import { api } from '@/lib/api';
@@ -65,6 +66,12 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <div className="p-8">{children}</div>
         </main>
       </div>
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          style: { background: '#1a1a24', border: '1px solid #2a2a38', color: '#fff' },
+        }}
+      />
     </div>
   );
 }

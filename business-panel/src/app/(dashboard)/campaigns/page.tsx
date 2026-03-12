@@ -20,7 +20,7 @@ const STATUS_VARIANT: Record<string, any> = {
 };
 
 export default function CampaignsPage() {
-  const businessId = useAuthStore((s) => s.businessId);
+  const { businessId, business: storedBusiness } = useAuthStore();
   const qc = useQueryClient();
 
   const { data: campaigns, isLoading } = useQuery({
@@ -80,19 +80,22 @@ export default function CampaignsPage() {
                   <tr key={c.id} className="hover:bg-[#1e1e2e] transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
-                        {c.business?.logoUrl ? (
-                          <img
-                            src={c.business.logoUrl}
-                            alt={c.business.name}
-                            className="h-8 w-8 rounded-lg object-cover border border-[#2a2a38] shrink-0"
-                          />
-                        ) : (
-                          <div className="h-8 w-8 rounded-lg bg-[#2a2a38] flex items-center justify-center shrink-0">
-                            <span className="text-xs font-bold text-[#6b6b80]">
-                              {c.name?.[0]?.toUpperCase()}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const logo = c.business?.logoUrl ?? storedBusiness?.logoUrl;
+                          return logo ? (
+                            <img
+                              src={logo}
+                              alt={c.business?.name ?? ''}
+                              className="h-8 w-8 rounded-lg object-cover border border-[#2a2a38] shrink-0"
+                            />
+                          ) : (
+                            <div className="h-8 w-8 rounded-lg bg-[#2a2a38] flex items-center justify-center shrink-0">
+                              <span className="text-xs font-bold text-[#6b6b80]">
+                                {c.name?.[0]?.toUpperCase()}
+                              </span>
+                            </div>
+                          );
+                        })()}
                         <Link href={`/campaigns/${c.id}`} className="font-medium text-white hover:text-amber-400">
                           {c.name}
                         </Link>
