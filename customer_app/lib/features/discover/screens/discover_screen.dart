@@ -4,11 +4,35 @@ import '../../../core/theme.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
 
-class DiscoverScreen extends ConsumerWidget {
+class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DiscoverScreen> createState() => _DiscoverScreenState();
+}
+
+class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+  final _searchController = TextEditingController();
+  String _query = '';
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  List<dynamic> _filter(List<dynamic> all) {
+    final q = _query.trim().toLowerCase();
+    if (q.isEmpty) return all;
+    return all.where((c) {
+      final name = (c['name'] as String? ?? '').toLowerCase();
+      final venue = (c['business']?['name'] as String? ?? '').toLowerCase();
+      return name.contains(q) || venue.contains(q);
+    }).toList();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final campaigns = ref.watch(activeCampaignsProvider);
 
     return Scaffold(
@@ -35,21 +59,39 @@ class DiscoverScreen extends ConsumerWidget {
                       const Text('All live campaigns near you',
                         style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
                       const SizedBox(height: 20),
-                      // Search bar placeholder
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                        decoration: BoxDecoration(
-                          color: AppTheme.surface,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: AppTheme.border),
-                        ),
-                        child: const Row(
-                          children: [
-                            Icon(Icons.search, color: AppTheme.muted, size: 18),
-                            SizedBox(width: 10),
-                            Text('Search campaigns or venues...',
-                              style: TextStyle(color: AppTheme.muted, fontSize: 14)),
-                          ],
+                      // Search bar
+                      TextField(
+                        controller: _searchController,
+                        onChanged: (v) => setState(() => _query = v),
+                        style: const TextStyle(color: AppTheme.white, fontSize: 14),
+                        decoration: InputDecoration(
+                          hintText: 'Search campaigns or venues…',
+                          hintStyle: const TextStyle(color: AppTheme.muted, fontSize: 14),
+                          prefixIcon: const Icon(Icons.search, color: AppTheme.muted, size: 20),
+                          suffixIcon: _query.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(Icons.close, color: AppTheme.muted, size: 18),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _query = '');
+                                  },
+                                )
+                              : null,
+                          filled: true,
+                          fillColor: AppTheme.surface,
+                          contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppTheme.border),
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppTheme.border),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(color: AppTheme.gold, width: 1.5),
+                          ),
                         ),
                       ),
                     ],
@@ -77,35 +119,46 @@ class DiscoverScreen extends ConsumerWidget {
                     ),
                   ),
                 ),
-                data: (list) => list.isEmpty
-                    ? const SliverFillRemaining(
-                        child: Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.explore_outlined, color: AppTheme.muted, size: 48),
-                              SizedBox(height: 12),
-                              Text('No campaigns right now',
-                                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
-                              SizedBox(height: 4),
-                              Text('Check back soon',
-                                style: TextStyle(color: AppTheme.muted, fontSize: 13)),
-                            ],
-                          ),
-                        ),
-                      )
-                    : SliverPadding(
-                        padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                        sliver: SliverList(
-                          delegate: SliverChildBuilderDelegate(
-                            (_, i) => Padding(
-                              padding: const EdgeInsets.only(bottom: 12),
-                              child: CampaignCard(campaign: list[i] as Map<String, dynamic>),
+                data: (all) {
+                  final list = _filter(all);
+                  if (list.isEmpty) {
+                    return SliverFillRemaining(
+                      child: Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.search_off, color: AppTheme.muted, size: 48),
+                            const SizedBox(height: 12),
+                            Text(
+                              _query.isNotEmpty
+                                  ? 'No results for "$_query"'
+                                  : 'No campaigns right now',
+                              style: const TextStyle(
+                                color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600),
                             ),
-                            childCount: list.length,
-                          ),
+                            const SizedBox(height: 4),
+                            Text(
+                              _query.isNotEmpty ? 'Try a different search term' : 'Check back soon',
+                              style: const TextStyle(color: AppTheme.muted, fontSize: 13),
+                            ),
+                          ],
                         ),
                       ),
+                    );
+                  }
+                  return SliverPadding(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
+                    sliver: SliverList(
+                      delegate: SliverChildBuilderDelegate(
+                        (_, i) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: CampaignCard(campaign: list[i] as Map<String, dynamic>),
+                        ),
+                        childCount: list.length,
+                      ),
+                    ),
+                  );
+                },
               ),
             ],
           ),
