@@ -29,6 +29,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setBusinessId = useAuthStore((s) => s.setBusinessId);
+  const setBusiness = useAuthStore((s) => s.setBusiness);
   const [error, setError] = useState('');
 
   const {
@@ -53,7 +54,7 @@ export default function RegisterPage() {
 
       // 2. Create business
       const bizRes = await api.post('/businesses', { name: data.businessName, type: data.businessType });
-      setBusinessId(bizRes.data.id);
+      setBusiness(bizRes.data);
 
       router.push('/dashboard');
     } catch (err: any) {

@@ -35,6 +35,7 @@ export default function LoginPage() {
   const router = useRouter();
   const setAuth = useAuthStore((s) => s.setAuth);
   const setBusinessId = useAuthStore((s) => s.setBusinessId);
+  const setBusiness = useAuthStore((s) => s.setBusiness);
   const [tab, setTab] = useState<'password' | 'otp'>('password');
   const [error, setError] = useState('');
 
@@ -53,7 +54,7 @@ export default function LoginPage() {
       // Fetch and store businessId
       try {
         const biz = await api.get('/businesses/my');
-        if (biz.data?.[0]?.id) setBusinessId(biz.data[0].id);
+        if (biz.data?.[0]) setBusiness(biz.data[0]);
       } catch { /* ignore */ }
       router.push('/dashboard');
     } catch (err: any) {
@@ -108,7 +109,7 @@ export default function LoginPage() {
       setAuth(user, accessToken, refreshToken);
       try {
         const biz = await api.get('/businesses/my');
-        if (biz.data?.[0]?.id) setBusinessId(biz.data[0].id);
+        if (biz.data?.[0]) setBusiness(biz.data[0]);
       } catch { /* ignore */ }
       router.push('/dashboard');
     } catch (err: any) {

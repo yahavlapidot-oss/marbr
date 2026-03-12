@@ -38,14 +38,24 @@ const nav = [
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { user, logout } = useAuthStore();
+  const { user, business, logout } = useAuthStore();
 
   return (
     <aside className="flex h-screen w-60 flex-col border-r border-[#2a2a38] bg-[#0f0f13]">
       {/* Logo */}
-      <div className="flex items-center gap-2 px-6 py-5 border-b border-[#2a2a38]">
-        <Beer className="h-7 w-7 text-amber-500" />
-        <span className="text-xl font-bold text-white tracking-tight">MrBar</span>
+      <div className="flex items-center gap-2.5 px-4 py-4 border-b border-[#2a2a38]">
+        {business?.logoUrl ? (
+          <img
+            src={business.logoUrl}
+            alt={business.name}
+            className="h-8 w-8 rounded-lg object-cover border border-[#2a2a38] shrink-0"
+          />
+        ) : (
+          <Beer className="h-7 w-7 text-amber-500 shrink-0" />
+        )}
+        <span className="text-base font-bold text-white tracking-tight truncate">
+          {business?.name ?? 'MrBar'}
+        </span>
       </div>
 
       {/* Nav */}

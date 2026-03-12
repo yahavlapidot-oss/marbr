@@ -104,6 +104,7 @@ function ImageUpload({
 
 export default function SettingsPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const setBusiness = useAuthStore((s) => s.setBusiness);
   const qc = useQueryClient();
   const { register, handleSubmit, reset, setValue, watch } = useForm<BusinessForm>();
 
@@ -119,7 +120,10 @@ export default function SettingsPage() {
 
   const update = useMutation({
     mutationFn: (data: BusinessForm) => api.patch(`/businesses/${businessId}`, data),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['business', businessId] }),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['business', businessId] });
+      setBusiness(res.data);
+    },
   });
 
   if (isLoading) {

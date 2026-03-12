@@ -10,24 +10,26 @@ import { api } from '@/lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const { user, businessId } = useAuthStore();
+  const { user, businessId, _hasHydrated } = useAuthStore();
   const [showBanner, setShowBanner] = useState(false);
 
+  // Wait for Zustand to rehydrate from localStorage before deciding to redirect
   useEffect(() => {
-    if (!user) router.push('/login');
-  }, [user, router]);
+    if (_hasHydrated && !user) router.push('/login');
+  }, [_hasHydrated, user, router]);
 
   useEffect(() => {
     if (!businessId) return;
     api
       .get(`/billing/subscription?businessId=${businessId}`)
       .then((r) => {
-        const sub = r.data;
-        if (sub.plan === 'FREE') setShowBanner(true);
+        if (r.data.plan === 'FREE') setShowBanner(true);
       })
       .catch(() => {});
   }, [businessId]);
 
+  // Show nothing until hydration is done (avoids flash redirect)
+  if (!_hasHydrated) return null;
   if (!user) return null;
 
   return (
