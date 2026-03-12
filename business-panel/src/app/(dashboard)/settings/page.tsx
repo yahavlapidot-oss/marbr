@@ -120,7 +120,8 @@ export default function SettingsPage() {
   }, [business, reset]);
 
   const update = useMutation({
-    mutationFn: (data: BusinessForm) => api.patch(`/businesses/${businessId}`, data),
+    mutationFn: ({ name, description, logoUrl, coverUrl, website, email, phone }: BusinessForm) =>
+      api.patch(`/businesses/${businessId}`, { name, description, logoUrl, coverUrl, website, email, phone }),
     onSuccess: (res, submitted) => {
       qc.invalidateQueries({ queryKey: ['business', businessId] });
       qc.invalidateQueries({ queryKey: ['business-sidebar', businessId] });
