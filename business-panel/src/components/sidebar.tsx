@@ -54,7 +54,7 @@ export function Sidebar() {
           <Beer className="h-7 w-7 text-amber-500 shrink-0" />
         )}
         <span className="text-base font-bold text-white tracking-tight truncate">
-          {business?.name ?? 'MrBar'}
+          MrBar
         </span>
       </div>
 
