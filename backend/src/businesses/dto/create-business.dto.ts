@@ -17,4 +17,6 @@ export class UpdateBusinessDto {
   @ApiPropertyOptional() @IsOptional() @IsEmail() email?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() phone?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() website?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() logoUrl?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() coverUrl?: string;
 }

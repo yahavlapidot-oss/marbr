@@ -79,9 +79,24 @@ export default function CampaignsPage() {
                 {campaigns.map((c: any) => (
                   <tr key={c.id} className="hover:bg-[#1e1e2e] transition-colors">
                     <td className="px-6 py-4">
-                      <Link href={`/campaigns/${c.id}`} className="font-medium text-white hover:text-amber-400">
-                        {c.name}
-                      </Link>
+                      <div className="flex items-center gap-3">
+                        {c.business?.logoUrl ? (
+                          <img
+                            src={c.business.logoUrl}
+                            alt={c.business.name}
+                            className="h-8 w-8 rounded-lg object-cover border border-[#2a2a38] shrink-0"
+                          />
+                        ) : (
+                          <div className="h-8 w-8 rounded-lg bg-[#2a2a38] flex items-center justify-center shrink-0">
+                            <span className="text-xs font-bold text-[#6b6b80]">
+                              {c.name?.[0]?.toUpperCase()}
+                            </span>
+                          </div>
+                        )}
+                        <Link href={`/campaigns/${c.id}`} className="font-medium text-white hover:text-amber-400">
+                          {c.name}
+                        </Link>
+                      </div>
                     </td>
                     <td className="px-6 py-4 text-sm text-[#a1a1b5]">{c.type.replace('_', ' ')}</td>
                     <td className="px-6 py-4">

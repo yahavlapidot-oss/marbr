@@ -51,7 +51,11 @@ export class BusinessesService {
 
     return this.prisma.campaign.findMany({
       where: { businessId },
-      include: { _count: { select: { entries: true } }, rewards: true },
+      include: {
+        _count: { select: { entries: true } },
+        rewards: true,
+        business: { select: { id: true, name: true, logoUrl: true } },
+      },
       orderBy: { createdAt: 'desc' },
     });
   }
