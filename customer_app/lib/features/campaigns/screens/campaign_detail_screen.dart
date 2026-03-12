@@ -62,7 +62,19 @@ class CampaignDetailScreen extends ConsumerWidget {
                                 border: Border.all(color: AppTheme.border),
                               ),
                               child: Row(children: [
-                                const Icon(Icons.location_on_outlined, color: AppTheme.subtle, size: 13),
+                                if (c['business']['logoUrl'] != null)
+                                  ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.network(
+                                      c['business']['logoUrl'],
+                                      width: 16, height: 16,
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (context, e, _) =>
+                                        const Icon(Icons.location_on_outlined, color: AppTheme.subtle, size: 13),
+                                    ),
+                                  )
+                                else
+                                  const Icon(Icons.location_on_outlined, color: AppTheme.subtle, size: 13),
                                 const SizedBox(width: 4),
                                 Text(c['business']['name'],
                                   style: const TextStyle(color: AppTheme.subtle, fontSize: 12)),

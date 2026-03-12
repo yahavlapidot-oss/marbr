@@ -84,10 +84,23 @@ class CampaignCard extends StatelessWidget {
             const SizedBox(height: 14),
             Row(
               children: [
-                if (business?['name'] != null) ...[
-                  const Icon(Icons.location_on_outlined, color: AppTheme.muted, size: 13),
-                  const SizedBox(width: 3),
-                  Text(business!['name'], style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
+                if (business != null) ...[
+                  if (business['logoUrl'] != null)
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(6),
+                      child: Image.network(
+                        business['logoUrl'],
+                        width: 20, height: 20,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, e, _) =>
+                          const Icon(Icons.location_on_outlined, color: AppTheme.muted, size: 13),
+                      ),
+                    )
+                  else
+                    const Icon(Icons.location_on_outlined, color: AppTheme.muted, size: 13),
+                  const SizedBox(width: 5),
+                  if (business['name'] != null)
+                    Text(business['name'], style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                 ],
                 const Spacer(),
                 Container(
