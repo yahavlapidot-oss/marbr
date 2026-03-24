@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 const ROLES = ['MANAGER', 'STAFF', 'BARTENDER'];
 
@@ -23,6 +24,7 @@ const roleBadge: Record<string, string> = {
 
 export default function EmployeesPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const { register, handleSubmit, reset } = useForm<{ email: string; role: string; branchId?: string }>();
@@ -55,11 +57,11 @@ export default function EmployeesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Employees</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Manage staff access and roles</p>
+          <h1 className="text-2xl font-bold text-white">{t('employees_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('employees_subtitle')}</p>
         </div>
         <Button onClick={() => setShowForm((v) => !v)}>
-          <Plus className="h-4 w-4" /> Invite Employee
+          <Plus className="h-4 w-4" /> {t('employees_invite')}
         </Button>
       </div>
 
@@ -122,7 +124,7 @@ export default function EmployeesPage() {
             </div>
             </div>
           ) : employees?.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-12">No employees yet</p>
+            <p className="text-center text-[#6b6b80] py-12">{t('employees_empty')}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">

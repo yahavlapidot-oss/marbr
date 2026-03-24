@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
 
 function StatCard({ title, value, icon: Icon, sub }: {
@@ -36,6 +37,7 @@ const STATUS_VARIANT: Record<string, 'active' | 'paused' | 'ended' | 'draft' | '
 
 export default function DashboardPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', businessId],
@@ -101,8 +103,8 @@ export default function DashboardPage() {
     <div className="space-y-8">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Dashboard</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Real-time overview of your venue</p>
+          <h1 className="text-2xl font-bold text-white">{t('dashboard_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('dashboard_subtitle')}</p>
         </div>
         <Button asChild>
           <Link href="/campaigns/new">

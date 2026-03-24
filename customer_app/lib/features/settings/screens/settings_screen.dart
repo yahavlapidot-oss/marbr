@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import '../../../core/api_client.dart';
+import '../../../core/locale_provider.dart';
+import '../../../core/l10n/app_l10n.dart';
 import '../../../core/router.dart';
 import '../../../core/theme.dart';
 
@@ -17,6 +19,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
@@ -24,32 +29,32 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           icon: const Icon(Icons.arrow_back_ios, size: 18),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text('Settings'),
+        title: Text(t('settings')),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(20, 8, 20, 32),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionLabel('NOTIFICATIONS'),
+            _sectionLabel(t('notifications')),
             _card(
               child: SwitchListTile(
                 contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                title: const Text('Push Notifications',
-                  style: TextStyle(color: AppTheme.white, fontSize: 15, fontWeight: FontWeight.w500)),
-                subtitle: const Text('Campaigns, wins, and alerts',
-                  style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+                title: Text(t('push_notifications'),
+                  style: const TextStyle(color: AppTheme.white, fontSize: 15, fontWeight: FontWeight.w500)),
+                subtitle: Text(t('push_notifications_sub'),
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                 value: _pushEnabled,
                 activeThumbColor: AppTheme.gold,
                 onChanged: (v) => setState(() => _pushEnabled = v),
               ),
             ),
             const SizedBox(height: 20),
-            _sectionLabel('ACCOUNT'),
+            _sectionLabel(t('account')),
             _card(
               child: Column(
                 children: [
-                  _tile(Icons.person_outline, 'Edit Profile',
+                  _tile(Icons.person_outline, t('edit_profile'),
                     onTap: () => showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
@@ -59,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                       builder: (_) => const _EditProfileSheet(),
                     )),
                   _divider(),
-                  _tile(Icons.lock_outline, 'Change Password',
+                  _tile(Icons.lock_outline, t('change_password'),
                     onTap: () => showModalBottomSheet(
                       context: context,
                       isScrollControlled: true,
@@ -72,22 +77,33 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
               ),
             ),
             const SizedBox(height: 20),
-            _sectionLabel('ABOUT'),
+            _sectionLabel(t('language')),
             _card(
               child: Column(
                 children: [
-                  _tile(Icons.info_outline, 'Version',
+                  _langTile('עברית', 'he', locale, ref),
+                  _divider(),
+                  _langTile('English', 'en', locale, ref),
+                ],
+              ),
+            ),
+            const SizedBox(height: 20),
+            _sectionLabel(t('about')),
+            _card(
+              child: Column(
+                children: [
+                  _tile(Icons.info_outline, t('version'),
                     trailing: const Text('1.0.0', style: TextStyle(color: AppTheme.muted, fontSize: 13))),
                   _divider(),
-                  _tile(Icons.description_outlined, 'Terms of Service', onTap: () {}),
+                  _tile(Icons.description_outlined, t('terms'), onTap: () {}),
                   _divider(),
-                  _tile(Icons.privacy_tip_outlined, 'Privacy Policy', onTap: () {}),
+                  _tile(Icons.privacy_tip_outlined, t('privacy'), onTap: () {}),
                 ],
               ),
             ),
             const SizedBox(height: 20),
             _card(
-              child: _tile(Icons.logout, 'Sign Out', color: Colors.redAccent,
+              child: _tile(Icons.logout, t('sign_out'), color: Colors.redAccent,
                 onTap: () async {
                   await const FlutterSecureStorage().deleteAll();
                   ref.read(authNotifierProvider).clear();
@@ -124,16 +140,39 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
           : null),
     );
   }
+
+  Widget _langTile(String label, String langCode, Locale currentLocale, WidgetRef ref) {
+    final isSelected = currentLocale.languageCode == langCode;
+    return ListTile(
+      onTap: () => ref.read(localeProvider.notifier).setLocale(Locale(langCode)),
+      leading: Icon(
+        Icons.language,
+        color: isSelected ? AppTheme.gold : AppTheme.subtle,
+        size: 20,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          color: isSelected ? AppTheme.gold : AppTheme.white,
+          fontSize: 15,
+          fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        ),
+      ),
+      trailing: isSelected
+          ? const Icon(Icons.check_circle, color: AppTheme.gold, size: 18)
+          : null,
+    );
+  }
 }
 
-class _EditProfileSheet extends StatefulWidget {
+class _EditProfileSheet extends ConsumerStatefulWidget {
   const _EditProfileSheet();
 
   @override
-  State<_EditProfileSheet> createState() => _EditProfileSheetState();
+  ConsumerState<_EditProfileSheet> createState() => _EditProfileSheetState();
 }
 
-class _EditProfileSheetState extends State<_EditProfileSheet> {
+class _EditProfileSheetState extends ConsumerState<_EditProfileSheet> {
   final _nameCtrl = TextEditingController();
   final _cityCtrl = TextEditingController();
   bool _saving = false;
@@ -161,6 +200,9 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
@@ -170,18 +212,18 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
           Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(
             color: AppTheme.border, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 20),
-          const Text('Edit Profile',
-            style: TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          Text(t('edit_profile_title'),
+            style: const TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 20),
-          const Text('Full Name', style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
+          Text(t('full_name'), style: const TextStyle(color: AppTheme.subtle, fontSize: 13)),
           const SizedBox(height: 8),
           TextField(controller: _nameCtrl, style: const TextStyle(color: AppTheme.white),
-            decoration: const InputDecoration(hintText: 'Your name')),
+            decoration: InputDecoration(hintText: t('your_name'))),
           const SizedBox(height: 14),
-          const Text('City', style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
+          Text(t('city'), style: const TextStyle(color: AppTheme.subtle, fontSize: 13)),
           const SizedBox(height: 8),
           TextField(controller: _cityCtrl, style: const TextStyle(color: AppTheme.white),
-            decoration: const InputDecoration(hintText: 'Your city')),
+            decoration: InputDecoration(hintText: t('your_city'))),
           if (_error != null) ...[
             const SizedBox(height: 10),
             Text(_error!, style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
@@ -194,7 +236,7 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               child: _saving
                   ? const SizedBox(height: 20, width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                  : const Text('SAVE CHANGES'),
+                  : Text(t('save_changes')),
             ),
           ),
         ],
@@ -203,14 +245,14 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
   }
 }
 
-class _ChangePasswordSheet extends StatefulWidget {
+class _ChangePasswordSheet extends ConsumerStatefulWidget {
   const _ChangePasswordSheet();
 
   @override
-  State<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
+  ConsumerState<_ChangePasswordSheet> createState() => _ChangePasswordSheetState();
 }
 
-class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
+class _ChangePasswordSheetState extends ConsumerState<_ChangePasswordSheet> {
   final _currentCtrl = TextEditingController();
   final _newCtrl = TextEditingController();
   bool _saving = false;
@@ -242,6 +284,9 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Padding(
       padding: EdgeInsets.fromLTRB(24, 20, 24, MediaQuery.of(context).viewInsets.bottom + 32),
       child: Column(
@@ -251,15 +296,15 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
           Center(child: Container(width: 40, height: 4, decoration: BoxDecoration(
             color: AppTheme.border, borderRadius: BorderRadius.circular(2)))),
           const SizedBox(height: 20),
-          const Text('Change Password',
-            style: TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w800)),
+          Text(t('change_password_title'),
+            style: const TextStyle(color: AppTheme.white, fontSize: 20, fontWeight: FontWeight.w800)),
           const SizedBox(height: 20),
-          const Text('Current Password', style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
+          Text(t('current_password'), style: const TextStyle(color: AppTheme.subtle, fontSize: 13)),
           const SizedBox(height: 8),
           TextField(controller: _currentCtrl, obscureText: true, style: const TextStyle(color: AppTheme.white),
             decoration: const InputDecoration(hintText: '••••••••')),
           const SizedBox(height: 14),
-          const Text('New Password', style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
+          Text(t('new_password'), style: const TextStyle(color: AppTheme.subtle, fontSize: 13)),
           const SizedBox(height: 8),
           TextField(controller: _newCtrl, obscureText: true, style: const TextStyle(color: AppTheme.white),
             decoration: const InputDecoration(hintText: '••••••••')),
@@ -275,7 +320,7 @@ class _ChangePasswordSheetState extends State<_ChangePasswordSheet> {
               child: _saving
                   ? const SizedBox(height: 20, width: 20,
                       child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                  : const Text('CHANGE PASSWORD'),
+                  : Text(t('change_password_btn')),
             ),
           ),
         ],

@@ -19,25 +19,12 @@ import {
   Beer,
   CreditCard,
   X,
+  Languages,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { api } from '@/lib/api';
-
-const nav = [
-  { href: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { href: '/campaigns', icon: Megaphone, label: 'Campaigns' },
-  { href: '/products', icon: Package, label: 'Products' },
-  { href: '/rewards', icon: Gift, label: 'Rewards' },
-  { href: '/customers', icon: Users, label: 'Customers' },
-  { href: '/employees', icon: UserCog, label: 'Employees' },
-  { href: '/analytics', icon: BarChart3, label: 'Analytics' },
-  { href: '/qr', icon: QrCode, label: 'QR Generator' },
-  { href: '/redeem', icon: ScanLine, label: 'Redeem' },
-  { href: '/branches', icon: Building2, label: 'Branches' },
-  { href: '/billing', icon: CreditCard, label: 'Billing' },
-  { href: '/settings', icon: Settings, label: 'Settings' },
-];
 
 interface SidebarProps {
   mobileOpen?: boolean;
@@ -47,6 +34,22 @@ interface SidebarProps {
 export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
   const { user, businessId, business: storedBusiness, logout } = useAuthStore();
+  const { locale, setLocale, t } = useLocaleStore();
+
+  const nav = [
+    { href: '/dashboard', icon: LayoutDashboard, label: t('nav_dashboard') },
+    { href: '/campaigns', icon: Megaphone, label: t('nav_campaigns') },
+    { href: '/products', icon: Package, label: t('nav_products') },
+    { href: '/rewards', icon: Gift, label: t('nav_rewards') },
+    { href: '/customers', icon: Users, label: t('nav_customers') },
+    { href: '/employees', icon: UserCog, label: t('nav_employees') },
+    { href: '/analytics', icon: BarChart3, label: t('nav_analytics') },
+    { href: '/qr', icon: QrCode, label: t('nav_qr') },
+    { href: '/redeem', icon: ScanLine, label: t('nav_redeem') },
+    { href: '/branches', icon: Building2, label: t('nav_branches') },
+    { href: '/billing', icon: CreditCard, label: t('nav_billing') },
+    { href: '/settings', icon: Settings, label: t('nav_settings') },
+  ];
 
   const { data: fetchedBusiness } = useQuery({
     queryKey: ['business-sidebar', businessId],
@@ -112,12 +115,45 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
           <p className="text-sm font-medium text-white truncate">{user?.fullName}</p>
           <p className="text-xs text-[#6b6b80] truncate">{user?.email ?? user?.phone}</p>
         </div>
+
+        {/* Language toggle */}
+        <div className="mb-2">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <Languages className="h-3.5 w-3.5 text-[#6b6b80]" />
+            <span className="text-xs text-[#6b6b80]">{t('language')}</span>
+          </div>
+          <div className="flex gap-1">
+            <button
+              onClick={() => setLocale('he')}
+              className={cn(
+                'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+                locale === 'he'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'text-[#6b6b80] hover:bg-[#1e1e2e] hover:text-white border border-transparent',
+              )}
+            >
+              {t('lang_he')}
+            </button>
+            <button
+              onClick={() => setLocale('en')}
+              className={cn(
+                'flex-1 rounded-md px-2 py-1.5 text-xs font-medium transition-colors',
+                locale === 'en'
+                  ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30'
+                  : 'text-[#6b6b80] hover:bg-[#1e1e2e] hover:text-white border border-transparent',
+              )}
+            >
+              {t('lang_en')}
+            </button>
+          </div>
+        </div>
+
         <button
           onClick={logout}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#6b6b80] hover:bg-[#1e1e2e] hover:text-white transition-colors"
         >
           <LogOut className="h-4 w-4" />
-          Logout
+          {t('nav_logout')}
         </button>
       </div>
     </>

@@ -8,12 +8,14 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import Image from 'next/image';
 
 const ROTATE_EVERY = 60; // seconds
 
 export default function QrPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const [campaignId, setCampaignId] = useState('');
   const [branchId, setBranchId] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
@@ -165,8 +167,8 @@ export default function QrPage() {
   return (
     <div className="space-y-6 max-w-xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">QR Code</h1>
-        <p className="text-[#6b6b80] text-sm mt-1">Display at the bar — auto-rotates every 60s</p>
+        <h1 className="text-2xl font-bold text-white">{t('qr_title')}</h1>
+        <p className="text-[#6b6b80] text-sm mt-1">{t('qr_subtitle')}</p>
       </div>
 
       <Card>

@@ -5,12 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import {
   BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend,
 } from 'recharts';
 
 export default function AnalyticsPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', businessId],
@@ -26,8 +28,8 @@ export default function AnalyticsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Analytics</h1>
-        <p className="text-[#6b6b80] text-sm mt-1">Performance overview across your campaigns</p>
+        <h1 className="text-2xl font-bold text-white">{t('analytics_title')}</h1>
+        <p className="text-[#6b6b80] text-sm mt-1">{t('analytics_subtitle')}</p>
       </div>
 
       <Card>

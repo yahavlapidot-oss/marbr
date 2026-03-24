@@ -8,6 +8,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 const statusBadge: Record<string, string> = {
   PENDING: 'bg-yellow-500/20 text-yellow-400',
@@ -18,6 +19,7 @@ const statusBadge: Record<string, string> = {
 
 export default function RewardsPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const [selectedCampaign, setSelectedCampaign] = useState('');
   const [search, setSearch] = useState('');
 
@@ -41,8 +43,8 @@ export default function RewardsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Rewards</h1>
-        <p className="text-[#6b6b80] text-sm mt-1">View and track won & redeemed rewards</p>
+        <h1 className="text-2xl font-bold text-white">{t('rewards_title')}</h1>
+        <p className="text-[#6b6b80] text-sm mt-1">{t('rewards_subtitle')}</p>
       </div>
 
       <div className="flex flex-col sm:flex-row gap-3">

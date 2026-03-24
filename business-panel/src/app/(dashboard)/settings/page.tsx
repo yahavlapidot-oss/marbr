@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 type BusinessForm = {
   name: string;
@@ -27,10 +28,14 @@ function ImageUpload({
   label,
   value,
   onChange,
+  uploadLabel,
+  uploadingLabel,
 }: {
   label: string;
   value?: string;
   onChange: (url: string) => void;
+  uploadLabel?: string;
+  uploadingLabel?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -94,7 +99,7 @@ function ImageUpload({
             onClick={() => inputRef.current?.click()}
           >
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
-            {uploading ? 'Uploading…' : 'Upload image'}
+            {uploading ? (uploadingLabel ?? 'Uploading…') : (uploadLabel ?? 'Upload image')}
           </Button>
           <p className="text-xs text-[#6b6b80]">JPEG, PNG, WebP — max 5 MB</p>
         </div>
@@ -107,6 +112,7 @@ function ImageUpload({
 export default function SettingsPage() {
   const businessId = useAuthStore((s) => s.businessId);
   const setBusiness = useAuthStore((s) => s.setBusiness);
+  const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
   const { register, handleSubmit, reset, setValue, watch } = useForm<BusinessForm>();
 
@@ -191,55 +197,59 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div>
-        <h1 className="text-2xl font-bold text-white">Settings</h1>
-        <p className="text-[#6b6b80] text-sm mt-1">Update your business profile</p>
+        <h1 className="text-2xl font-bold text-white">{t('settings_title')}</h1>
+        <p className="text-[#6b6b80] text-sm mt-1">{t('settings_subtitle')}</p>
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Business Info</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('settings_business_info')}</CardTitle></CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit((d) => update.mutate(d))} className="space-y-5">
             {/* Logo */}
             <ImageUpload
-              label="Logo"
+              label={t('settings_logo')}
               value={watch('logoUrl')}
               onChange={(url) => setValue('logoUrl', url)}
+              uploadLabel={t('settings_upload')}
+              uploadingLabel={t('settings_uploading')}
             />
 
             {/* Cover photo */}
             <ImageUpload
-              label="Cover Photo"
+              label={t('settings_cover')}
               value={watch('coverUrl')}
               onChange={(url) => setValue('coverUrl', url)}
+              uploadLabel={t('settings_upload')}
+              uploadingLabel={t('settings_uploading')}
             />
 
             <div className="space-y-1.5">
-              <Label>Business Name</Label>
+              <Label>{t('settings_name')}</Label>
               <Input placeholder="Bar Name" {...register('name', { required: true })} />
             </div>
             <div className="space-y-1.5">
-              <Label>Description</Label>
+              <Label>{t('settings_description')}</Label>
               <Input placeholder="A brief description…" {...register('description')} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <Label>Email</Label>
+                <Label>{t('settings_email')}</Label>
                 <Input placeholder="contact@bar.com" {...register('email')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Phone</Label>
+                <Label>{t('settings_phone')}</Label>
                 <Input placeholder="+972…" {...register('phone')} />
               </div>
             </div>
             <div className="space-y-1.5">
-              <Label>Website</Label>
+              <Label>{t('settings_website')}</Label>
               <Input placeholder="https://yourbar.com" {...register('website')} />
             </div>
 
             <div className="flex justify-end pt-2">
               <Button type="submit" disabled={update.isPending}>
                 {update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                Save Changes
+                {t('settings_save')}
               </Button>
             </div>
           </form>

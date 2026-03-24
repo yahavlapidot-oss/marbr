@@ -11,11 +11,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 type ProductForm = { name: string; description?: string; price?: number; sku?: string };
 
 export default function ProductsPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const { register, handleSubmit, reset } = useForm<ProductForm>();
@@ -40,11 +42,11 @@ export default function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Products</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Menu items used in campaigns</p>
+          <h1 className="text-2xl font-bold text-white">{t('products_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('products_subtitle')}</p>
         </div>
         <Button onClick={() => setShowForm((v) => !v)}>
-          <Plus className="h-4 w-4" /> Add Product
+          <Plus className="h-4 w-4" /> {t('products_add')}
         </Button>
       </div>
 
@@ -54,11 +56,11 @@ export default function ProductsPage() {
           <CardContent>
             <form onSubmit={handleSubmit((d) => create.mutate(d))} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
-                <Label>Name</Label>
+                <Label>{t('settings_name')}</Label>
                 <Input placeholder="Heineken 330ml" {...register('name', { required: true })} />
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>Description</Label>
+                <Label>{t('settings_description')}</Label>
                 <Input placeholder="Optional description" {...register('description')} />
               </div>
               <div className="space-y-1.5">
@@ -71,9 +73,9 @@ export default function ProductsPage() {
               </div>
               <div className="col-span-2 flex gap-2">
                 <Button type="submit" disabled={create.isPending}>
-                  {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save
+                  {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />} {t('save')}
                 </Button>
-                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>{t('cancel')}</Button>
               </div>
             </form>
           </CardContent>
@@ -97,7 +99,7 @@ export default function ProductsPage() {
               ))}
             </div>
         ) : products?.length === 0 ? (
-          <p className="col-span-3 text-center text-[#6b6b80] py-12">No products yet</p>
+          <p className="col-span-3 text-center text-[#6b6b80] py-12">{t('products_empty')}</p>
         ) : products?.map((p: any) => (
           <Card key={p.id}>
             <CardContent className="p-5">

@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
 
 type RewardInfo = {
@@ -24,6 +25,7 @@ type RewardInfo = {
 
 export default function RedeemPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const [code, setCode] = useState('');
   const [branchId, setBranchId] = useState('');
   const [reward, setReward] = useState<RewardInfo | null>(null);
@@ -66,8 +68,8 @@ export default function RedeemPage() {
   return (
     <div className="max-w-lg mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-white">Staff Redemption</h1>
-        <p className="text-[#6b6b80] text-sm mt-1">Verify and redeem customer rewards</p>
+        <h1 className="text-2xl font-bold text-white">{t('redeem_title')}</h1>
+        <p className="text-[#6b6b80] text-sm mt-1">{t('redeem_subtitle')}</p>
       </div>
 
       <Card>

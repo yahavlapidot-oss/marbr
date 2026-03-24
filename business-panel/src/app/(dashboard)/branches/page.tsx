@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 const BranchMapPicker = dynamic(() => import('@/components/branch-map-picker'), { ssr: false });
 
@@ -30,6 +31,7 @@ const DEFAULT_LNG = 34.7818;
 
 export default function BranchesPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
   const [showForm, setShowForm] = useState(false);
   const [mapLat, setMapLat] = useState(DEFAULT_LAT);
@@ -116,11 +118,11 @@ export default function BranchesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Branches</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Manage your venue locations</p>
+          <h1 className="text-2xl font-bold text-white">{t('branches_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('branches_subtitle')}</p>
         </div>
         <Button onClick={() => setShowForm((v) => !v)}>
-          <Plus className="h-4 w-4" /> Add Branch
+          <Plus className="h-4 w-4" /> {t('branches_add')}
         </Button>
       </div>
 
@@ -223,7 +225,7 @@ export default function BranchesPage() {
             </Card>
           ))
         ) : !branches?.length ? (
-          <p className="col-span-3 text-center text-[#6b6b80] py-12">No branches yet</p>
+          <p className="col-span-3 text-center text-[#6b6b80] py-12">{t('branches_empty')}</p>
         ) : branches.map((b: any) => (
           <Card key={b.id}>
             <CardContent className="p-5">

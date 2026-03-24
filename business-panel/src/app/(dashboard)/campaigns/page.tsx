@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, any> = {
@@ -23,6 +24,7 @@ const STATUS_VARIANT: Record<string, any> = {
 
 export default function CampaignsPage() {
   const { businessId, business: storedBusiness } = useAuthStore();
+  const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
 
   const { data: campaigns, isLoading } = useQuery({
@@ -51,13 +53,13 @@ export default function CampaignsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Campaigns</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Manage your promotions and raffles</p>
+          <h1 className="text-2xl font-bold text-white">{t('campaigns_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('campaigns_subtitle')}</p>
         </div>
         <Button asChild>
           <Link href="/campaigns/new">
             <Plus className="h-4 w-4" />
-            New Campaign
+            {t('campaigns_new')}
           </Link>
         </Button>
       </div>

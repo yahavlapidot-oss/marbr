@@ -5,6 +5,7 @@ import { useSearchParams } from 'next/navigation';
 import { CreditCard, Check, ExternalLink, Download, Zap, Crown } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { formatCurrency, formatDate } from '@/lib/utils';
 
 interface Subscription {
@@ -86,6 +87,7 @@ const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'ENTERPRISE'];
 
 function BillingContent() {
   const { businessId } = useAuthStore();
+  const t = useLocaleStore((s) => s.t);
   const searchParams = useSearchParams();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);
@@ -168,8 +170,8 @@ function BillingContent() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Billing & Plans</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Manage your subscription and invoices</p>
+          <h1 className="text-2xl font-bold text-white">{t('billing_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('billing_subtitle')}</p>
         </div>
         {sub?.stripeSubscriptionId && (
           <button
@@ -177,7 +179,7 @@ function BillingContent() {
             className="flex items-center gap-2 px-4 py-2 bg-[#1e1e2e] border border-[#2a2a38] text-[#a1a1b5] rounded-lg hover:text-white hover:border-[#3a3a4e] transition-colors text-sm"
           >
             <ExternalLink className="h-4 w-4" />
-            Manage Subscription
+            {t('billing_manage')}
           </button>
         )}
       </div>
@@ -190,7 +192,7 @@ function BillingContent() {
               <CreditCard className="h-5 w-5 text-amber-400" />
             </div>
             <div>
-              <p className="text-xs text-[#6b6b80] uppercase tracking-wider font-medium">Current Plan</p>
+              <p className="text-xs text-[#6b6b80] uppercase tracking-wider font-medium">{t('billing_current_plan')}</p>
               <div className="flex items-center gap-2 mt-0.5">
                 <span className="text-xl font-bold text-white">{sub.plan}</span>
                 <span
@@ -215,7 +217,7 @@ function BillingContent() {
 
       {/* Plans */}
       <div>
-        <h2 className="text-lg font-semibold text-white mb-4">Plans</h2>
+        <h2 className="text-lg font-semibold text-white mb-4">{t('billing_plans')}</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
           {PLANS.map((plan) => {
             const isCurrent = sub?.plan === plan.key;
@@ -266,11 +268,11 @@ function BillingContent() {
 
                 {isCurrent ? (
                   <div className="text-center text-sm font-medium text-[#6b6b80] py-2 border border-[#2a2a38] rounded-lg">
-                    Current Plan
+                    {t('billing_current')}
                   </div>
                 ) : plan.key === 'FREE' || isDowngrade ? (
                   <div className="text-center text-xs text-[#6b6b80] py-2">
-                    {plan.key === 'FREE' ? 'Downgrade via portal' : 'Contact us to downgrade'}
+                    {plan.key === 'FREE' ? t('billing_upgrade_portal') : t('billing_contact_downgrade')}
                   </div>
                 ) : (
                   <button
@@ -294,7 +296,7 @@ function BillingContent() {
       {/* Invoice History */}
       {sub && sub.invoices.length > 0 && (
         <div>
-          <h2 className="text-lg font-semibold text-white mb-4">Invoice History</h2>
+          <h2 className="text-lg font-semibold text-white mb-4">{t('billing_invoices')}</h2>
           <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
@@ -357,7 +359,7 @@ function BillingContent() {
       {sub && sub.invoices.length === 0 && (
         <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl p-8 text-center">
           <CreditCard className="h-8 w-8 text-[#3a3a4e] mx-auto mb-3" />
-          <p className="text-[#6b6b80] text-sm">No invoices yet</p>
+          <p className="text-[#6b6b80] text-sm">{t('billing_no_invoices')}</p>
         </div>
       )}
     </div>

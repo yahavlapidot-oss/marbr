@@ -8,9 +8,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 export default function CustomersPage() {
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const [search, setSearch] = useState('');
 
   const { data: customers, isLoading } = useQuery({
@@ -28,8 +30,8 @@ export default function CustomersPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-white">Customers</h1>
-          <p className="text-[#6b6b80] text-sm mt-1">Users who have entered your campaigns</p>
+          <h1 className="text-2xl font-bold text-white">{t('customers_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('customers_subtitle')}</p>
         </div>
         {customers && (
           <div className="flex items-center gap-2 text-sm text-[#6b6b80]">
@@ -42,7 +44,7 @@ export default function CustomersPage() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6b6b80]" />
         <Input
-          placeholder="Search by name, email or phone…"
+          placeholder={t('customers_search')}
           className="pl-9"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -78,7 +80,7 @@ export default function CustomersPage() {
             </table>
             </div>
           ) : filtered?.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-12">No customers found</p>
+            <p className="text-center text-[#6b6b80] py-12">{t('customers_empty')}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
