@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Search, Users } from 'lucide-react';
+import { Search, Users } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -51,9 +52,29 @@ export default function CustomersPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-            </div>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
+                  <th className="text-left px-4 py-3">Customer</th>
+                  <th className="text-left px-4 py-3">Phone</th>
+                  <th className="text-left px-4 py-3">Entries</th>
+                  <th className="text-left px-4 py-3">Joined</th>
+                </tr>
+              </thead>
+              <tbody>
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <tr key={i} className="border-b border-[#2a2a3a]">
+                    <td className="px-4 py-3 space-y-1.5">
+                      <Skeleton className="h-4 w-32" />
+                      <Skeleton className="h-3 w-40" />
+                    </td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-8" /></td>
+                    <td className="px-4 py-3"><Skeleton className="h-4 w-20" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : filtered?.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-12">No customers found</p>
           ) : (

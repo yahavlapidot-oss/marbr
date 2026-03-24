@@ -2,8 +2,9 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, Gift, Search } from 'lucide-react';
+import { Gift, Search } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
@@ -72,8 +73,19 @@ export default function RewardsPage() {
               <p>Select a campaign to view rewards</p>
             </div>
           ) : isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+            <div className="divide-y divide-[#2a2a38]">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between px-5 py-4">
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-36" />
+                    <Skeleton className="h-3 w-52" />
+                  </div>
+                  <div className="text-right space-y-1.5">
+                    <Skeleton className="h-4 w-16 ml-auto" />
+                    <Skeleton className="h-3 w-12 ml-auto" />
+                  </div>
+                </div>
+              ))}
             </div>
           ) : filtered?.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-12">No rewards found</p>

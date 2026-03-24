@@ -1,8 +1,8 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import {
@@ -34,8 +34,17 @@ export default function AnalyticsPage() {
         <CardHeader><CardTitle>Entries by Campaign</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? (
-            <div className="flex justify-center py-12">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+            <div className="space-y-3 py-2">
+              <div className="flex items-end gap-3 h-56">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="flex-1" style={{ height: `${40 + Math.random() * 60}%` }} />
+                ))}
+              </div>
+              <div className="flex justify-center gap-6 pt-2">
+                {Array.from({ length: 6 }).map((_, i) => (
+                  <Skeleton key={i} className="h-3 w-16" />
+                ))}
+              </div>
             </div>
           ) : chartData.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-12">No campaign data yet</p>
