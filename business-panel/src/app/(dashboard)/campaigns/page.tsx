@@ -2,6 +2,7 @@
 
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Play, Pause, StopCircle, Loader2, BarChart2, Copy } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -64,9 +65,32 @@ export default function CampaignsPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
-            <div className="flex justify-center py-16">
-              <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
-            </div>
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-[#2a2a38]">
+                  {['Name', 'Type', 'Status', 'Entries', 'Ends', 'Actions'].map((h) => (
+                    <th key={h} className="px-6 py-3 text-left text-xs font-medium text-[#6b6b80] uppercase">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-[#2a2a38]">
+                {Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i}>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+                        <Skeleton className="h-4 w-32" />
+                      </div>
+                    </td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-6 w-16 rounded-full" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-8" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-6 py-4"><Skeleton className="h-8 w-24 rounded-md" /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : !campaigns?.length ? (
             <div className="flex flex-col items-center py-16 text-center">
               <p className="text-[#6b6b80] mb-4">No campaigns yet</p>
