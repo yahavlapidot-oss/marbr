@@ -1,6 +1,8 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 
@@ -18,6 +20,281 @@ final snakeLeaderboardProvider =
   return Map<String, dynamic>.from(res.data);
 });
 
+// ── QR Scan Sheet ─────────────────────────────────────────────────────────────
+
+class _SnakeScanSheet extends StatefulWidget {
+  final String campaignId;
+  final VoidCallback onSuccess;
+  const _SnakeScanSheet({required this.campaignId, required this.onSuccess});
+
+  @override
+  State<_SnakeScanSheet> createState() => _SnakeScanSheetState();
+}
+
+class _SnakeScanSheetState extends State<_SnakeScanSheet> {
+  final _ctrl = MobileScannerController();
+  bool _processing = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _onDetect(BarcodeCapture capture) async {
+    if (_processing) return;
+    final code = capture.barcodes.firstOrNull?.rawValue;
+    if (code == null) return;
+
+    setState(() { _processing = true; _error = null; });
+    _ctrl.stop();
+
+    try {
+      await createDio().post('/entries', data: {
+        'campaignId': code,
+        'method': 'QR_SCAN',
+        'code': code,
+      });
+      widget.onSuccess();
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      final msg = data is Map ? data['message']?.toString() : null;
+      String errorMsg = 'Could not scan this code. Try again.';
+      if (msg != null) {
+        if (msg.contains('not active')) {
+          errorMsg = 'This campaign is not active right now.';
+        } else if (msg.contains('Entry limit') || msg.contains('already')) {
+          // Already has an entry — let them play
+          widget.onSuccess();
+          return;
+        } else if (msg.contains('venue')) {
+          errorMsg = 'You must be at the venue to scan.';
+        } else {
+          errorMsg = msg;
+        }
+      }
+      setState(() { _processing = false; _error = errorMsg; });
+      _ctrl.start();
+    } catch (_) {
+      setState(() { _processing = false; _error = 'Something went wrong. Try again.'; });
+      _ctrl.start();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: MediaQuery.of(context).size.height * 0.72,
+      decoration: const BoxDecoration(
+        color: Colors.black,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: ClipRRect(
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+        child: Stack(
+          children: [
+            // Camera
+            MobileScanner(controller: _ctrl, onDetect: _onDetect),
+
+            // Dark overlay with cutout
+            CustomPaint(
+              size: MediaQuery.of(context).size,
+              painter: _ScanOverlay(),
+            ),
+
+            // Header
+            Positioned(
+              top: 0, left: 0, right: 0,
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+                  child: Row(
+                    children: [
+                      const Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Scan to Play 🐍',
+                              style: TextStyle(color: Colors.white, fontSize: 18,
+                                  fontWeight: FontWeight.w800)),
+                            SizedBox(height: 2),
+                            Text('Point camera at the QR code at the bar',
+                              style: TextStyle(color: Colors.white60, fontSize: 13)),
+                          ],
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => Navigator.of(context).pop(),
+                        child: Container(
+                          width: 36, height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withAlpha(30),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.close, color: Colors.white, size: 18),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
+            // Scan frame + status
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 220, height: 220,
+                    child: Stack(
+                      children: [
+                        _corner(0), _corner(1), _corner(2), _corner(3),
+                        if (_processing)
+                          const Center(
+                            child: CircularProgressIndicator(
+                                color: AppTheme.gold, strokeWidth: 2)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_error != null)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withAlpha(220),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(_error!,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              textAlign: TextAlign.center),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(140),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: const Text(
+                        'Show this screen to the bartender',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _corner(int pos) {
+    const s = 26.0;
+    const stroke = 3.0;
+    const color = AppTheme.gold;
+    final positions = [
+      [true, true, false, false],   // TL: top, left
+      [true, false, false, true],   // TR: top, right
+      [false, true, true, false],   // BL: bottom, left
+      [false, false, true, true],   // BR: bottom, right
+    ];
+    final p = positions[pos];
+    return Positioned(
+      top: p[0] ? 0 : null,
+      bottom: p[2] ? 0 : null,
+      left: p[1] ? 0 : null,
+      right: p[3] ? 0 : null,
+      child: CustomPaint(
+        size: const Size(s, s),
+        painter: _CornerPaint(pos: pos, color: color, stroke: stroke),
+      ),
+    );
+  }
+}
+
+class _ScanOverlay extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cutout = 220.0;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx, cy), width: cutout, height: cutout),
+      const Radius.circular(12),
+    );
+    final paint = Paint()..color = Colors.black.withAlpha(150);
+    canvas.drawPath(
+      Path.combine(
+        PathOperation.difference,
+        Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+        Path()..addRRect(rect),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+class _CornerPaint extends CustomPainter {
+  final int pos;
+  final Color color;
+  final double stroke;
+  const _CornerPaint({required this.pos, required this.color, required this.stroke});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    const r = Radius.circular(4);
+    final w = size.width;
+    final h = size.height;
+    final rv = r.x;
+    switch (pos) {
+      case 0:
+        canvas.drawPath(Path()
+          ..moveTo(0, h)..lineTo(0, rv)..arcToPoint(Offset(rv, 0), radius: r)..lineTo(w, 0), p);
+        break;
+      case 1:
+        canvas.drawPath(Path()
+          ..moveTo(0, 0)..lineTo(w - rv, 0)..arcToPoint(Offset(w, rv), radius: r)..lineTo(w, h), p);
+        break;
+      case 2:
+        canvas.drawPath(Path()
+          ..moveTo(w, h)..lineTo(rv, h)..arcToPoint(Offset(0, h - rv), radius: r)..lineTo(0, 0), p);
+        break;
+      case 3:
+        canvas.drawPath(Path()
+          ..moveTo(w, 0)..lineTo(w, h - rv)..arcToPoint(Offset(w - rv, h), radius: r), p);
+        canvas.drawPath(Path()
+          ..moveTo(0, h)..lineTo(w - rv, h)..arcToPoint(Offset(w, h - rv), radius: r, clockwise: false), p);
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class SnakeCampaignScreen extends ConsumerStatefulWidget {
@@ -29,6 +306,23 @@ class SnakeCampaignScreen extends ConsumerStatefulWidget {
 }
 
 class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
+  Future<void> _openScanner(BuildContext context, WidgetRef ref) async {
+    await showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _SnakeScanSheet(
+        campaignId: widget.campaignId,
+        onSuccess: () {
+          Navigator.of(context).pop(); // close the sheet
+          context.push('/game/snake/${widget.campaignId}/play').then((_) {
+            ref.invalidate(snakeLeaderboardProvider(widget.campaignId));
+          });
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final campaign = ref.watch(snakeCampaignProvider(widget.campaignId));
@@ -250,11 +544,10 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                   child: ElevatedButton.icon(
                     onPressed: alreadyPlayed
                         ? null
-                        : () => context.push('/game/snake/${widget.campaignId}/play').then((_) {
-                            ref.invalidate(snakeLeaderboardProvider(widget.campaignId));
-                          }),
-                    icon: const Text('🐍', style: TextStyle(fontSize: 18)),
-                    label: Text(alreadyPlayed ? 'ALREADY PLAYED' : 'PLAY NOW'),
+                        : () => _openScanner(context, ref),
+                    icon: Text(alreadyPlayed ? '✓' : '🐍',
+                        style: const TextStyle(fontSize: 18)),
+                    label: Text(alreadyPlayed ? 'ALREADY PLAYED' : 'SCAN TO PLAY'),
                   ),
                 ),
               );
@@ -264,9 +557,9 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
               child: SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () => context.push('/game/snake/${widget.campaignId}/play'),
+                  onPressed: () => _openScanner(context, ref),
                   icon: const Text('🐍', style: TextStyle(fontSize: 18)),
-                  label: const Text('PLAY NOW'),
+                  label: const Text('SCAN TO PLAY'),
                 ),
               ),
             ),
