@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
+import '../../../core/location_service.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
 import '../widgets/campaign_map_view.dart';
@@ -16,6 +17,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final _searchController = TextEditingController();
   String _query = '';
   bool _mapMode = false;
+  bool _locationPromptDismissed = false;
 
   @override
   void dispose() {
@@ -23,26 +25,35 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     super.dispose();
   }
 
-  List<dynamic> _filter(List<dynamic> all) {
+  List<Map<String, dynamic>> _filter(List<dynamic> all) {
     final q = _query.trim().toLowerCase();
-    if (q.isEmpty) return all;
-    return all.where((c) {
+    final typed = all.cast<Map<String, dynamic>>();
+    if (q.isEmpty) return typed;
+    return typed.where((c) {
       final name = (c['name'] as String? ?? '').toLowerCase();
       final venue = (c['business']?['name'] as String? ?? '').toLowerCase();
       return name.contains(q) || venue.contains(q);
     }).toList();
   }
 
+  Future<void> _requestLocation() async {
+    await ref.read(locationProvider.notifier).requestAndGetLocation();
+    // Re-fetch campaigns with new location
+    final pos = ref.read(locationProvider);
+    ref.invalidate(activeCampaignsProvider(pos));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final campaigns = ref.watch(activeCampaignsProvider);
+    final userPosition = ref.watch(locationProvider);
+    final campaigns = ref.watch(activeCampaignsProvider(userPosition));
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: SafeArea(
         child: Column(
           children: [
-            // Header + search + toggle (always visible)
+            // Header + search + toggle
             Padding(
               padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
               child: Column(
@@ -63,9 +74,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                   ),
                             ),
                             const SizedBox(height: 2),
-                            const Text(
-                              'All live campaigns near you',
-                              style: TextStyle(color: AppTheme.subtle, fontSize: 13),
+                            Text(
+                              userPosition != null
+                                  ? 'Campaigns near you'
+                                  : 'All live campaigns',
+                              style: const TextStyle(color: AppTheme.subtle, fontSize: 13),
                             ),
                           ],
                         ),
@@ -96,7 +109,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ],
                   ),
                   const SizedBox(height: 16),
-                  // Search bar
                   TextField(
                     controller: _searchController,
                     onChanged: (v) => setState(() => _query = v),
@@ -147,27 +159,30 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     children: [
                       const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
                       const SizedBox(height: 12),
-                      const Text(
-                        'Could not load campaigns',
-                        style: TextStyle(
-                            color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600),
-                      ),
+                      const Text('Could not load campaigns',
+                          style: TextStyle(
+                              color: AppTheme.subtle,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
                       const Text('Pull down to retry',
                           style: TextStyle(color: AppTheme.muted, fontSize: 13)),
                       const SizedBox(height: 16),
                       TextButton(
-                        onPressed: () => ref.refresh(activeCampaignsProvider.future),
+                        onPressed: () => ref.invalidate(activeCampaignsProvider(userPosition)),
                         child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
                       ),
                     ],
                   ),
                 ),
                 data: (all) {
-                  final list = _filter(all).cast<Map<String, dynamic>>();
+                  final list = _filter(all);
 
                   if (_mapMode) {
-                    return CampaignMapView(campaigns: list);
+                    return CampaignMapView(
+                      campaigns: list,
+                      userPosition: userPosition,
+                    );
                   }
 
                   if (list.isEmpty) {
@@ -180,7 +195,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           Text(
                             _query.isNotEmpty
                                 ? 'No results for "$_query"'
-                                : 'No campaigns right now',
+                                : 'No campaigns nearby',
                             style: const TextStyle(
                                 color: AppTheme.subtle,
                                 fontSize: 15,
@@ -200,14 +215,28 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
                   return RefreshIndicator(
                     color: AppTheme.gold,
-                    onRefresh: () => ref.refresh(activeCampaignsProvider.future),
+                    onRefresh: () async =>
+                        ref.invalidate(activeCampaignsProvider(userPosition)),
                     child: ListView.builder(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 24),
-                      itemCount: list.length,
-                      itemBuilder: (_, i) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: CampaignCard(campaign: list[i]),
-                      ),
+                      itemCount: list.length +
+                          (_shouldShowLocationPrompt(userPosition) ? 1 : 0),
+                      itemBuilder: (_, i) {
+                        // Location permission banner at top of list
+                        if (i == 0 && _shouldShowLocationPrompt(userPosition)) {
+                          return _LocationPromptCard(
+                            onAllow: _requestLocation,
+                            onDismiss: () =>
+                                setState(() => _locationPromptDismissed = true),
+                          );
+                        }
+                        final offset =
+                            _shouldShowLocationPrompt(userPosition) ? 1 : 0;
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: CampaignCard(campaign: list[i - offset]),
+                        );
+                      },
                     ),
                   );
                 },
@@ -218,14 +247,113 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
       ),
     );
   }
+
+  bool _shouldShowLocationPrompt(Object? position) =>
+      position == null && !_locationPromptDismissed;
 }
+
+// ─────────────────────────────────────────────────────────────
+// Location permission banner
+// ─────────────────────────────────────────────────────────────
+
+class _LocationPromptCard extends StatefulWidget {
+  final Future<void> Function() onAllow;
+  final VoidCallback onDismiss;
+  const _LocationPromptCard({required this.onAllow, required this.onDismiss});
+
+  @override
+  State<_LocationPromptCard> createState() => _LocationPromptCardState();
+}
+
+class _LocationPromptCardState extends State<_LocationPromptCard> {
+  bool _loading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.gold.withAlpha(60)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              color: AppTheme.gold.withAlpha(20),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: const Icon(Icons.near_me, color: AppTheme.gold, size: 20),
+          ),
+          const SizedBox(width: 12),
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('See campaigns near you',
+                    style: TextStyle(
+                        color: AppTheme.white,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700)),
+                SizedBox(height: 2),
+                Text('Allow location for nearby deals',
+                    style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          TextButton(
+            style: TextButton.styleFrom(
+              backgroundColor: AppTheme.gold,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              minimumSize: Size.zero,
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+            onPressed: _loading
+                ? null
+                : () async {
+                    setState(() => _loading = true);
+                    await widget.onAllow();
+                    if (mounted) setState(() => _loading = false);
+                  },
+            child: _loading
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: Colors.black))
+                : const Text('Allow',
+                    style:
+                        TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+          ),
+          const SizedBox(width: 4),
+          GestureDetector(
+            onTap: widget.onDismiss,
+            child: const Icon(Icons.close, size: 16, color: AppTheme.muted),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─────────────────────────────────────────────────────────────
+// List / Map toggle button
+// ─────────────────────────────────────────────────────────────
 
 class _ToggleButton extends StatelessWidget {
   final IconData icon;
   final bool active;
   final VoidCallback onTap;
 
-  const _ToggleButton({required this.icon, required this.active, required this.onTap});
+  const _ToggleButton(
+      {required this.icon, required this.active, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -238,11 +366,8 @@ class _ToggleButton extends StatelessWidget {
           color: active ? AppTheme.gold : Colors.transparent,
           borderRadius: BorderRadius.circular(9),
         ),
-        child: Icon(
-          icon,
-          size: 18,
-          color: active ? Colors.black : AppTheme.muted,
-        ),
+        child: Icon(icon, size: 18,
+            color: active ? Colors.black : AppTheme.muted),
       ),
     );
   }

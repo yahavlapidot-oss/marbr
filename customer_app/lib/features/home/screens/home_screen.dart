@@ -32,13 +32,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     });
   }
 
-  // Ask for location permission once — improves nearby notification targeting
-  void _requestLocationIfNeeded() {
-    DeviceService().requestLocationPermission().then((granted) {
-      if (granted) DeviceService().registerDevice();
-    });
-  }
-
   Future<void> _confirmLeave(BuildContext context, WidgetRef ref, String campaignName) async {
     final confirmed = await showDialog<bool>(
       context: context,
@@ -70,14 +63,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final campaigns = ref.watch(activeCampaignsProvider);
+    // Home screen loads campaigns without location filter (null position)
+    final campaigns = ref.watch(activeCampaignsProvider(null));
     final enrollment = ref.watch(activeCampaignEnrollmentProvider);
 
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
           color: AppTheme.gold,
-          onRefresh: () => ref.refresh(activeCampaignsProvider.future),
+          onRefresh: () => ref.refresh(activeCampaignsProvider(null).future),
           child: CustomScrollView(
             slivers: [
               SliverToBoxAdapter(

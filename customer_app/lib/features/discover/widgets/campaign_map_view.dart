@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
+import 'package:geolocator/geolocator.dart';
 import 'package:go_router/go_router.dart';
 import 'package:latlong2/latlong.dart';
 import '../../../core/theme.dart';
 
 class CampaignMapView extends StatefulWidget {
   final List<Map<String, dynamic>> campaigns;
+  final Position? userPosition;
 
-  const CampaignMapView({super.key, required this.campaigns});
+  const CampaignMapView({super.key, required this.campaigns, this.userPosition});
 
   @override
   State<CampaignMapView> createState() => _CampaignMapViewState();
@@ -47,6 +49,10 @@ class _CampaignMapViewState extends State<CampaignMapView> {
   }
 
   LatLng get _center {
+    // Prefer user's actual position as the map center
+    if (widget.userPosition != null) {
+      return LatLng(widget.userPosition!.latitude, widget.userPosition!.longitude);
+    }
     final pins = _pins;
     if (pins.isEmpty) return const LatLng(32.0853, 34.7818); // Tel Aviv default
     final avgLat = pins.map((p) => p.point.latitude).reduce((a, b) => a + b) / pins.length;
@@ -129,6 +135,31 @@ class _CampaignMapViewState extends State<CampaignMapView> {
                 );
               }).toList(),
             ),
+            // User location pin — blue pulsing dot
+            if (widget.userPosition != null)
+              MarkerLayer(
+                markers: [
+                  Marker(
+                    point: LatLng(widget.userPosition!.latitude, widget.userPosition!.longitude),
+                    width: 22,
+                    height: 22,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF3B82F6),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white, width: 2.5),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF3B82F6).withValues(alpha: 0.5),
+                            blurRadius: 10,
+                            spreadRadius: 3,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
           ],
         ),
 

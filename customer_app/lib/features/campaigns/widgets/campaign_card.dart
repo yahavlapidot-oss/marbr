@@ -2,6 +2,45 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 
+String _distanceLabel(double meters) {
+  if (meters < 100) return 'Here now';
+  if (meters < 1000) return '~${meters.round()}m';
+  return '~${(meters / 1000).toStringAsFixed(1)}km';
+}
+
+class _DistanceBadge extends StatelessWidget {
+  final double meters;
+  const _DistanceBadge({required this.meters});
+
+  @override
+  Widget build(BuildContext context) {
+    final isHere = meters < 100;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+      decoration: BoxDecoration(
+        color: isHere ? const Color(0xFF22C55E).withAlpha(25) : AppTheme.gold.withAlpha(20),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.near_me, size: 10,
+              color: isHere ? const Color(0xFF22C55E) : AppTheme.gold),
+          const SizedBox(width: 3),
+          Text(
+            _distanceLabel(meters),
+            style: TextStyle(
+              color: isHere ? const Color(0xFF22C55E) : AppTheme.gold,
+              fontSize: 10,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class CampaignCard extends StatelessWidget {
   final Map<String, dynamic> campaign;
   const CampaignCard({super.key, required this.campaign});
@@ -53,6 +92,11 @@ class CampaignCard extends StatelessWidget {
                   ],
                 ),
                 const Spacer(),
+                // Distance badge (only when server returns _distanceMeters)
+                if (campaign['_distanceMeters'] != null && (campaign['_distanceMeters'] as num) != double.infinity) ...[
+                  _DistanceBadge(meters: (campaign['_distanceMeters'] as num).toDouble()),
+                  const SizedBox(width: 6),
+                ],
                 if (timeLabel.isNotEmpty)
                   Container(
                     padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),

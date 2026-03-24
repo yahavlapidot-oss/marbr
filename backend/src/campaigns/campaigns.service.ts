@@ -11,6 +11,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PLAN_LIMITS } from '../billing/billing.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
+import { haversineMeters } from '../common/geo.util';
 
 @Injectable()
 export class CampaignsService {
@@ -139,9 +140,9 @@ export class CampaignsService {
     });
   }
 
-  async findActive(lat?: number, lng?: number, radius = 5000) {
+  async findActive(lat?: number, lng?: number, radius = 10000) {
     const now = new Date();
-    return this.prisma.campaign.findMany({
+    const campaigns = await this.prisma.campaign.findMany({
       where: {
         status: CampaignStatus.ACTIVE,
         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
@@ -153,8 +154,26 @@ export class CampaignsService {
         _count: { select: { entries: true } },
       },
       orderBy: { createdAt: 'desc' },
-      take: 50,
+      take: 100,
     });
+
+    const userLat = lat ? Number(lat) : null;
+    const userLng = lng ? Number(lng) : null;
+
+    if (!userLat || !userLng) return campaigns;
+
+    const radiusM = Number(radius);
+
+    return campaigns
+      .map((c) => {
+        const distances = c.branches
+          .filter((b) => b.branch.lat != null && b.branch.lng != null)
+          .map((b) => haversineMeters(userLat, userLng, b.branch.lat!, b.branch.lng!));
+        const minDist = distances.length ? Math.min(...distances) : Infinity;
+        return { ...c, _distanceMeters: minDist };
+      })
+      .filter((c) => c._distanceMeters <= radiusM || c.branches.length === 0)
+      .sort((a, b) => a._distanceMeters - b._distanceMeters);
   }
 
   async updateStatus(id: string, status: CampaignStatus, requesterId: string) {
