@@ -149,8 +149,7 @@ export class EntriesService {
     const now = new Date();
     if (campaign.status !== CampaignStatus.ACTIVE)
       throw new BadRequestException('Campaign is not active');
-    if (campaign.startsAt && campaign.startsAt > now)
-      throw new BadRequestException('Campaign has not started yet');
+    // When status is ACTIVE the business has explicitly started it — skip startsAt check
     if (campaign.endsAt && campaign.endsAt < now)
       throw new BadRequestException('Campaign has ended');
   }
