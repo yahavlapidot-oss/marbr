@@ -319,8 +319,9 @@ class _CountdownTimerState extends State<_CountdownTimer> {
   }
 
   String _formatTime(DateTime dt) {
-    final h = dt.hour;
-    final m = dt.minute.toString().padLeft(2, '0');
+    final local = dt.toLocal();
+    final h = local.hour;
+    final m = local.minute.toString().padLeft(2, '0');
     final period = h >= 12 ? 'PM' : 'AM';
     final hour = h > 12 ? h - 12 : (h == 0 ? 12 : h);
     return '$hour:$m $period';
