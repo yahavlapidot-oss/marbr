@@ -35,6 +35,10 @@ dependencies:
   geolocator: ^13.0.2
   permission_handler: ^11.3.1
 
+  # Map
+  flutter_map: ^7.0.1
+  latlong2: ^0.9.1
+
   # Utils
   intl: ^0.20.1
   cached_network_image: ^3.4.1
