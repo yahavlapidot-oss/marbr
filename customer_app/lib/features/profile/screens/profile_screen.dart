@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
 import '../../../core/router.dart' show authNotifierProvider;
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 final profileProvider = FutureProvider<Map<String, dynamic>>((ref) async {
   final res = await createDio().get('/me');
@@ -16,6 +18,9 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final profile = ref.watch(profileProvider);
 
     return Scaffold(
@@ -23,7 +28,7 @@ class ProfileScreen extends ConsumerWidget {
       body: profile.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
         error: (e, _) => Center(child: Text('$e', style: const TextStyle(color: AppTheme.muted))),
-        data: (user) => _ProfileContent(user: user, ref: ref),
+        data: (user) => _ProfileContent(user: user, ref: ref, t: t),
       ),
     );
   }
@@ -32,7 +37,8 @@ class ProfileScreen extends ConsumerWidget {
 class _ProfileContent extends StatelessWidget {
   final Map<String, dynamic> user;
   final WidgetRef ref;
-  const _ProfileContent({required this.user, required this.ref});
+  final String Function(String) t;
+  const _ProfileContent({required this.user, required this.ref, required this.t});
 
   @override
   Widget build(BuildContext context) {
@@ -52,7 +58,7 @@ class _ProfileContent extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text('Profile',
+                  Text(t('profile'),
                     style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                       color: AppTheme.white,
                       fontWeight: FontWeight.w800,
@@ -103,9 +109,9 @@ class _ProfileContent extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Row(
                 children: [
-                  _StatBox(value: '$entriesCount', label: 'RAFFLES\nENTERED', icon: Icons.confirmation_number_outlined),
+                  _StatBox(value: '$entriesCount', label: t('raffles_entered'), icon: Icons.confirmation_number_outlined),
                   const SizedBox(width: 12),
-                  _StatBox(value: '$winsCount', label: 'PRIZES\nWON', icon: Icons.emoji_events_outlined),
+                  _StatBox(value: '$winsCount', label: t('prizes_won'), icon: Icons.emoji_events_outlined),
                 ],
               ),
             ),
@@ -118,25 +124,25 @@ class _ProfileContent extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: Text('ACCOUNT',
-                      style: TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(t('account'),
+                      style: const TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
                   ),
-                  _MenuTile(icon: Icons.history, label: 'Participation History', onTap: () => context.go('/history')),
-                  _MenuTile(icon: Icons.notifications_outlined, label: 'Notifications', onTap: () => context.go('/notifications')),
-                  _MenuTile(icon: Icons.favorite_outline, label: 'Favorite Venues', onTap: () => context.go('/favorites')),
+                  _MenuTile(icon: Icons.history, label: t('participation'), onTap: () => context.go('/history')),
+                  _MenuTile(icon: Icons.notifications_outlined, label: t('notifications_menu'), onTap: () => context.go('/notifications')),
+                  _MenuTile(icon: Icons.favorite_outline, label: t('favorite_venues'), onTap: () => context.go('/favorites')),
 
                   const SizedBox(height: 20),
-                  const Padding(
-                    padding: EdgeInsets.only(bottom: 10),
-                    child: Text('MORE',
-                      style: TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+                  Padding(
+                    padding: const EdgeInsets.only(bottom: 10),
+                    child: Text(t('more'),
+                      style: const TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
                   ),
-                  _MenuTile(icon: Icons.settings_outlined, label: 'Settings', onTap: () => context.go('/settings')),
+                  _MenuTile(icon: Icons.settings_outlined, label: t('settings'), onTap: () => context.go('/settings')),
                   _MenuTile(
                     icon: Icons.logout,
-                    label: 'Sign Out',
+                    label: t('sign_out'),
                     destructive: true,
                     onTap: () async {
                       await const FlutterSecureStorage().deleteAll();

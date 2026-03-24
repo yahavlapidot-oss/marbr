@@ -3,6 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 final myRewardsProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await createDio().get('/me/rewards');
@@ -34,12 +36,15 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final rewards = ref.watch(myRewardsProvider);
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
-        title: const Text('My Wins'),
+        title: Text(t('my_rewards')),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(48),
           child: Container(
@@ -62,7 +67,7 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
               labelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700),
               unselectedLabelStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
               dividerColor: Colors.transparent,
-              tabs: const [Tab(text: 'Active'), Tab(text: 'History')],
+              tabs: [Tab(text: t('active')), Tab(text: t('history'))],
             ),
           ),
         ),
@@ -75,12 +80,12 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
             children: [
               const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
               const SizedBox(height: 12),
-              const Text('Could not load rewards',
-                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(t('could_not_load'),
+                style: const TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => ref.refresh(myRewardsProvider),
-                child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
+                child: Text(t('retry'), style: const TextStyle(color: AppTheme.gold)),
               ),
             ],
           ),
@@ -93,12 +98,12 @@ class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
             children: [
               _RewardsList(items: active, onRefresh: () => ref.refresh(myRewardsProvider.future),
                 emptyIcon: Icons.emoji_events_outlined,
-                emptyText: 'No active rewards',
-                emptySubtext: 'Win a campaign to see your prizes here'),
+                emptyText: t('no_active_rewards'),
+                emptySubtext: t('win_to_see')),
               _RewardsList(items: history, onRefresh: () => ref.refresh(myRewardsProvider.future),
                 emptyIcon: Icons.history,
-                emptyText: 'No history yet',
-                emptySubtext: 'Past rewards will appear here'),
+                emptyText: t('no_history'),
+                emptySubtext: t('past_rewards')),
             ],
           );
         },
@@ -153,15 +158,15 @@ class _RewardsList extends StatelessWidget {
   }
 }
 
-class _RewardCard extends StatefulWidget {
+class _RewardCard extends ConsumerStatefulWidget {
   final Map<String, dynamic> reward;
   const _RewardCard({required this.reward});
 
   @override
-  State<_RewardCard> createState() => _RewardCardState();
+  ConsumerState<_RewardCard> createState() => _RewardCardState();
 }
 
-class _RewardCardState extends State<_RewardCard> {
+class _RewardCardState extends ConsumerState<_RewardCard> {
   bool _copied = false;
 
   void _copyCode(String code) async {
@@ -171,7 +176,7 @@ class _RewardCardState extends State<_RewardCard> {
     if (mounted) setState(() => _copied = false);
   }
 
-  void _showRedeemSheet(BuildContext context) {
+  void _showRedeemSheet(BuildContext context, String Function(String) t) {
     final code = widget.reward['code'] as String? ?? '';
     final r = widget.reward['reward'] as Map<String, dynamic>? ?? {};
     final campaign = r['campaign'] as Map<String, dynamic>? ?? {};
@@ -200,8 +205,8 @@ class _RewardCardState extends State<_RewardCard> {
                 style: const TextStyle(color: AppTheme.muted, fontSize: 14)),
             ],
             const SizedBox(height: 24),
-            const Text('SHOW THIS CODE TO STAFF',
-              style: TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+            Text(t('show_to_staff'),
+              style: const TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
             const SizedBox(height: 12),
             Container(
               width: double.infinity,
@@ -217,8 +222,8 @@ class _RewardCardState extends State<_RewardCard> {
                     style: const TextStyle(
                       color: AppTheme.gold, fontSize: 28, fontWeight: FontWeight.w800, letterSpacing: 6)),
                   const SizedBox(height: 6),
-                  const Text('Tap below to copy',
-                    style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+                  Text(t('tap_copy'),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                 ],
               ),
             ),
@@ -231,14 +236,14 @@ class _RewardCardState extends State<_RewardCard> {
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Code copied to clipboard'),
+                      content: Text(t('copied')),
                       backgroundColor: AppTheme.gold,
                       behavior: SnackBarBehavior.floating,
                     ),
                   );
                 },
                 icon: const Icon(Icons.copy, size: 18),
-                label: const Text('COPY CODE'),
+                label: Text(t('copy_code')),
               ),
             ),
           ],
@@ -249,6 +254,9 @@ class _RewardCardState extends State<_RewardCard> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final status = widget.reward['status'] as String? ?? '';
     final r = widget.reward['reward'] as Map<String, dynamic>? ?? {};
     final campaign = r['campaign'] as Map<String, dynamic>? ?? {};
@@ -294,7 +302,7 @@ class _RewardCardState extends State<_RewardCard> {
                     ],
                   ),
                 ),
-                _StatusBadge(status: status),
+                _StatusBadge(status: status, t: t),
               ],
             ),
           ),
@@ -337,7 +345,7 @@ class _RewardCardState extends State<_RewardCard> {
                             style: const TextStyle(
                               color: AppTheme.gold, fontSize: 22, fontWeight: FontWeight.w800, letterSpacing: 3)),
                           const SizedBox(height: 4),
-                          Text(_copied ? '✓ Copied!' : 'Tap to copy',
+                          Text(_copied ? t('copied_check') : t('tap_to_copy'),
                             style: TextStyle(
                               color: _copied ? const Color(0xFF22C55E) : AppTheme.muted,
                               fontSize: 11)),
@@ -349,9 +357,9 @@ class _RewardCardState extends State<_RewardCard> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton.icon(
-                      onPressed: () => _showRedeemSheet(context),
+                      onPressed: () => _showRedeemSheet(context, t),
                       icon: const Icon(Icons.qr_code, size: 18),
-                      label: const Text('REDEEM NOW'),
+                      label: Text(t('redeem_now')),
                     ),
                   ),
                 ],
@@ -367,8 +375,8 @@ class _RewardCardState extends State<_RewardCard> {
                 border: Border(top: BorderSide(color: AppTheme.border, width: 0.5)),
                 borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
               ),
-              child: const Center(
-                child: Text('Redeemed', style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+              child: Center(
+                child: Text(t('redeemed'), style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
               ),
             ),
         ],
@@ -379,16 +387,17 @@ class _RewardCardState extends State<_RewardCard> {
 
 class _StatusBadge extends StatelessWidget {
   final String status;
-  const _StatusBadge({required this.status});
+  final String Function(String) t;
+  const _StatusBadge({required this.status, required this.t});
 
   @override
   Widget build(BuildContext context) {
     Color color;
     String label;
     switch (status) {
-      case 'ACTIVE': color = const Color(0xFF22C55E); label = 'ACTIVE'; break;
-      case 'REDEEMED': color = AppTheme.muted; label = 'REDEEMED'; break;
-      case 'EXPIRED': color = Colors.redAccent; label = 'EXPIRED'; break;
+      case 'ACTIVE': color = const Color(0xFF22C55E); label = t('status_active'); break;
+      case 'REDEEMED': color = AppTheme.muted; label = t('status_redeemed'); break;
+      case 'EXPIRED': color = Colors.redAccent; label = t('status_expired'); break;
       default: color = AppTheme.muted; label = status;
     }
     return Container(

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class AppTheme {
   static const gold = Color(0xFFF5C518);
@@ -15,6 +16,10 @@ class AppTheme {
         useMaterial3: true,
         brightness: Brightness.dark,
         scaffoldBackgroundColor: bg,
+        textTheme: GoogleFonts.heeboTextTheme(ThemeData.dark().textTheme).apply(
+          bodyColor: white,
+          displayColor: white,
+        ),
         colorScheme: const ColorScheme.dark(
           primary: gold,
           onPrimary: Colors.black,

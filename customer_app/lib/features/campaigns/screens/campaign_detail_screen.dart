@@ -5,6 +5,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 final campaignProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
   final res = await createDio().get('/campaigns/$id');
@@ -17,6 +19,9 @@ class CampaignDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final campaign = ref.watch(campaignProvider(id));
 
     return Scaffold(
@@ -26,7 +31,7 @@ class CampaignDetailScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_ios, size: 18),
           onPressed: () => context.pop(),
         ),
-        title: const Text('Campaign'),
+        title: Text(t('campaign')),
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined, size: 20),
@@ -92,8 +97,8 @@ class CampaignDetailScreen extends ConsumerWidget {
                                 Container(width: 6, height: 6,
                                   decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle)),
                                 const SizedBox(width: 5),
-                                const Text('LIVE EVENT',
-                                  style: TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                                Text(t('live_event').toUpperCase(),
+                                  style: const TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
                               ]),
                             ),
                           ],
@@ -118,24 +123,24 @@ class CampaignDetailScreen extends ConsumerWidget {
 
                       // Circular countdown
                       if (endsAt != null)
-                        Center(child: _CountdownTimer(endsAt: endsAt)),
+                        Center(child: _CountdownTimer(endsAt: endsAt, t: t)),
 
                       const SizedBox(height: 32),
 
                       // Stats row
                       Row(
                         children: [
-                          _StatBox(icon: Icons.confirmation_number_outlined, value: '$entries', label: 'TICKETS'),
+                          _StatBox(icon: Icons.confirmation_number_outlined, value: '$entries', label: t('tickets')),
                           const SizedBox(width: 12),
-                          _StatBox(icon: Icons.card_giftcard_outlined, value: '${rewards.length}', label: 'PRIZES'),
+                          _StatBox(icon: Icons.card_giftcard_outlined, value: '${rewards.length}', label: t('prizes')),
                         ],
                       ),
                       const SizedBox(height: 28),
 
                       // Prizes
                       if (rewards.isNotEmpty) ...[
-                        const Text('PRIZES',
-                          style: TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+                        Text(t('prizes'),
+                          style: const TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
                         const SizedBox(height: 12),
                         ...rewards.map((r) => Container(
                           margin: const EdgeInsets.only(bottom: 10),
@@ -194,12 +199,12 @@ class CampaignDetailScreen extends ConsumerWidget {
                     ? ElevatedButton.icon(
                         onPressed: () => context.push('/game/snake/$id'),
                         icon: const Text('🐍', style: TextStyle(fontSize: 18)),
-                        label: const Text('PLAY SNAKE'),
+                        label: Text(t('play_snake')),
                       )
                     : ElevatedButton.icon(
                         onPressed: () => context.go('/scan'),
                         icon: const Icon(Icons.qr_code_scanner, size: 20),
-                        label: const Text('SCAN QR TO ENTER'),
+                        label: Text(t('scan_qr')),
                       ),
                 ),
               ),
@@ -243,7 +248,8 @@ class _StatBox extends StatelessWidget {
 
 class _CountdownTimer extends StatefulWidget {
   final DateTime endsAt;
-  const _CountdownTimer({required this.endsAt});
+  final String Function(String) t;
+  const _CountdownTimer({required this.endsAt, required this.t});
 
   @override
   State<_CountdownTimer> createState() => _CountdownTimerState();
@@ -271,7 +277,7 @@ class _CountdownTimerState extends State<_CountdownTimer> {
   @override
   Widget build(BuildContext context) {
     if (_remaining.isNegative) {
-      return const Text('Campaign ended', style: TextStyle(color: AppTheme.muted));
+      return Text(widget.t('campaign_ended'), style: const TextStyle(color: AppTheme.muted));
     }
 
     final totalMinutes = _remaining.inMinutes;
@@ -280,8 +286,8 @@ class _CountdownTimerState extends State<_CountdownTimer> {
 
     return Column(
       children: [
-        const Text('TIME REMAINING',
-          style: TextStyle(color: AppTheme.subtle, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
+        Text(widget.t('time_remaining'),
+          style: const TextStyle(color: AppTheme.subtle, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
         const SizedBox(height: 16),
         SizedBox(
           width: 180,
@@ -306,7 +312,7 @@ class _CountdownTimerState extends State<_CountdownTimer> {
                     ),
                   ),
                   Text(
-                      'Closing at ${_formatTime(widget.endsAt)}',
+                      '${widget.t('closing_at')} ${_formatTime(widget.endsAt)}',
                       style: const TextStyle(color: AppTheme.muted, fontSize: 11),
                     ),
                 ],

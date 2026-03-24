@@ -8,6 +8,8 @@ import '../../../core/api_client.dart';
 import '../../../core/device_service.dart';
 import '../../../core/router.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 class OtpScreen extends ConsumerStatefulWidget {
   final String target;
@@ -55,18 +57,21 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _confirmBack() async {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final leave = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppTheme.surface,
-        title: const Text('Leave verification?', style: TextStyle(color: AppTheme.white)),
-        content: const Text('Your code will no longer be valid.',
-          style: TextStyle(color: AppTheme.subtle)),
+        title: Text(t('leave_verification'), style: const TextStyle(color: AppTheme.white)),
+        content: Text(t('code_invalid'),
+          style: const TextStyle(color: AppTheme.subtle)),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Stay')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(t('stay'))),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Leave', style: TextStyle(color: Colors.redAccent)),
+            child: Text(t('leave'), style: const TextStyle(color: Colors.redAccent)),
           ),
         ],
       ),
@@ -75,6 +80,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
   }
 
   Future<void> _resend() async {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     setState(() { _loading = true; _error = null; _attempts = 0; _otpCtrl.clear(); });
     try {
       await createDio().post('/auth/otp/send', data: {'target': widget.target});
@@ -82,13 +90,16 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
     } on DioException catch (e) {
       final data = e.response?.data;
       final msg = data is Map ? data['message']?.toString() : null;
-      setState(() => _error = msg ?? 'Failed to resend. Try again.');
+      setState(() => _error = msg ?? t('went_wrong'));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
   }
 
   Future<void> _verify() async {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final code = _otpCtrl.text.trim();
     if (code.length != 6) return;
     if (_attempts >= _maxAttempts) return;
@@ -118,16 +129,17 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       final remaining = _maxAttempts - _attempts;
       String errorMsg;
       if (_attempts >= _maxAttempts) {
-        errorMsg = 'Too many attempts. Please request a new code.';
+        errorMsg = t('too_many');
         _otpCtrl.clear();
       } else if (msg.toLowerCase().contains('expired')) {
-        errorMsg = 'Code expired. Request a new one.';
+        errorMsg = t('code_expired_otp');
       } else if (e.type == DioExceptionType.connectionError) {
-        errorMsg = 'No connection. Check your internet.';
+        errorMsg = t('no_connection');
       } else if (e.type == DioExceptionType.connectionTimeout || e.type == DioExceptionType.receiveTimeout) {
-        errorMsg = 'Request timed out. Try again.';
+        errorMsg = t('timeout');
       } else {
-        errorMsg = 'Incorrect code. $remaining attempt${remaining == 1 ? '' : 's'} left.';
+        final attemptsWord = remaining == 1 ? t('attempt_left') : t('attempts_left');
+        errorMsg = '${t('incorrect_code')} $remaining $attemptsWord.';
       }
       setState(() => _error = errorMsg);
     } finally {
@@ -137,6 +149,9 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Scaffold(
       backgroundColor: AppTheme.bg,
       appBar: AppBar(
@@ -144,7 +159,7 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           icon: const Icon(Icons.arrow_back_ios, size: 18),
           onPressed: _confirmBack,
         ),
-        title: const Text('Verify'),
+        title: Text(t('verify')),
       ),
       body: Padding(
         padding: const EdgeInsets.all(24),
@@ -152,11 +167,11 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const SizedBox(height: 16),
-            const Text('Check your messages',
-              style: TextStyle(color: AppTheme.white, fontSize: 22, fontWeight: FontWeight.w800)),
+            Text(t('verify_title'),
+              style: const TextStyle(color: AppTheme.white, fontSize: 22, fontWeight: FontWeight.w800)),
             const SizedBox(height: 8),
-            const Text('Enter the 6-digit code sent to',
-              style: TextStyle(color: AppTheme.muted, fontSize: 14)),
+            Text(t('enter_code'),
+              style: const TextStyle(color: AppTheme.muted, fontSize: 14)),
             const SizedBox(height: 4),
             Text(widget.target,
               style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w700, fontSize: 16)),
@@ -217,19 +232,19 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
                 child: _loading
                     ? const SizedBox(height: 20, width: 20,
                         child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black))
-                    : const Text('VERIFY CODE'),
+                    : Text(t('verify_btn')),
               ),
             ),
 
             const SizedBox(height: 20),
             Center(
               child: _resendCooldown > 0
-                  ? Text('Resend in ${_resendCooldown}s',
+                  ? Text('${t('resend_in')} ${_resendCooldown}s',
                       style: const TextStyle(color: AppTheme.muted, fontSize: 13))
                   : TextButton(
                       onPressed: _loading ? null : _resend,
-                      child: const Text('Resend code',
-                        style: TextStyle(color: AppTheme.gold, fontSize: 13, fontWeight: FontWeight.w600)),
+                      child: Text(t('resend_code'),
+                        style: const TextStyle(color: AppTheme.gold, fontSize: 13, fontWeight: FontWeight.w600)),
                     ),
             ),
           ],

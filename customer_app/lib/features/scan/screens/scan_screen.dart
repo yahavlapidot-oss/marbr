@@ -5,6 +5,8 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -26,6 +28,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
     if (_processing) return;
     final code = capture.barcodes.firstOrNull?.rawValue;
     if (code == null) return;
+
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
 
     setState(() { _processing = true; _result = null; _subtitle = null; _isConflict = false; });
     _ctrl.stop();
@@ -54,28 +59,28 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       setState(() {
         _success = true;
         _won = reward != null;
-        _result = reward != null ? 'You won!' : "You're In!";
+        _result = reward != null ? t('you_won') : t('youre_in');
         _subtitle = reward != null
             ? rewardName ?? 'You got a reward!'
             : campaignName != null
                 ? 'Entered: $campaignName'
-                : 'Good luck!';
+                : t('good_luck');
       });
     } catch (e) {
-      String msg = 'Could not process this code. Try again.';
+      String msg = t('code_error');
       bool isConflict = false;
       if (e is DioException) {
         final data = e.response?.data;
         final serverMsg = data is Map ? data['message']?.toString() : null;
         if (serverMsg != null) {
           if (serverMsg.contains('invalid or expired')) {
-            msg = 'Code expired — ask staff for a new one.';
+            msg = t('code_expired');
           } else if (serverMsg.contains('Entry limit')) {
-            msg = "You've already entered this campaign.";
+            msg = t('already_entered');
           } else if (serverMsg.contains('venue')) {
-            msg = "You must be at the venue to participate.";
+            msg = t('must_be_at_venue');
           } else if (serverMsg.contains('not active')) {
-            msg = 'This campaign is not active right now.';
+            msg = t('not_active');
           } else if (serverMsg.contains('already participating')) {
             msg = serverMsg;
             isConflict = true;
@@ -88,7 +93,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _success = false;
         _won = false;
         _isConflict = isConflict;
-        _result = isConflict ? 'Already In A Campaign' : 'Oops!';
+        _result = isConflict ? t('already_in_campaign') : t('oops');
         _subtitle = msg;
       });
       if (!isConflict) {
@@ -128,6 +133,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   }
 
   Widget _scanView() {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Stack(
       children: [
         // Full-screen scanner
@@ -158,10 +166,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                       child: const Icon(Icons.close, color: Colors.white, size: 18),
                     ),
                   ),
-                  const Expanded(
+                  Expanded(
                     child: Center(
-                      child: Text('Scan QR to Enter',
-                        style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
+                      child: Text(t('scan_title'),
+                        style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w700)),
                     ),
                   ),
                   IconButton(
@@ -205,10 +213,10 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   color: Colors.black.withAlpha(150),
                   borderRadius: BorderRadius.circular(20),
                 ),
-                child: const Text(
-                  'Point camera at the QR code on your receipt',
+                child: Text(
+                  t('point_camera'),
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.white70, fontSize: 13),
+                  style: const TextStyle(color: Colors.white70, fontSize: 13),
                 ),
               ),
             ],
@@ -241,6 +249,9 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
   }
 
   Widget _resultView() {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final iconColor = _won
         ? AppTheme.gold
         : _success
@@ -293,7 +304,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 child: ElevatedButton(
                   onPressed: _leaveAndReset,
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent.withAlpha(200)),
-                  child: const Text('LEAVE CURRENT CAMPAIGN & SCAN'),
+                  child: Text(t('leave_and_scan')),
                 ),
               ),
               const SizedBox(height: 12),
@@ -301,7 +312,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 width: double.infinity,
                 child: OutlinedButton(
                   onPressed: _reset,
-                  child: const Text('CANCEL'),
+                  child: Text(t('cancel')),
                 ),
               ),
             ] else
@@ -310,7 +321,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                 child: ElevatedButton.icon(
                   onPressed: _reset,
                   icon: const Icon(Icons.qr_code_scanner, size: 18),
-                  label: const Text('SCAN AGAIN'),
+                  label: Text(t('scan_again')),
                 ),
               ),
           ],

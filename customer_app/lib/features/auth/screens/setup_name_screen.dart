@@ -6,6 +6,8 @@ import '../../../core/api_client.dart';
 import '../../../core/device_service.dart';
 import '../../../core/router.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 class SetupNameScreen extends ConsumerStatefulWidget {
   const SetupNameScreen({super.key});
@@ -27,13 +29,16 @@ class _SetupNameScreenState extends ConsumerState<SetupNameScreen> {
   }
 
   Future<void> _save() async {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final name = _nameCtrl.text.trim();
     if (name.isEmpty) {
-      setState(() => _error = 'Please enter your full name');
+      setState(() => _error = t('name_required'));
       return;
     }
     if (name.split(' ').where((w) => w.isNotEmpty).length < 2) {
-      setState(() => _error = 'Please enter your first and last name');
+      setState(() => _error = t('name_too_short'));
       return;
     }
 
@@ -51,14 +56,17 @@ class _SetupNameScreenState extends ConsumerState<SetupNameScreen> {
     } on DioException catch (e) {
       final data = e.response?.data;
       final msg = data is Map ? data['message']?.toString() : null;
-      setState(() { _loading = false; _error = msg ?? 'Something went wrong. Try again.'; });
+      setState(() { _loading = false; _error = msg ?? AppL10n.of(ref.read(localeProvider), 'went_wrong'); });
     } catch (e) {
-      setState(() { _loading = false; _error = 'Something went wrong. Try again.'; });
+      setState(() { _loading = false; _error = AppL10n.of(ref.read(localeProvider), 'went_wrong'); });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: SafeArea(
@@ -82,9 +90,9 @@ class _SetupNameScreenState extends ConsumerState<SetupNameScreen> {
               ),
               const SizedBox(height: 24),
 
-              const Text(
-                'What\'s your name?',
-                style: TextStyle(
+              Text(
+                t('whats_name'),
+                style: const TextStyle(
                   color: AppTheme.white,
                   fontSize: 26,
                   fontWeight: FontWeight.w800,
@@ -92,9 +100,9 @@ class _SetupNameScreenState extends ConsumerState<SetupNameScreen> {
                 ),
               ),
               const SizedBox(height: 8),
-              const Text(
-                'So we know what to call you when you win.',
-                style: TextStyle(color: AppTheme.muted, fontSize: 15, height: 1.4),
+              Text(
+                t('name_sub'),
+                style: const TextStyle(color: AppTheme.muted, fontSize: 15, height: 1.4),
               ),
 
               const Spacer(flex: 2),
@@ -105,7 +113,7 @@ class _SetupNameScreenState extends ConsumerState<SetupNameScreen> {
                 textCapitalization: TextCapitalization.words,
                 style: const TextStyle(color: AppTheme.white, fontSize: 18),
                 decoration: InputDecoration(
-                  hintText: 'First and last name',
+                  hintText: t('name_ph'),
                   prefixIcon: const Icon(Icons.person_outline, color: AppTheme.muted, size: 22),
                   errorText: _error,
                   errorMaxLines: 2,
@@ -124,7 +132,7 @@ class _SetupNameScreenState extends ConsumerState<SetupNameScreen> {
                           width: 20,
                           child: CircularProgressIndicator(strokeWidth: 2, color: Colors.black),
                         )
-                      : const Text("Let's go!"),
+                      : Text(t('lets_go')),
                 ),
               ),
 

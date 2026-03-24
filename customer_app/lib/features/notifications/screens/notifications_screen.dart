@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 final notificationsProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await createDio().get('/me/notifications');
@@ -13,6 +15,9 @@ class NotificationsScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final notifs = ref.watch(notificationsProvider);
 
     return Scaffold(
@@ -22,7 +27,7 @@ class NotificationsScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_ios, size: 18),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text('Notifications'),
+        title: Text(t('notifications_title')),
       ),
       body: notifs.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
@@ -32,29 +37,29 @@ class NotificationsScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
               const SizedBox(height: 12),
-              const Text('Could not load notifications',
-                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(t('could_not_load_notif'),
+                style: const TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => ref.refresh(notificationsProvider),
-                child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
+                child: Text(t('retry'), style: const TextStyle(color: AppTheme.gold)),
               ),
             ],
           ),
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.notifications_none, size: 48, color: AppTheme.muted),
-                  SizedBox(height: 12),
-                  Text('No notifications yet',
-                    style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
-                  SizedBox(height: 4),
-                  Text('You\'ll see campaign alerts and win notices here',
-                    style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                  const Icon(Icons.notifications_none, size: 48, color: AppTheme.muted),
+                  const SizedBox(height: 12),
+                  Text(t('no_notifications'),
+                    style: const TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(t('notif_sub'),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
                 ],
               ),
             );

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/theme.dart';
 import '../../../core/location_service.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
 import '../widgets/campaign_map_view.dart';
@@ -45,6 +47,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final userPosition = ref.watch(locationProvider);
     final campaigns = ref.watch(activeCampaignsProvider(userPosition));
 
@@ -66,7 +71,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Discover',
+                              t('discover'),
                               style: Theme.of(context).textTheme.headlineMedium?.copyWith(
                                     color: AppTheme.white,
                                     fontWeight: FontWeight.w800,
@@ -76,8 +81,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             const SizedBox(height: 2),
                             Text(
                               userPosition != null
-                                  ? 'Campaigns near you'
-                                  : 'All live campaigns',
+                                  ? t('campaigns_near')
+                                  : t('all_live'),
                               style: const TextStyle(color: AppTheme.subtle, fontSize: 13),
                             ),
                           ],
@@ -114,7 +119,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     onChanged: (v) => setState(() => _query = v),
                     style: const TextStyle(color: AppTheme.white, fontSize: 14),
                     decoration: InputDecoration(
-                      hintText: 'Search campaigns or venues…',
+                      hintText: t('search_ph'),
                       hintStyle: const TextStyle(color: AppTheme.muted, fontSize: 14),
                       prefixIcon: const Icon(Icons.search, color: AppTheme.muted, size: 20),
                       suffixIcon: _query.isNotEmpty
@@ -159,18 +164,18 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     children: [
                       const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
                       const SizedBox(height: 12),
-                      const Text('Could not load campaigns',
-                          style: TextStyle(
+                      Text(t('could_not_load'),
+                          style: const TextStyle(
                               color: AppTheme.subtle,
                               fontSize: 15,
                               fontWeight: FontWeight.w600)),
                       const SizedBox(height: 4),
-                      const Text('Pull down to retry',
-                          style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                      Text(t('pull_retry'),
+                          style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
                       const SizedBox(height: 16),
                       TextButton(
                         onPressed: () => ref.invalidate(activeCampaignsProvider(userPosition)),
-                        child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
+                        child: Text(t('retry'), style: const TextStyle(color: AppTheme.gold)),
                       ),
                     ],
                   ),
@@ -194,8 +199,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           const SizedBox(height: 12),
                           Text(
                             _query.isNotEmpty
-                                ? 'No results for "$_query"'
-                                : 'No campaigns nearby',
+                                ? '${t('no_results')} "$_query"'
+                                : t('no_campaigns_nearby'),
                             style: const TextStyle(
                                 color: AppTheme.subtle,
                                 fontSize: 15,
@@ -204,8 +209,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                           const SizedBox(height: 4),
                           Text(
                             _query.isNotEmpty
-                                ? 'Try a different search term'
-                                : 'Check back soon',
+                                ? t('try_different')
+                                : t('check_back'),
                             style: const TextStyle(color: AppTheme.muted, fontSize: 13),
                           ),
                         ],
@@ -228,6 +233,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             onAllow: _requestLocation,
                             onDismiss: () =>
                                 setState(() => _locationPromptDismissed = true),
+                            locationPrompt: t('location_prompt'),
+                            locationSub: t('location_sub'),
+                            allowLabel: t('allow'),
                           );
                         }
                         final offset =
@@ -259,7 +267,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 class _LocationPromptCard extends StatefulWidget {
   final Future<void> Function() onAllow;
   final VoidCallback onDismiss;
-  const _LocationPromptCard({required this.onAllow, required this.onDismiss});
+  final String locationPrompt;
+  final String locationSub;
+  final String allowLabel;
+  const _LocationPromptCard({
+    required this.onAllow,
+    required this.onDismiss,
+    required this.locationPrompt,
+    required this.locationSub,
+    required this.allowLabel,
+  });
 
   @override
   State<_LocationPromptCard> createState() => _LocationPromptCardState();
@@ -290,18 +307,18 @@ class _LocationPromptCardState extends State<_LocationPromptCard> {
             child: const Icon(Icons.near_me, color: AppTheme.gold, size: 20),
           ),
           const SizedBox(width: 12),
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('See campaigns near you',
-                    style: TextStyle(
+                Text(widget.locationPrompt,
+                    style: const TextStyle(
                         color: AppTheme.white,
                         fontSize: 13,
                         fontWeight: FontWeight.w700)),
-                SizedBox(height: 2),
-                Text('Allow location for nearby deals',
-                    style: TextStyle(color: AppTheme.muted, fontSize: 12)),
+                const SizedBox(height: 2),
+                Text(widget.locationSub,
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
               ],
             ),
           ),
@@ -328,9 +345,9 @@ class _LocationPromptCardState extends State<_LocationPromptCard> {
                     height: 14,
                     child: CircularProgressIndicator(
                         strokeWidth: 2, color: Colors.black))
-                : const Text('Allow',
+                : Text(widget.allowLabel,
                     style:
-                        TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
+                        const TextStyle(fontWeight: FontWeight.w700, fontSize: 12)),
           ),
           const SizedBox(width: 4),
           GestureDetector(

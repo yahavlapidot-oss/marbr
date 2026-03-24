@@ -5,6 +5,8 @@ import 'package:go_router/go_router.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
@@ -22,16 +24,16 @@ final snakeLeaderboardProvider =
 
 // ── QR Scan Sheet ─────────────────────────────────────────────────────────────
 
-class _SnakeScanSheet extends StatefulWidget {
+class _SnakeScanSheet extends ConsumerStatefulWidget {
   final String campaignId;
   final VoidCallback onSuccess;
   const _SnakeScanSheet({required this.campaignId, required this.onSuccess});
 
   @override
-  State<_SnakeScanSheet> createState() => _SnakeScanSheetState();
+  ConsumerState<_SnakeScanSheet> createState() => _SnakeScanSheetState();
 }
 
-class _SnakeScanSheetState extends State<_SnakeScanSheet> {
+class _SnakeScanSheetState extends ConsumerState<_SnakeScanSheet> {
   final _ctrl = MobileScannerController();
   bool _processing = false;
   String? _error;
@@ -47,6 +49,9 @@ class _SnakeScanSheetState extends State<_SnakeScanSheet> {
     final code = capture.barcodes.firstOrNull?.rawValue;
     if (code == null) return;
 
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     setState(() { _processing = true; _error = null; });
     _ctrl.stop();
 
@@ -60,16 +65,16 @@ class _SnakeScanSheetState extends State<_SnakeScanSheet> {
     } on DioException catch (e) {
       final data = e.response?.data;
       final msg = data is Map ? data['message']?.toString() : null;
-      String errorMsg = 'Could not scan this code. Try again.';
+      String errorMsg = t('code_error');
       if (msg != null) {
         if (msg.contains('not active')) {
-          errorMsg = 'This campaign is not active right now.';
+          errorMsg = t('not_active');
         } else if (msg.contains('Entry limit') || msg.contains('already')) {
           // Already has an entry — let them play
           widget.onSuccess();
           return;
         } else if (msg.contains('venue')) {
-          errorMsg = 'You must be at the venue to scan.';
+          errorMsg = t('must_be_at_venue');
         } else {
           errorMsg = msg;
         }
@@ -77,13 +82,17 @@ class _SnakeScanSheetState extends State<_SnakeScanSheet> {
       setState(() { _processing = false; _error = errorMsg; });
       _ctrl.start();
     } catch (_) {
-      setState(() { _processing = false; _error = 'Something went wrong. Try again.'; });
+      final locale = ref.read(localeProvider);
+      setState(() { _processing = false; _error = AppL10n.of(locale, 'went_wrong'); });
       _ctrl.start();
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Container(
       height: MediaQuery.of(context).size.height * 0.72,
       decoration: const BoxDecoration(
@@ -112,16 +121,16 @@ class _SnakeScanSheetState extends State<_SnakeScanSheet> {
                   padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
                     children: [
-                      const Expanded(
+                      Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text('Scan to Play 🐍',
-                              style: TextStyle(color: Colors.white, fontSize: 18,
+                            Text(t('scan_to_play'),
+                              style: const TextStyle(color: Colors.white, fontSize: 18,
                                   fontWeight: FontWeight.w800)),
-                            SizedBox(height: 2),
-                            Text('Point camera at the QR code at the bar',
-                              style: TextStyle(color: Colors.white60, fontSize: 13)),
+                            const SizedBox(height: 2),
+                            Text(t('point_camera_bar'),
+                              style: const TextStyle(color: Colors.white60, fontSize: 13)),
                           ],
                         ),
                       ),
@@ -188,10 +197,10 @@ class _SnakeScanSheetState extends State<_SnakeScanSheet> {
                         color: Colors.black.withAlpha(140),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'Show this screen to the bartender',
+                      child: Text(
+                        t('show_bartender'),
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: Colors.white70, fontSize: 13),
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
                       ),
                     ),
                 ],
@@ -325,6 +334,9 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final campaign = ref.watch(snakeCampaignProvider(widget.campaignId));
     final leaderboard = ref.watch(snakeLeaderboardProvider(widget.campaignId));
 
@@ -336,8 +348,8 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
           onPressed: () => context.pop(),
         ),
         title: campaign.maybeWhen(
-          data: (c) => Text(c['name'] ?? 'Snake Game'),
-          orElse: () => const Text('Snake Game'),
+          data: (c) => Text(c['name'] ?? t('snake_game')),
+          orElse: () => Text(t('snake_game')),
         ),
       ),
       body: Column(
@@ -366,16 +378,16 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Row(children: [
-                            Text('🐍', style: TextStyle(fontSize: 22)),
-                            SizedBox(width: 8),
-                            Text('Snake Leaderboard',
-                              style: TextStyle(color: AppTheme.gold, fontSize: 16, fontWeight: FontWeight.w700)),
+                          Row(children: [
+                            const Text('🐍', style: TextStyle(fontSize: 22)),
+                            const SizedBox(width: 8),
+                            Text(t('snake_leaderboard'),
+                              style: const TextStyle(color: AppTheme.gold, fontSize: 16, fontWeight: FontWeight.w700)),
                           ]),
                           const SizedBox(height: 8),
-                          const Text(
-                            'One game per player. Top scorers when the campaign ends win the prize. Eat as many apples as you can!',
-                            style: TextStyle(color: AppTheme.subtle, fontSize: 13, height: 1.5),
+                          Text(
+                            t('snake_rules'),
+                            style: const TextStyle(color: AppTheme.subtle, fontSize: 13, height: 1.5),
                           ),
                           const SizedBox(height: 12),
                           campaign.maybeWhen(
@@ -384,7 +396,7 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                               if (endsAt == null) return const SizedBox.shrink();
                               final left = endsAt.difference(DateTime.now());
                               if (left.isNegative) {
-                                return const Text('Campaign ended', style: TextStyle(color: AppTheme.muted, fontSize: 12));
+                                return Text(t('campaign_ended'), style: const TextStyle(color: AppTheme.muted, fontSize: 12));
                               }
                               final label = left.inHours > 0
                                   ? '${left.inHours}h ${left.inMinutes % 60}m left'
@@ -406,12 +418,12 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                     // Leaderboard
                     Row(
                       children: [
-                        const Text('LEADERBOARD',
-                          style: TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+                        Text('LEADERBOARD',
+                          style: const TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
                         const Spacer(),
                         leaderboard.maybeWhen(
                           data: (lb) => Text(
-                            '${lb['totalPlayers']} players',
+                            '${lb['totalPlayers']} ${t('players')}',
                             style: const TextStyle(color: AppTheme.muted, fontSize: 12),
                           ),
                           orElse: () => const SizedBox.shrink(),
@@ -428,7 +440,7 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                         ),
                       ),
                       error: (e, _) => Center(
-                        child: Text('Could not load leaderboard', style: const TextStyle(color: AppTheme.muted)),
+                        child: Text(t('could_not_load_lb'), style: const TextStyle(color: AppTheme.muted)),
                       ),
                       data: (lb) {
                         final entries = lb['leaderboard'] as List? ?? [];
@@ -452,8 +464,8 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
-                                        const Text('Your score', style: TextStyle(color: AppTheme.muted, fontSize: 11)),
-                                        Text('${myScore['score']} pts · ${myScore['foodEaten']} foods',
+                                        Text(t('your_score'), style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
+                                        Text('${myScore['score']} ${t('pts')} · ${myScore['foodEaten']} ${t('foods_eaten')}',
                                           style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w700)),
                                       ],
                                     ),
@@ -465,10 +477,10 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                             ],
 
                             if (entries.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.all(32),
-                                child: Text('No scores yet. Be the first!',
-                                  style: TextStyle(color: AppTheme.muted),
+                              Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Text(t('no_scores'),
+                                  style: const TextStyle(color: AppTheme.muted),
                                   textAlign: TextAlign.center,
                                 ),
                               )
@@ -507,7 +519,7 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                                         children: [
                                           Text(entry['name'] ?? 'Anonymous',
                                             style: const TextStyle(color: AppTheme.white, fontWeight: FontWeight.w600)),
-                                          Text('${entry['foodEaten']} foods eaten',
+                                          Text('${entry['foodEaten']} ${t('foods_eaten')}',
                                             style: const TextStyle(color: AppTheme.muted, fontSize: 11)),
                                         ],
                                       ),
@@ -547,7 +559,7 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                         : () => _openScanner(context, ref),
                     icon: Text(alreadyPlayed ? '✓' : '🐍',
                         style: const TextStyle(fontSize: 18)),
-                    label: Text(alreadyPlayed ? 'ALREADY PLAYED' : 'SCAN TO PLAY'),
+                    label: Text(alreadyPlayed ? t('already_played') : t('scan_to_play_btn')),
                   ),
                 ),
               );
@@ -559,7 +571,7 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () => _openScanner(context, ref),
                   icon: const Text('🐍', style: TextStyle(fontSize: 18)),
-                  label: const Text('SCAN TO PLAY'),
+                  label: Text(t('scan_to_play_btn')),
                 ),
               ),
             ),

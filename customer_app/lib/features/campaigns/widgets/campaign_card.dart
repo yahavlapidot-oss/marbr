@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
-
-String _distanceLabel(double meters) {
-  if (meters < 100) return 'Here now';
-  if (meters < 1000) return '~${meters.round()}m';
-  return '~${(meters / 1000).toStringAsFixed(1)}km';
-}
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 class _DistanceBadge extends StatelessWidget {
   final double meters;
-  const _DistanceBadge({required this.meters});
+  final String hereNowLabel;
+  const _DistanceBadge({required this.meters, required this.hereNowLabel});
+
+  String _distanceLabel() {
+    if (meters < 100) return hereNowLabel;
+    if (meters < 1000) return '~${meters.round()}m';
+    return '~${(meters / 1000).toStringAsFixed(1)}km';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +32,7 @@ class _DistanceBadge extends StatelessWidget {
               color: isHere ? const Color(0xFF22C55E) : AppTheme.gold),
           const SizedBox(width: 3),
           Text(
-            _distanceLabel(meters),
+            _distanceLabel(),
             style: TextStyle(
               color: isHere ? const Color(0xFF22C55E) : AppTheme.gold,
               fontSize: 10,
@@ -41,12 +45,15 @@ class _DistanceBadge extends StatelessWidget {
   }
 }
 
-class CampaignCard extends StatelessWidget {
+class CampaignCard extends ConsumerWidget {
   final Map<String, dynamic> campaign;
   const CampaignCard({super.key, required this.campaign});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final business = campaign['business'] as Map<String, dynamic>?;
     final endsAt = campaign['endsAt'] != null ? DateTime.tryParse(campaign['endsAt']) : null;
     final timeLeft = endsAt != null ? endsAt.difference(DateTime.now()) : Duration.zero;
@@ -55,7 +62,7 @@ class CampaignCard extends StatelessWidget {
     String timeLabel = '';
     if (endsAt != null) {
       if (timeLeft.isNegative) {
-        timeLabel = 'Ended';
+        timeLabel = t('ended');
       } else if (timeLeft.inMinutes < 60) {
         timeLabel = '${timeLeft.inMinutes}m left';
       } else if (timeLeft.inHours < 24) {
@@ -87,14 +94,17 @@ class CampaignCard extends StatelessWidget {
                       decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle),
                     ),
                     const SizedBox(width: 5),
-                    const Text('LIVE EVENT',
-                      style: TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                    Text(t('live_event'),
+                      style: const TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
                   ],
                 ),
                 const Spacer(),
                 // Distance badge (only when server returns _distanceMeters)
                 if (campaign['_distanceMeters'] != null && (campaign['_distanceMeters'] as num) != double.infinity) ...[
-                  _DistanceBadge(meters: (campaign['_distanceMeters'] as num).toDouble()),
+                  _DistanceBadge(
+                    meters: (campaign['_distanceMeters'] as num).toDouble(),
+                    hereNowLabel: t('here_now'),
+                  ),
                   const SizedBox(width: 6),
                 ],
                 if (timeLabel.isNotEmpty)
@@ -159,11 +169,11 @@ class CampaignCard extends StatelessWidget {
                       if (campaign['type'] == 'SNAKE') ...[
                         const Text('🐍', style: TextStyle(fontSize: 13)),
                         const SizedBox(width: 4),
-                        const Text('Play Now',
-                          style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                        Text(t('play_now'),
+                          style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
                       ] else
-                        const Text('Enter Now',
-                          style: TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                        Text(t('enter_now'),
+                          style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
                     ],
                   ),
                 ),

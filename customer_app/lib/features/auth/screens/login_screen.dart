@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -23,23 +25,26 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
-  String _parseError(DioException e) {
+  String _parseError(DioException e, String Function(String) t) {
     final data = e.response?.data;
     final msg = data is Map ? data['message']?.toString() : null;
     if (e.type == DioExceptionType.connectionTimeout ||
         e.type == DioExceptionType.receiveTimeout) {
-      return 'Request timed out. Try again.';
+      return t('timeout');
     }
     if (e.type == DioExceptionType.connectionError) {
-      return 'No connection. Check your internet.';
+      return t('no_connection');
     }
-    return msg ?? 'Something went wrong. Try again.';
+    return msg ?? t('went_wrong');
   }
 
   Future<void> _sendOtp() async {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final phone = _phoneCtrl.text.trim();
     if (phone.isEmpty) {
-      setState(() => _error = 'Please enter your phone number');
+      setState(() => _error = t('phone_required'));
       return;
     }
     setState(() { _loading = true; _error = null; });
@@ -48,7 +53,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       final devCode = res.data['devCode'] as String?;
       if (mounted) context.push('/otp', extra: {'target': phone, 'devCode': devCode});
     } on DioException catch (e) {
-      setState(() => _error = _parseError(e));
+      setState(() => _error = _parseError(e, t));
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -56,6 +61,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     return Scaffold(
       backgroundColor: AppTheme.bg,
       body: SafeArea(
@@ -90,25 +98,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       ),
                 ),
                 const SizedBox(height: 8),
-                const Text(
-                  'Real-time promos. Instant wins.\nRedeem on the spot.',
-                  style: TextStyle(color: AppTheme.muted, fontSize: 15, height: 1.5),
+                Text(
+                  t('tagline'),
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 15, height: 1.5),
                 ),
 
                 const Spacer(flex: 3),
 
-                const Text(
-                  'Enter your phone number',
-                  style: TextStyle(
+                Text(
+                  t('enter_phone'),
+                  style: const TextStyle(
                     color: AppTheme.white,
                     fontSize: 18,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
                 const SizedBox(height: 6),
-                const Text(
-                  "We'll send you a one-time code to sign in or create your account.",
-                  style: TextStyle(color: AppTheme.muted, fontSize: 14, height: 1.4),
+                Text(
+                  t('phone_sub'),
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 14, height: 1.4),
                 ),
                 const SizedBox(height: 20),
 
@@ -116,9 +124,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   controller: _phoneCtrl,
                   keyboardType: TextInputType.phone,
                   style: const TextStyle(color: AppTheme.white, fontSize: 16),
-                  decoration: const InputDecoration(
-                    hintText: '+972 50 000 0000',
-                    prefixIcon: Icon(Icons.phone_outlined, color: AppTheme.muted, size: 20),
+                  decoration: InputDecoration(
+                    hintText: t('phone_ph'),
+                    prefixIcon: const Icon(Icons.phone_outlined, color: AppTheme.muted, size: 20),
                   ),
                   onSubmitted: (_) => _sendOtp(),
                 ),
@@ -151,7 +159,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             child: CircularProgressIndicator(
                                 strokeWidth: 2, color: Colors.black),
                           )
-                        : const Text('Continue'),
+                        : Text(t('continue_btn')),
                   ),
                 ),
 

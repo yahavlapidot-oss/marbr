@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 
 final favoritesProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await createDio().get('/me/favorites');
@@ -13,6 +15,9 @@ class FavoritesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final favs = ref.watch(favoritesProvider);
 
     return Scaffold(
@@ -22,7 +27,7 @@ class FavoritesScreen extends ConsumerWidget {
           icon: const Icon(Icons.arrow_back_ios, size: 18),
           onPressed: () => Navigator.of(context).maybePop(),
         ),
-        title: const Text('Favorite Venues'),
+        title: Text(t('favorites_title')),
       ),
       body: favs.when(
         loading: () => const Center(child: CircularProgressIndicator(color: AppTheme.gold, strokeWidth: 2)),
@@ -32,29 +37,29 @@ class FavoritesScreen extends ConsumerWidget {
             children: [
               const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
               const SizedBox(height: 12),
-              const Text('Could not load favorites',
-                style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+              Text(t('could_not_load_fav'),
+                style: const TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
               const SizedBox(height: 8),
               TextButton(
                 onPressed: () => ref.refresh(favoritesProvider),
-                child: const Text('Retry', style: TextStyle(color: AppTheme.gold)),
+                child: Text(t('retry'), style: const TextStyle(color: AppTheme.gold)),
               ),
             ],
           ),
         ),
         data: (list) {
           if (list.isEmpty) {
-            return const Center(
+            return Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(Icons.favorite_border, size: 48, color: AppTheme.muted),
-                  SizedBox(height: 12),
-                  Text('No favorites yet',
-                    style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
-                  SizedBox(height: 4),
-                  Text('Save venues to follow their campaigns',
-                    style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                  const Icon(Icons.favorite_border, size: 48, color: AppTheme.muted),
+                  const SizedBox(height: 12),
+                  Text(t('no_favorites'),
+                    style: const TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 4),
+                  Text(t('save_venues'),
+                    style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
                 ],
               ),
             );

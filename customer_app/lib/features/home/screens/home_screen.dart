@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import '../../../core/api_client.dart';
 import '../../../core/device_service.dart';
 import '../../../core/theme.dart';
+import '../../../core/l10n/app_l10n.dart';
+import '../../../core/locale_provider.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
 
@@ -33,24 +35,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   }
 
   Future<void> _confirmLeave(BuildContext context, WidgetRef ref, String campaignName) async {
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1a1a24),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('Leave Campaign?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        title: Text(t('leave_campaign'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
         content: Text(
-          'Are you sure you want to leave "$campaignName"? You can join a different campaign afterwards.',
+          t('leave_confirm'),
           style: const TextStyle(color: Color(0xFF9b9bae), height: 1.5),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Stay', style: TextStyle(color: Color(0xFF9b9bae))),
+            child: Text(t('stay'), style: const TextStyle(color: Color(0xFF9b9bae))),
           ),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Leave', style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700)),
+            child: Text(t('leave'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700)),
           ),
         ],
       ),
@@ -63,6 +68,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final locale = ref.watch(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
     // Home screen loads campaigns without location filter (null position)
     final campaigns = ref.watch(activeCampaignsProvider(null));
     final enrollment = ref.watch(activeCampaignEnrollmentProvider);
@@ -94,8 +102,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   letterSpacing: -0.5,
                                 )),
                               const SizedBox(height: 2),
-                              const Text('Live campaigns near you',
-                                style: TextStyle(color: AppTheme.subtle, fontSize: 13)),
+                              Text(t('live_campaigns'),
+                                style: const TextStyle(color: AppTheme.subtle, fontSize: 13)),
                             ],
                           ),
                           GestureDetector(
@@ -148,14 +156,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 child: const Icon(Icons.qr_code_scanner, color: Colors.black, size: 24),
                               ),
                               const SizedBox(width: 14),
-                              const Column(
+                              Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Text('SCAN QR TO ENTER',
-                                    style: TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.8)),
-                                  SizedBox(height: 2),
-                                  Text('Scan your purchase code to participate',
-                                    style: TextStyle(color: Colors.black54, fontSize: 12)),
+                                  Text(t('scan_qr_enter'),
+                                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.8)),
+                                  const SizedBox(height: 2),
+                                  Text(t('scan_purchase_code'),
+                                    style: const TextStyle(color: Colors.black54, fontSize: 12)),
                                 ],
                               ),
                               const Spacer(),
@@ -199,8 +207,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      const Text('Currently enrolled',
-                                        style: TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
+                                      Text(t('currently_enrolled'),
+                                        style: const TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
                                       Text(name,
                                         style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
                                     ],
@@ -215,8 +223,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(color: Colors.redAccent.withAlpha(60)),
                                     ),
-                                    child: const Text('Leave',
-                                      style: TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
+                                    child: Text(t('leave'),
+                                      style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
                                   ),
                                 ),
                               ],
@@ -226,8 +234,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         orElse: () => const SizedBox.shrink(),
                       ),
 
-                      const Text('LIVE NOW',
-                        style: TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
+                      Text(t('live_now'),
+                        style: const TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),
                       const SizedBox(height: 12),
                     ],
                   ),
@@ -245,28 +253,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       children: [
                         const Icon(Icons.wifi_off, color: AppTheme.muted, size: 40),
                         const SizedBox(height: 12),
-                        const Text('Could not load campaigns',
-                          style: TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
+                        Text(t('could_not_load'),
+                          style: const TextStyle(color: AppTheme.subtle, fontSize: 15, fontWeight: FontWeight.w600)),
                         const SizedBox(height: 4),
-                        const Text('Pull down to retry',
-                          style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                        Text(t('pull_retry'),
+                          style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
                       ],
                     ),
                   ),
                 ),
                 data: (list) => list.isEmpty
-                    ? const SliverFillRemaining(
+                    ? SliverFillRemaining(
                         child: Center(
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.local_bar_outlined, color: AppTheme.muted, size: 48),
-                              SizedBox(height: 12),
-                              Text('No live campaigns right now',
-                                style: TextStyle(color: AppTheme.muted, fontSize: 15)),
-                              SizedBox(height: 4),
-                              Text('Check back soon',
-                                style: TextStyle(color: AppTheme.muted, fontSize: 13)),
+                              const Icon(Icons.local_bar_outlined, color: AppTheme.muted, size: 48),
+                              const SizedBox(height: 12),
+                              Text(t('no_live_campaigns'),
+                                style: const TextStyle(color: AppTheme.muted, fontSize: 15)),
+                              const SizedBox(height: 4),
+                              Text(t('check_back'),
+                                style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
                             ],
                           ),
                         ),
