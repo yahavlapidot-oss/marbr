@@ -100,9 +100,17 @@ class _OtpScreenState extends ConsumerState<OtpScreen> {
       });
       await _storage.write(key: 'accessToken', value: res.data['accessToken']);
       await _storage.write(key: 'refreshToken', value: res.data['refreshToken']);
-      if (mounted) ref.read(authNotifierProvider).setToken(res.data['accessToken'] as String);
-      // Register device for push notifications (fire and forget)
-      DeviceService().registerDevice();
+      final isNewUser = res.data['isNewUser'] == true;
+      if (mounted) {
+        if (isNewUser) {
+          // New user — ask for their name before logging in
+          context.push('/setup-name');
+        } else {
+          ref.read(authNotifierProvider).setToken(res.data['accessToken'] as String);
+          // Register device for push notifications (fire and forget)
+          DeviceService().registerDevice();
+        }
+      }
     } on DioException catch (e) {
       _attempts++;
       final data = e.response?.data;

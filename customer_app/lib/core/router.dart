@@ -5,7 +5,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import '../features/auth/screens/login_screen.dart';
 import '../features/auth/screens/otp_screen.dart';
-import '../features/auth/screens/register_screen.dart';
+import '../features/auth/screens/setup_name_screen.dart';
 import '../features/home/screens/home_screen.dart';
 import '../features/discover/screens/discover_screen.dart';
 import '../features/campaigns/screens/campaign_detail_screen.dart';
@@ -67,14 +67,13 @@ final routerProvider = Provider<GoRouter>((ref) {
       final isAuthRoute =
           state.matchedLocation.startsWith('/login') ||
           state.matchedLocation.startsWith('/otp') ||
-          state.matchedLocation.startsWith('/register');
+          state.matchedLocation.startsWith('/setup-name');
       if (!isAuth && !isAuthRoute) return '/login';
       if (isAuth && isAuthRoute) return '/home';
       return null;
     },
     routes: [
       GoRoute(path: '/login', builder: (_, _) => const LoginScreen()),
-      GoRoute(path: '/register', builder: (_, _) => const RegisterScreen()),
       GoRoute(
         path: '/otp',
         builder: (_, state) {
@@ -85,6 +84,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           );
         },
       ),
+      GoRoute(path: '/setup-name', builder: (_, _) => const SetupNameScreen()),
       ShellRoute(
         builder: (context, state, child) => ShellScreen(child: child),
         routes: [

@@ -151,7 +151,9 @@ export class AuthService {
       where: isPhone ? { phone: dto.target } : { email: dto.target },
     });
 
+    let isNewUser = false;
     if (!user) {
+      isNewUser = true;
       user = await this.prisma.user.create({
         data: {
           fullName: dto.target,
@@ -176,6 +178,7 @@ export class AuthService {
         phone: user.phone,
         role: user.role,
       },
+      isNewUser,
       ...tokens,
     };
   }
