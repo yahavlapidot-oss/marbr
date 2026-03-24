@@ -52,28 +52,28 @@ export default function ProductsPage() {
 
       {showForm && (
         <Card>
-          <CardHeader><CardTitle>New Product</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('products_new')}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit((d) => create.mutate(d))} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
-                <Label>{t('settings_name')}</Label>
+                <Label>{t('products_name')}</Label>
                 <Input placeholder="Heineken 330ml" {...register('name', { required: true })} />
               </div>
               <div className="space-y-1.5 col-span-2">
-                <Label>{t('settings_description')}</Label>
+                <Label>{t('products_description')}</Label>
                 <Input placeholder="Optional description" {...register('description')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Price</Label>
+                <Label>{t('products_price')}</Label>
                 <Input type="number" step="0.01" placeholder="12.00" {...register('price', { valueAsNumber: true })} />
               </div>
               <div className="space-y-1.5">
-                <Label>SKU</Label>
+                <Label>{t('products_sku')}</Label>
                 <Input placeholder="HNK-330" {...register('sku')} />
               </div>
               <div className="col-span-2 flex gap-2">
                 <Button type="submit" disabled={create.isPending}>
-                  {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />} {t('save')}
+                  {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />} {t('products_save')}
                 </Button>
                 <Button variant="outline" type="button" onClick={() => setShowForm(false)}>{t('cancel')}</Button>
               </div>

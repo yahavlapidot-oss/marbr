@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 
 const schema = z.object({
   name: z.string().min(2),
@@ -34,6 +35,7 @@ type FormData = z.infer<typeof schema>;
 export default function NewCampaignPage() {
   const router = useRouter();
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
   const [error, setError] = useState('');
 
   const {
@@ -94,8 +96,8 @@ export default function NewCampaignPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-white">New Campaign</h1>
-          <p className="text-[#6b6b80] text-sm">Create a promotion or game</p>
+          <h1 className="text-2xl font-bold text-white">{t('campaign_new_title')}</h1>
+          <p className="text-[#6b6b80] text-sm">{t('campaign_new_sub')}</p>
         </div>
       </div>
 
@@ -104,44 +106,44 @@ export default function NewCampaignPage() {
           <CardHeader><CardTitle>Basic Info</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Campaign Name *</Label>
+              <Label>{t('campaign_name')} *</Label>
               <Input placeholder="e.g. Happy Hour Snake" {...register('name')} />
               {errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
             </div>
 
             <div className="space-y-1.5">
-              <Label>Campaign Type *</Label>
+              <Label>{t('campaign_type')} *</Label>
               <Select
                 value={campaignType}
                 onValueChange={(v) => setValue('type', v as FormData['type'])}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder={t('campaign_type_select')} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="RAFFLE">Raffle (random winner at end)</SelectItem>
-                  <SelectItem value="INSTANT_WIN">Instant Win</SelectItem>
-                  <SelectItem value="EVERY_N">Every N Entries Wins</SelectItem>
-                  <SelectItem value="WEIGHTED_ODDS">Weighted Odds</SelectItem>
-                  <SelectItem value="SNAKE">🐍 Snake Leaderboard</SelectItem>
+                  <SelectItem value="RAFFLE">{t('campaigns_type_raffle')}</SelectItem>
+                  <SelectItem value="INSTANT_WIN">{t('campaigns_type_instant')}</SelectItem>
+                  <SelectItem value="EVERY_N">{t('campaigns_type_every_n')}</SelectItem>
+                  <SelectItem value="WEIGHTED_ODDS">{t('campaigns_type_weighted')}</SelectItem>
+                  <SelectItem value="SNAKE">🐍 {t('campaigns_type_snake')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             {isSnake && (
               <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 space-y-3">
-                <p className="text-amber-400 text-sm font-medium">🐍 Snake Game Campaign</p>
+                <p className="text-amber-400 text-sm font-medium">🐍 {t('campaign_snake_section')}</p>
                 <p className="text-[#6b6b80] text-xs">
                   Customers play Snake on their phone. One game per player. Top scorers win when the campaign ends.
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
-                    <Label>Number of winners</Label>
+                    <Label>{t('campaign_snake_winners')}</Label>
                     <Input type="number" min={1} placeholder="3" {...register('topN', { valueAsNumber: true })} />
                     <p className="text-[#6b6b80] text-xs">Top N scores win the reward</p>
                   </div>
                   <div className="space-y-1.5">
-                    <Label>Reward name</Label>
+                    <Label>{t('campaign_snake_reward')}</Label>
                     <Input placeholder="Free drinks" {...register('rewardName')} />
                   </div>
                 </div>
@@ -150,14 +152,14 @@ export default function NewCampaignPage() {
 
             {campaignType === 'EVERY_N' && (
               <div className="space-y-1.5">
-                <Label>Win every N entries</Label>
+                <Label>{t('campaign_every_n')}</Label>
                 <Input type="number" min={2} placeholder="e.g. 10" {...register('everyN', { valueAsNumber: true })} />
               </div>
             )}
 
             {campaignType === 'WEIGHTED_ODDS' && (
               <div className="space-y-1.5">
-                <Label>Win probability (0–1)</Label>
+                <Label>{t('campaign_odds')}</Label>
                 <Input type="number" step="0.01" min={0} max={1} placeholder="e.g. 0.1" {...register('winProbability', { valueAsNumber: true })} />
               </div>
             )}
@@ -172,29 +174,29 @@ export default function NewCampaignPage() {
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Schedule</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('campaign_schedule')}</CardTitle></CardHeader>
           <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
-              <Label>Starts at</Label>
+              <Label>{t('campaign_starts')}</Label>
               <Input type="datetime-local" {...register('startsAt')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Ends at {isSnake && <span className="text-amber-400">(required for Snake)</span>}</Label>
+              <Label>{t('campaign_ends')} {isSnake && <span className="text-amber-400">(required for Snake)</span>}</Label>
               <Input type="datetime-local" {...register('endsAt')} />
             </div>
           </CardContent>
         </Card>
 
         <Card>
-          <CardHeader><CardTitle>Push Notification</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('campaign_push_section')}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
-              <Label>Title</Label>
-              <Input placeholder={isSnake ? '🐍 Snake challenge is live!' : '🍺 Happy Hour is live!'} {...register('pushTitle')} />
+              <Label>{t('campaign_push_title')}</Label>
+              <Input placeholder={isSnake ? '🐍 Snake challenge is live!' : t('campaign_push_ph_title')} {...register('pushTitle')} />
             </div>
             <div className="space-y-1.5">
-              <Label>Message</Label>
-              <Input placeholder={isSnake ? 'Play Snake and top the leaderboard to win!' : 'Buy a Heineken and enter to win!'} {...register('pushBody')} />
+              <Label>{t('campaign_push_body')}</Label>
+              <Input placeholder={isSnake ? 'Play Snake and top the leaderboard to win!' : t('campaign_push_ph_body')} {...register('pushBody')} />
             </div>
           </CardContent>
         </Card>
@@ -205,11 +207,11 @@ export default function NewCampaignPage() {
 
         <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
           <Button variant="outline" type="button" asChild>
-            <Link href="/campaigns">Cancel</Link>
+            <Link href="/campaigns">{t('cancel')}</Link>
           </Button>
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="h-4 w-4 animate-spin" />}
-            Create Campaign
+            {isSubmitting ? t('campaign_submitting') : t('campaign_submit')}
           </Button>
         </div>
       </form>

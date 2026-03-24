@@ -67,38 +67,39 @@ export default function EmployeesPage() {
 
       {showForm && (
         <Card>
-          <CardHeader><CardTitle>Invite Employee</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('employees_invite')}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit((d) => invite.mutate(d))} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
-                <Label>Email</Label>
+                <Label>{t('employees_email')}</Label>
                 <Input placeholder="employee@email.com" {...register('email', { required: true })} />
               </div>
               <div className="space-y-1.5">
-                <Label>Role</Label>
+                <Label>{t('employees_role')}</Label>
                 <select
                   {...register('role', { required: true })}
                   className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
                 >
-                  <option value="">Select role…</option>
+                  <option value="">{t('employees_role_select')}</option>
                   {ROLES.map((r) => <option key={r} value={r}>{r}</option>)}
                 </select>
               </div>
               <div className="space-y-1.5">
-                <Label>Branch (optional)</Label>
+                <Label>{t('employees_branch')}</Label>
                 <select
                   {...register('branchId')}
                   className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
                 >
-                  <option value="">All branches</option>
+                  <option value="">{t('employees_all_branches')}</option>
                   {branches?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
                 </select>
               </div>
               <div className="col-span-2 flex gap-2">
                 <Button type="submit" disabled={invite.isPending}>
-                  {invite.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Send Invite
+                  {invite.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {invite.isPending ? t('employees_sending') : t('employees_send_invite')}
                 </Button>
-                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={() => setShowForm(false)}>{t('cancel')}</Button>
               </div>
             </form>
           </CardContent>
@@ -130,10 +131,10 @@ export default function EmployeesPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
-                  <th className="text-left px-4 py-3">Employee</th>
-                  <th className="text-left px-4 py-3">Role</th>
-                  <th className="text-left px-4 py-3">Branch</th>
-                  <th className="text-left px-4 py-3">Status</th>
+                  <th className="text-left px-4 py-3">{t('employees_col_employee')}</th>
+                  <th className="text-left px-4 py-3">{t('employees_col_role')}</th>
+                  <th className="text-left px-4 py-3">{t('employees_col_branch')}</th>
+                  <th className="text-left px-4 py-3">{t('employees_col_status')}</th>
                   <th className="px-4 py-3" />
                 </tr>
               </thead>
@@ -157,7 +158,7 @@ export default function EmployeesPage() {
                     <td className="px-4 py-3 text-[#6b6b80]">{e.branch?.name ?? '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${e.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {e.isActive ? 'Active' : 'Revoked'}
+                        {e.isActive ? t('active') : 'Revoked'}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">

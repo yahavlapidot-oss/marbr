@@ -36,7 +36,7 @@ export default function CustomersPage() {
         {customers && (
           <div className="flex items-center gap-2 text-sm text-[#6b6b80]">
             <Users className="h-4 w-4" />
-            {customers.length} total
+            {customers.length} {t('customers_total')}
           </div>
         )}
       </div>
@@ -58,10 +58,10 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
-                  <th className="text-left px-4 py-3">Customer</th>
-                  <th className="text-left px-4 py-3">Phone</th>
-                  <th className="text-left px-4 py-3">Entries</th>
-                  <th className="text-left px-4 py-3">Joined</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_customer')}</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_phone')}</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_entries')}</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_joined')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -86,10 +86,10 @@ export default function CustomersPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
-                  <th className="text-left px-4 py-3">Customer</th>
-                  <th className="text-left px-4 py-3">Phone</th>
-                  <th className="text-left px-4 py-3">Entries</th>
-                  <th className="text-left px-4 py-3">Joined</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_customer')}</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_phone')}</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_entries')}</th>
+                  <th className="text-left px-4 py-3">{t('customers_col_joined')}</th>
                 </tr>
               </thead>
               <tbody>

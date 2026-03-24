@@ -20,6 +20,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
 
 const ROTATE_EVERY = 60;
@@ -80,6 +81,7 @@ export default function CampaignDetailPage() {
   const { id } = useParams<{ id: string }>();
   const qc = useQueryClient();
   const businessId = useAuthStore((s) => s.businessId);
+  const t = useLocaleStore((s) => s.t);
 
   // UI state
   const [showAddReward, setShowAddReward] = useState(false);
@@ -281,7 +283,7 @@ export default function CampaignDetailPage() {
               strokeLinecap="round" transform="rotate(-90 26 26)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
             <text x="26" y="31" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">{countdown}</text>
           </svg>
-          <span className="text-white/50 text-sm">Refreshes automatically</span>
+          <span className="text-white/50 text-sm">{t('campaign_detail_qr_rotate')}</span>
         </div>
       </div>
     );
@@ -325,14 +327,14 @@ export default function CampaignDetailPage() {
           {campaign.status === 'DRAFT' && (
             <Button onClick={() => transition.mutate('publish')} disabled={isPending} className="bg-green-600 hover:bg-green-500">
               {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              Publish Campaign
+              {t('campaigns_publish')}
             </Button>
           )}
           {campaign.status === 'ACTIVE' && (
             <>
               <Button variant="outline" onClick={() => transition.mutate('pause')} disabled={isPending}>
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Pause className="h-4 w-4" />}
-                Pause
+                {t('campaigns_pause')}
               </Button>
               <Button
                 variant="outline"
@@ -343,7 +345,7 @@ export default function CampaignDetailPage() {
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
               >
                 <StopCircle className="h-4 w-4" />
-                End Campaign
+                {t('campaigns_end')}
               </Button>
             </>
           )}
@@ -351,7 +353,7 @@ export default function CampaignDetailPage() {
             <>
               <Button onClick={() => transition.mutate('resume')} disabled={isPending} className="bg-green-600 hover:bg-green-500">
                 {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                Resume
+                {t('campaigns_resume')}
               </Button>
               <Button
                 variant="outline"
@@ -362,7 +364,7 @@ export default function CampaignDetailPage() {
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
               >
                 <StopCircle className="h-4 w-4" />
-                End Campaign
+                {t('campaigns_end')}
               </Button>
             </>
           )}
@@ -377,10 +379,10 @@ export default function CampaignDetailPage() {
 
       {/* Stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatTile icon={Users} label="Total Entries" value={stats?.totalEntries ?? 0} />
-        <StatTile icon={Trophy} label="Winners" value={stats?.totalWinners ?? 0} />
-        <StatTile icon={CheckCircle} label="Redeemed" value={stats?.totalRedemptions ?? 0} />
-        <StatTile icon={TrendingUp} label="Conversion" value={`${stats?.conversionRate?.toFixed(1) ?? 0}%`} />
+        <StatTile icon={Users} label={t('campaign_detail_entries')} value={stats?.totalEntries ?? 0} />
+        <StatTile icon={Trophy} label={t('campaign_detail_winners')} value={stats?.totalWinners ?? 0} />
+        <StatTile icon={CheckCircle} label={t('redeem_status_redeemed')} value={stats?.totalRedemptions ?? 0} />
+        <StatTile icon={TrendingUp} label={t('campaign_detail_conversion')} value={`${stats?.conversionRate?.toFixed(1) ?? 0}%`} />
       </div>
 
       {/* Edit Campaign */}
@@ -393,7 +395,7 @@ export default function CampaignDetailPage() {
             <div className="flex items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-amber-500" />
-                Edit Campaign
+                {t('campaign_detail_edit')}
               </CardTitle>
               {showEdit ? <ChevronUp className="h-4 w-4 text-[#6b6b80]" /> : <ChevronDown className="h-4 w-4 text-[#6b6b80]" />}
             </div>
@@ -401,7 +403,7 @@ export default function CampaignDetailPage() {
           {showEdit && (
             <CardContent className="space-y-4 pt-0">
               <div className="space-y-1.5">
-                <Label>Campaign Name</Label>
+                <Label>{t('campaign_name')}</Label>
                 <Input {...register('name')} />
               </div>
               <div className="space-y-1.5">
@@ -410,11 +412,11 @@ export default function CampaignDetailPage() {
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Starts at</Label>
+                  <Label>{t('campaign_starts')}</Label>
                   <Input type="datetime-local" {...register('startsAt')} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Ends at</Label>
+                  <Label>{t('campaign_ends')}</Label>
                   <Input type="datetime-local" {...register('endsAt')} />
                 </div>
               </div>
@@ -426,22 +428,22 @@ export default function CampaignDetailPage() {
               )}
               {isEveryN && (
                 <div className="space-y-1.5">
-                  <Label>Win every N entries</Label>
+                  <Label>{t('campaign_every_n')}</Label>
                   <Input type="number" min={2} {...register('everyN', { valueAsNumber: true })} className="w-40" />
                 </div>
               )}
               {isWeightedOdds && (
                 <div className="space-y-1.5">
-                  <Label>Win probability (0–1)</Label>
+                  <Label>{t('campaign_odds')}</Label>
                   <Input type="number" step="0.01" min={0} max={1} {...register('winProbability', { valueAsNumber: true })} className="w-40" />
                 </div>
               )}
               <div className="space-y-1.5">
-                <Label>Push notification title</Label>
+                <Label>{t('campaign_push_title')}</Label>
                 <Input placeholder="e.g. 🍺 Happy Hour is live!" {...register('pushTitle')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Push notification message</Label>
+                <Label>{t('campaign_push_body')}</Label>
                 <Input placeholder="e.g. Buy a Heineken and enter to win!" {...register('pushBody')} />
               </div>
               <div className="flex gap-2 pt-1">
@@ -450,9 +452,9 @@ export default function CampaignDetailPage() {
                   disabled={editMutation.isPending}
                 >
                   {editMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle className="h-4 w-4" />}
-                  Save Changes
+                  {editMutation.isPending ? t('campaign_detail_saving') : t('campaign_detail_save')}
                 </Button>
-                <Button variant="ghost" onClick={() => setShowEdit(false)}>Cancel</Button>
+                <Button variant="ghost" onClick={() => setShowEdit(false)}>{t('cancel')}</Button>
               </div>
             </CardContent>
           )}
@@ -462,17 +464,17 @@ export default function CampaignDetailPage() {
       {/* Raffle draw */}
       {isRaffle && (
         <Card>
-          <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4 text-amber-500" /> Draw Winners</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4 text-amber-500" /> {t('campaign_detail_draw')}</CardTitle></CardHeader>
           <CardContent>
             <p className="text-sm text-[#6b6b80] mb-4">Randomly select winners from all entries. Each draw is final.</p>
             <div className="flex items-end gap-3">
               <div className="space-y-1.5">
-                <Label>Number of winners</Label>
+                <Label>{t('campaign_raffle_winners')}</Label>
                 <Input type="number" min="1" value={drawCount} onChange={(e) => setDrawCount(e.target.value)} className="w-32" />
               </div>
               <Button onClick={() => drawWinners.mutate(parseInt(drawCount) || 1)} disabled={drawWinners.isPending}>
                 {drawWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shuffle className="h-4 w-4" />}
-                Draw Now
+                {drawWinners.isPending ? t('campaign_detail_drawing') : t('campaign_detail_draw')}
               </Button>
             </div>
           </CardContent>
@@ -486,7 +488,7 @@ export default function CampaignDetailPage() {
             <CardHeader className="flex flex-row items-center justify-between">
               <CardTitle className="flex items-center gap-2">
                 <Gamepad2 className="h-4 w-4 text-amber-500" />
-                Live Leaderboard
+                {t('campaign_detail_leaderboard')}
                 <span className="text-xs text-[#6b6b80] font-normal ml-1">({totalPlayers} players · auto-refreshes)</span>
               </CardTitle>
             </CardHeader>
@@ -515,7 +517,7 @@ export default function CampaignDetailPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> Draw Snake Winners</CardTitle>
+              <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_snake_draw')}</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm text-[#6b6b80] mb-4">Award the top scorers. Only available after the campaign ends.</p>
@@ -525,7 +527,7 @@ export default function CampaignDetailPage() {
                 variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
               >
                 {drawSnakeWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
-                {campaign?.status === 'ENDED' ? 'Draw Winners Now' : 'Campaign must be ended first'}
+                {campaign?.status === 'ENDED' ? t('campaign_detail_snake_draw') : 'Campaign must be ended first'}
               </Button>
               {drawSnakeWinners.isSuccess && (
                 <div className="mt-4 space-y-2">
@@ -544,16 +546,16 @@ export default function CampaignDetailPage() {
 
       {/* QR Code */}
       <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><QrCode className="h-4 w-4 text-amber-500" /> QR Code</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="flex items-center gap-2"><QrCode className="h-4 w-4 text-amber-500" /> {t('campaign_detail_qr')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Branch</Label>
+            <Label>{t('qr_branch')}</Label>
             <select
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
               className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
             >
-              <option value="">Select branch…</option>
+              <option value="">{t('qr_select_branch')}</option>
               {branches?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
             </select>
           </div>
@@ -588,13 +590,13 @@ export default function CampaignDetailPage() {
               </div>
               <div className="flex gap-2 w-full">
                 <Button variant="outline" className="flex-1" onClick={() => setKiosk(true)}>
-                  <Maximize2 className="h-4 w-4 mr-1" /> Kiosk
+                  <Maximize2 className="h-4 w-4 mr-1" /> {t('campaign_detail_kiosk')}
                 </Button>
                 <Button variant="outline" className="flex-1" onClick={downloadQr}>
-                  <Download className="h-4 w-4 mr-1" /> Download
+                  <Download className="h-4 w-4 mr-1" /> {t('qr_download')}
                 </Button>
               </div>
-              <p className="text-[#6b6b80] text-xs text-center">Multiple customers can scan the same code. Rotates every 60s.</p>
+              <p className="text-[#6b6b80] text-xs text-center">{t('campaign_detail_qr_rotate')}</p>
             </div>
           )}
         </CardContent>
@@ -605,19 +607,19 @@ export default function CampaignDetailPage() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <ScanLine className="h-4 w-4 text-amber-500" />
-            Recent Entries
+            {t('campaign_detail_recent')}
             <span className="text-xs text-[#6b6b80] font-normal ml-1">(last {entries.length})</span>
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {entries.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-10 text-sm">No entries yet</p>
+            <p className="text-center text-[#6b6b80] py-10 text-sm">{t('campaign_detail_no_entries')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-[#2a2a38]">
-                    {['Customer', 'Method', 'Time'].map((h) => (
+                    {[t('campaign_detail_col_user'), t('campaign_detail_col_method'), t('campaign_detail_col_time')].map((h) => (
                       <th key={h} className="px-5 py-3 text-left text-xs font-medium text-[#6b6b80] uppercase">{h}</th>
                     ))}
                   </tr>
@@ -651,9 +653,9 @@ export default function CampaignDetailPage() {
       {/* Prizes / Rewards */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Prizes / Rewards</CardTitle>
+          <CardTitle>{t('campaign_detail_prizes')}</CardTitle>
           <Button size="sm" onClick={() => setShowAddReward(!showAddReward)}>
-            <Plus className="h-4 w-4" /> Add Prize
+            <Plus className="h-4 w-4" /> {t('campaign_detail_add_prize')}
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -661,16 +663,16 @@ export default function CampaignDetailPage() {
             <div className="rounded-lg border border-[#2a2a38] bg-[#1e1e2e] p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Name</Label>
+                  <Label>{t('campaign_prize_name')}</Label>
                   <Input placeholder="e.g. Free shots" value={rewardName} onChange={(e) => setRewardName(e.target.value)} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Quantity</Label>
+                  <Label>{t('campaign_prize_qty')}</Label>
                   <Input type="number" min="1" value={rewardInventory} onChange={(e) => setRewardInventory(e.target.value)} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Description (optional)</Label>
+                <Label>Description ({t('campaign_optional')})</Label>
                 <Input placeholder="Prize details..." value={rewardDesc} onChange={(e) => setRewardDesc(e.target.value)} />
               </div>
               <div className="flex gap-2">
@@ -679,9 +681,9 @@ export default function CampaignDetailPage() {
                   onClick={() => addReward.mutate({ name: rewardName, description: rewardDesc || undefined, inventory: parseInt(rewardInventory) || 1 })}
                   disabled={!rewardName || addReward.isPending}
                 >
-                  {addReward.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Prize'}
+                  {addReward.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('save')}
                 </Button>
-                <Button size="sm" variant="ghost" onClick={() => setShowAddReward(false)}>Cancel</Button>
+                <Button size="sm" variant="ghost" onClick={() => setShowAddReward(false)}>{t('cancel')}</Button>
               </div>
             </div>
           )}
@@ -697,7 +699,7 @@ export default function CampaignDetailPage() {
                   </div>
                   <div className="text-right text-sm">
                     <p className="text-white">{r.allocated ?? 0} / {r.inventory ?? '∞'}</p>
-                    <p className="text-xs text-[#6b6b80]">allocated</p>
+                    <p className="text-xs text-[#6b6b80]">{t('campaign_detail_allocated')}</p>
                   </div>
                 </div>
               ))}
@@ -708,7 +710,7 @@ export default function CampaignDetailPage() {
 
       {/* Campaign config (read-only) */}
       <Card>
-        <CardHeader><CardTitle>Configuration</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('campaign_detail_config')}</CardTitle></CardHeader>
         <CardContent className="space-y-3">
           {campaign?.description && (
             <div>
@@ -718,7 +720,7 @@ export default function CampaignDetailPage() {
           )}
           {campaign?.pushTitle && (
             <div>
-              <p className="text-xs text-[#6b6b80] mb-1">Push Notification</p>
+              <p className="text-xs text-[#6b6b80] mb-1">{t('campaign_push_section')}</p>
               <div className="rounded-lg bg-[#1e1e2e] border border-[#2a2a38] p-3">
                 <p className="font-medium text-white text-sm">{campaign.pushTitle}</p>
                 {campaign.pushBody && <p className="text-[#a1a1b5] text-sm mt-1">{campaign.pushBody}</p>}
@@ -734,13 +736,13 @@ export default function CampaignDetailPage() {
             )}
             {campaign?.everyN && (
               <div>
-                <p className="text-[#6b6b80]">Every N</p>
+                <p className="text-[#6b6b80]">{t('campaign_every_n')}</p>
                 <p className="text-white">{campaign.everyN}</p>
               </div>
             )}
             {campaign?.winProbability && (
               <div>
-                <p className="text-[#6b6b80]">Win probability</p>
+                <p className="text-[#6b6b80]">{t('campaign_odds')}</p>
                 <p className="text-white">{(campaign.winProbability * 100).toFixed(1)}%</p>
               </div>
             )}

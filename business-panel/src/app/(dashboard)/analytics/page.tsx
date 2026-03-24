@@ -33,7 +33,7 @@ export default function AnalyticsPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Entries by Campaign</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('analytics_entries_by_campaign')}</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="space-y-3 py-2">
@@ -49,7 +49,7 @@ export default function AnalyticsPage() {
               </div>
             </div>
           ) : chartData.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-12">No campaign data yet</p>
+            <p className="text-center text-[#6b6b80] py-12">{t('analytics_no_data')}</p>
           ) : (
             <ResponsiveContainer width="100%" height={320}>
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>

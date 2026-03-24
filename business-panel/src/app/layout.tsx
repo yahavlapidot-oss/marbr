@@ -1,10 +1,10 @@
 import type { Metadata } from 'next';
-import { Inter } from 'next/font/google';
+import { Heebo } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/providers';
 import { LocaleHtml } from '@/components/locale-html';
 
-const inter = Inter({ subsets: ['latin'] });
+const heebo = Heebo({ subsets: ['hebrew', 'latin'] });
 
 export const metadata: Metadata = {
   title: 'MrBar — Business Panel',
@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="he" dir="rtl" className="dark">
-      <body className={inter.className}>
+      <body className={heebo.className}>
         <Providers>
           <LocaleHtml />
           {children}

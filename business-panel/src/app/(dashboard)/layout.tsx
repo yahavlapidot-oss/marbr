@@ -7,11 +7,13 @@ import { Zap, X, Menu, Beer } from 'lucide-react';
 import { Toaster } from 'sonner';
 import { Sidebar } from '@/components/sidebar';
 import { useAuthStore } from '@/lib/auth-store';
+import { useLocaleStore } from '@/lib/locale-store';
 import { api } from '@/lib/api';
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const { user, businessId, _hasHydrated, setBusiness } = useAuthStore();
+  const t = useLocaleStore((s) => s.t);
   const [showBanner, setShowBanner] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
@@ -70,10 +72,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
               <Zap className="h-4 w-4 shrink-0" />
               <span className="text-xs sm:text-sm">
                 <span className="hidden sm:inline">You're on the </span>
-                <strong>Free plan</strong>
-                <span className="hidden sm:inline"> — limited to 1 active campaign.</span>{' '}
+                <strong>{t('banner_free_plan')}</strong>
+                <span className="hidden sm:inline"> — {t('banner_limited')}.</span>{' '}
                 <Link href="/billing" className="underline font-semibold hover:text-amber-200">
-                  Upgrade
+                  {t('banner_upgrade')}
                 </Link>
               </span>
             </div>

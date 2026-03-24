@@ -158,7 +158,7 @@ export default function QrPage() {
               {countdown}
             </text>
           </svg>
-          <span className="text-white/50 text-sm">Refreshes automatically</span>
+          <span className="text-white/50 text-sm">{t('qr_refreshes')}</span>
         </div>
       </div>
     );
@@ -175,13 +175,13 @@ export default function QrPage() {
         <CardHeader><CardTitle>Setup</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
-            <Label>Campaign</Label>
+            <Label>{t('qr_campaign')}</Label>
             <select
               value={campaignId}
               onChange={(e) => setCampaignId(e.target.value)}
               className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
             >
-              <option value="">Select campaign…</option>
+              <option value="">{t('qr_select_campaign')}</option>
               {campaigns?.filter((c: any) => c.status === 'ACTIVE').map((c: any) => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
@@ -189,13 +189,13 @@ export default function QrPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label>Branch</Label>
+            <Label>{t('qr_branch')}</Label>
             <select
               value={branchId}
               onChange={(e) => setBranchId(e.target.value)}
               className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
             >
-              <option value="">Select branch…</option>
+              <option value="">{t('qr_select_branch')}</option>
               {branches?.map((b: any) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}
@@ -214,6 +214,10 @@ export default function QrPage() {
           </Button>
         </CardContent>
       </Card>
+
+      {!campaignId && !qrDataUrl && (
+        <p className="text-center text-[#6b6b80] text-sm">{t('qr_no_campaign')}</p>
+      )}
 
       {qrDataUrl && (
         <Card>
@@ -263,15 +267,15 @@ export default function QrPage() {
 
             <div className="flex gap-2 w-full">
               <Button variant="outline" className="flex-1" onClick={() => setKiosk(true)}>
-                <Maximize2 className="h-4 w-4 mr-2" /> Kiosk Mode
+                <Maximize2 className="h-4 w-4 mr-2" /> {t('qr_kiosk')}
               </Button>
               <Button variant="outline" className="flex-1" onClick={download}>
-                <Download className="h-4 w-4 mr-2" /> Download
+                <Download className="h-4 w-4 mr-2" /> {t('qr_download')}
               </Button>
             </div>
 
             <p className="text-[#6b6b80] text-xs text-center">
-              Multiple customers can scan the same code. Rotates automatically — screenshots expire in 60s.
+              {t('qr_refreshes')}
             </p>
           </CardContent>
         </Card>

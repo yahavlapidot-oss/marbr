@@ -49,6 +49,15 @@ export default function CampaignsPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Duplicate failed'),
   });
 
+  const headers = [
+    t('campaigns_col_name'),
+    t('campaigns_col_type'),
+    t('campaigns_col_status'),
+    t('campaigns_col_entries'),
+    t('campaigns_col_ends'),
+    t('campaigns_col_actions'),
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
@@ -71,7 +80,7 @@ export default function CampaignsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#2a2a38]">
-                  {['Name', 'Type', 'Status', 'Entries', 'Ends', 'Actions'].map((h) => (
+                  {headers.map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-[#6b6b80] uppercase">{h}</th>
                   ))}
                 </tr>
@@ -97,9 +106,9 @@ export default function CampaignsPage() {
             </div>
           ) : !campaigns?.length ? (
             <div className="flex flex-col items-center py-16 text-center">
-              <p className="text-[#6b6b80] mb-4">No campaigns yet</p>
+              <p className="text-[#6b6b80] mb-4">{t('campaigns_empty')}</p>
               <Button asChild size="sm">
-                <Link href="/campaigns/new">Create your first campaign</Link>
+                <Link href="/campaigns/new">{t('campaigns_empty_sub')}</Link>
               </Button>
             </div>
           ) : (
@@ -107,7 +116,7 @@ export default function CampaignsPage() {
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#2a2a38]">
-                  {['Name', 'Type', 'Status', 'Entries', 'Ends', 'Actions'].map((h) => (
+                  {headers.map((h) => (
                     <th key={h} className="px-6 py-3 text-left text-xs font-medium text-[#6b6b80] uppercase">
                       {h}
                     </th>
@@ -154,7 +163,7 @@ export default function CampaignsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Publish"
+                            title={t('campaigns_publish')}
                             onClick={() => transition.mutate({ id: c.id, action: 'publish' })}
                           >
                             <Play className="h-4 w-4 text-green-400" />
@@ -164,7 +173,7 @@ export default function CampaignsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Pause"
+                            title={t('campaigns_pause')}
                             onClick={() => transition.mutate({ id: c.id, action: 'pause' })}
                           >
                             <Pause className="h-4 w-4 text-yellow-400" />
@@ -174,7 +183,7 @@ export default function CampaignsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="Resume"
+                            title={t('campaigns_resume')}
                             onClick={() => transition.mutate({ id: c.id, action: 'resume' })}
                           >
                             <Play className="h-4 w-4 text-green-400" />
@@ -184,7 +193,7 @@ export default function CampaignsPage() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            title="End"
+                            title={t('campaigns_end')}
                             onClick={() => transition.mutate({ id: c.id, action: 'end' })}
                           >
                             <StopCircle className="h-4 w-4 text-red-400" />
@@ -193,7 +202,7 @@ export default function CampaignsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title="Duplicate"
+                          title={t('campaigns_duplicate')}
                           onClick={() => duplicate.mutate(c.id)}
                           disabled={duplicate.isPending}
                         >

@@ -73,11 +73,11 @@ export default function RedeemPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Enter Reward Code</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('redeem_code')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="flex gap-2">
             <Input
-              placeholder="Paste or type reward code..."
+              placeholder={t('redeem_code_ph')}
               value={code}
               onChange={(e) => setCode(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && lookup()}
@@ -116,24 +116,24 @@ export default function RedeemPage() {
           <CardContent className="space-y-4">
             <div className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-[#6b6b80]">Customer</span>
+                <span className="text-[#6b6b80]">{t('redeem_customer')}</span>
                 <span className="text-white font-medium">{reward.user.fullName}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6b6b80]">Reward</span>
+                <span className="text-[#6b6b80]">{t('redeem_reward')}</span>
                 <span className="text-white font-medium">{reward.reward.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6b6b80]">Campaign</span>
+                <span className="text-[#6b6b80]">{t('redeem_campaign')}</span>
                 <span className="text-white">{reward.reward.campaign.name}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-[#6b6b80]">Won at</span>
+                <span className="text-[#6b6b80]">{t('rewards_col_won')}</span>
                 <span className="text-white">{formatDateTime(reward.wonAt)}</span>
               </div>
               {reward.expiresAt && (
                 <div className="flex justify-between">
-                  <span className="text-[#6b6b80]">Expires</span>
+                  <span className="text-[#6b6b80]">{t('redeem_expires')}</span>
                   <span className="text-yellow-400">{formatDateTime(reward.expiresAt)}</span>
                 </div>
               )}
@@ -142,13 +142,13 @@ export default function RedeemPage() {
             {reward.status === 'ACTIVE' && (
               <>
                 <div className="space-y-1.5">
-                  <Label>Branch</Label>
+                  <Label>{t('redeem_branch')}</Label>
                   <select
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
                     className="w-full rounded-lg border border-[#2a2a38] bg-[#1a1a24] px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
                   >
-                    <option value="">Select branch...</option>
+                    <option value="">{t('redeem_select_branch')}</option>
                     {(branches ?? []).map((b: any) => (
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
@@ -160,7 +160,7 @@ export default function RedeemPage() {
                   disabled={loading || !branchId}
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Mark as Redeemed
+                  {loading ? t('redeem_confirming') : t('redeem_confirm')}
                 </Button>
               </>
             )}

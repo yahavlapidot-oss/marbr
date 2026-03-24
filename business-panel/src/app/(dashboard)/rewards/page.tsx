@@ -53,13 +53,13 @@ export default function RewardsPage() {
           onChange={(e) => setSelectedCampaign(e.target.value)}
           className="rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm w-full sm:w-auto sm:min-w-[220px]"
         >
-          <option value="">Select campaign…</option>
+          <option value="">{t('rewards_filter_campaign')}</option>
           {campaigns?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#6b6b80]" />
           <Input
-            placeholder="Search by user or code…"
+            placeholder={t('rewards_search')}
             className="pl-9"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -90,17 +90,17 @@ export default function RewardsPage() {
               ))}
             </div>
           ) : filtered?.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-12">No rewards found</p>
+            <p className="text-center text-[#6b6b80] py-12">{t('rewards_empty')}</p>
           ) : (
             <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
-                  <th className="text-left px-4 py-3">Customer</th>
-                  <th className="text-left px-4 py-3">Reward</th>
-                  <th className="text-left px-4 py-3">Code</th>
-                  <th className="text-left px-4 py-3">Status</th>
-                  <th className="text-left px-4 py-3">Won At</th>
+                  <th className="text-left px-4 py-3">{t('rewards_col_customer')}</th>
+                  <th className="text-left px-4 py-3">{t('rewards_col_reward')}</th>
+                  <th className="text-left px-4 py-3">{t('rewards_col_code')}</th>
+                  <th className="text-left px-4 py-3">{t('rewards_col_status')}</th>
+                  <th className="text-left px-4 py-3">{t('rewards_col_won')}</th>
                 </tr>
               </thead>
               <tbody>

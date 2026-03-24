@@ -128,24 +128,24 @@ export default function BranchesPage() {
 
       {showForm && (
         <Card>
-          <CardHeader><CardTitle>New Branch</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('branches_new')}</CardTitle></CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit((d) => create.mutate(d))} className="space-y-5">
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label>Name *</Label>
+                  <Label>{t('branches_name')} *</Label>
                   <Input placeholder="Main Bar" {...register('name', { required: true })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Phone</Label>
+                  <Label>{t('branches_phone')}</Label>
                   <Input placeholder="+972..." {...register('phone')} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>City *</Label>
+                  <Label>{t('branches_city')} *</Label>
                   <Input placeholder="Tel Aviv" {...register('city', { required: true })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Address *</Label>
+                  <Label>{t('branches_address')} *</Label>
                   <Input placeholder="Rothschild Blvd 1" {...register('address', { required: true })} />
                 </div>
               </div>
@@ -160,7 +160,7 @@ export default function BranchesPage() {
                       {locationSet ? (
                         <span className="text-xs text-green-400 font-normal ml-1">✓ set</span>
                       ) : (
-                        <span className="text-xs text-[#6b6b80] font-normal ml-1">optional</span>
+                        <span className="text-xs text-[#6b6b80] font-normal ml-1">({t('campaign_optional')})</span>
                       )}
                     </Label>
                     <p className="text-xs text-[#6b6b80] mt-0.5">
@@ -177,7 +177,7 @@ export default function BranchesPage() {
                     {geocoding
                       ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" />
                       : <Search className="h-3.5 w-3.5 mr-1.5" />}
-                    Find on map
+                    {geocoding ? t('branches_geocoding') : t('branches_find_map')}
                   </Button>
                 </div>
 
@@ -200,9 +200,9 @@ export default function BranchesPage() {
 
               <div className="flex gap-2 pt-1">
                 <Button type="submit" disabled={create.isPending}>
-                  {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />} Save Branch
+                  {create.isPending && <Loader2 className="h-4 w-4 animate-spin" />} {t('save')}
                 </Button>
-                <Button variant="outline" type="button" onClick={cancelForm}>Cancel</Button>
+                <Button variant="outline" type="button" onClick={cancelForm}>{t('cancel')}</Button>
               </div>
             </form>
           </CardContent>
@@ -236,11 +236,11 @@ export default function BranchesPage() {
                 <div className="flex items-center gap-1">
                   {b.lat != null ? (
                     <span className="flex items-center gap-1 text-xs text-green-400 bg-green-400/10 px-2 py-0.5 rounded-full">
-                      <CheckCircle className="h-3 w-3" /> Located
+                      <CheckCircle className="h-3 w-3" /> {t('branches_located')}
                     </span>
                   ) : (
                     <span className="flex items-center gap-1 text-xs text-[#6b6b80] bg-[#2a2a38] px-2 py-0.5 rounded-full">
-                      <AlertCircle className="h-3 w-3" /> No location
+                      <AlertCircle className="h-3 w-3" /> {t('branches_no_location')}
                     </span>
                   )}
                   <Button variant="ghost" size="icon" onClick={() => remove.mutate(b.id)}>
