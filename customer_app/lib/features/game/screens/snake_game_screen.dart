@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -415,7 +416,7 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
             // Red death flash
             AnimatedBuilder(
               animation: _deathAnim,
-              builder: (_, __) {
+              builder: (_, child) {
                 final v = _deathAnim.value;
                 if (v == 0) return const SizedBox.shrink();
                 final alpha = v < 0.3
