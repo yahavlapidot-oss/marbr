@@ -45,11 +45,11 @@ export default function RewardsPage() {
         <p className="text-[#6b6b80] text-sm mt-1">View and track won & redeemed rewards</p>
       </div>
 
-      <div className="flex gap-4">
+      <div className="flex flex-col sm:flex-row gap-3">
         <select
           value={selectedCampaign}
           onChange={(e) => setSelectedCampaign(e.target.value)}
-          className="rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm min-w-[220px]"
+          className="rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm w-full sm:w-auto sm:min-w-[220px]"
         >
           <option value="">Select campaign…</option>
           {campaigns?.map((c: any) => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -90,6 +90,7 @@ export default function RewardsPage() {
           ) : filtered?.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-12">No rewards found</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
@@ -122,6 +123,7 @@ export default function RewardsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

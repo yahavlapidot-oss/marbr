@@ -134,7 +134,7 @@ export default function NewCampaignPage() {
                 <p className="text-[#6b6b80] text-xs">
                   Customers play Snake on their phone. One game per player. Top scorers win when the campaign ends.
                 </p>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>Number of winners</Label>
                     <Input type="number" min={1} placeholder="3" {...register('topN', { valueAsNumber: true })} />
@@ -173,7 +173,7 @@ export default function NewCampaignPage() {
 
         <Card>
           <CardHeader><CardTitle>Schedule</CardTitle></CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
+          <CardContent className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div className="space-y-1.5">
               <Label>Starts at</Label>
               <Input type="datetime-local" {...register('startsAt')} />
@@ -203,7 +203,7 @@ export default function NewCampaignPage() {
           <p className="text-sm text-red-400 bg-red-500/10 rounded-lg px-4 py-3">{error}</p>
         )}
 
-        <div className="flex gap-3 justify-end">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-3">
           <Button variant="outline" type="button" asChild>
             <Link href="/campaigns">Cancel</Link>
           </Button>

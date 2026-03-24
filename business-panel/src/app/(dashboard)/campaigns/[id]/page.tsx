@@ -408,7 +408,7 @@ export default function CampaignDetailPage() {
                 <Label>Description</Label>
                 <Input placeholder="Optional description" {...register('description')} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <Label>Starts at</Label>
                   <Input type="datetime-local" {...register('startsAt')} />
@@ -659,7 +659,7 @@ export default function CampaignDetailPage() {
         <CardContent className="space-y-4">
           {showAddReward && (
             <div className="rounded-lg border border-[#2a2a38] bg-[#1e1e2e] p-4 space-y-3">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label>Name</Label>
                   <Input placeholder="e.g. Free shots" value={rewardName} onChange={(e) => setRewardName(e.target.value)} />
@@ -725,7 +725,7 @@ export default function CampaignDetailPage() {
               </div>
             </div>
           )}
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             {!isSnake && (
               <div>
                 <p className="text-[#6b6b80]">Max entries / user</p>

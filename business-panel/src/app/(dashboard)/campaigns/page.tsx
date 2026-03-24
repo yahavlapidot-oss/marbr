@@ -65,6 +65,7 @@ export default function CampaignsPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#2a2a38]">
@@ -91,6 +92,7 @@ export default function CampaignsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           ) : !campaigns?.length ? (
             <div className="flex flex-col items-center py-16 text-center">
               <p className="text-[#6b6b80] mb-4">No campaigns yet</p>
@@ -99,6 +101,7 @@ export default function CampaignsPage() {
               </Button>
             </div>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
                 <tr className="border-b border-[#2a2a38]">
@@ -205,6 +208,7 @@ export default function CampaignsPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

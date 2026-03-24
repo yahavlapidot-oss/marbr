@@ -52,6 +52,7 @@ export default function CustomersPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
@@ -75,9 +76,11 @@ export default function CustomersPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           ) : filtered?.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-12">No customers found</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
@@ -103,6 +106,7 @@ export default function CustomersPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

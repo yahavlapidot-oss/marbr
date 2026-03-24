@@ -67,7 +67,7 @@ export default function EmployeesPage() {
         <Card>
           <CardHeader><CardTitle>Invite Employee</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit((d) => invite.mutate(d))} className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit((d) => invite.mutate(d))} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
                 <Label>Email</Label>
                 <Input placeholder="employee@email.com" {...register('email', { required: true })} />
@@ -106,6 +106,7 @@ export default function EmployeesPage() {
       <Card>
         <CardContent className="p-0">
           {isLoading ? (
+            <div className="overflow-x-auto">
             <div className="divide-y divide-[#2a2a38]">
               {Array.from({ length: 4 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 px-6 py-4">
@@ -119,9 +120,11 @@ export default function EmployeesPage() {
                 </div>
               ))}
             </div>
+            </div>
           ) : employees?.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-12">No employees yet</p>
           ) : (
+            <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a3a] text-[#6b6b80]">
@@ -166,6 +169,7 @@ export default function EmployeesPage() {
                 ))}
               </tbody>
             </table>
+            </div>
           )}
         </CardContent>
       </Card>

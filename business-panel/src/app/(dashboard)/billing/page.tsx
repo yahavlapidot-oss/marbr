@@ -295,7 +295,7 @@ function BillingContent() {
       {sub && sub.invoices.length > 0 && (
         <div>
           <h2 className="text-lg font-semibold text-white mb-4">Invoice History</h2>
-          <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl overflow-hidden">
+          <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-xl overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-[#2a2a38]">

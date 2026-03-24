@@ -52,7 +52,7 @@ export default function ProductsPage() {
         <Card>
           <CardHeader><CardTitle>New Product</CardTitle></CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit((d) => create.mutate(d))} className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleSubmit((d) => create.mutate(d))} className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5 col-span-2">
                 <Label>Name</Label>
                 <Input placeholder="Heineken 330ml" {...register('name', { required: true })} />

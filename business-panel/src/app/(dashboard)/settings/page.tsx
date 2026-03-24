@@ -221,7 +221,7 @@ export default function SettingsPage() {
               <Label>Description</Label>
               <Input placeholder="A brief description…" {...register('description')} />
             </div>
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>Email</Label>
                 <Input placeholder="contact@bar.com" {...register('email')} />
