@@ -185,11 +185,14 @@ class _RewardCardState extends ConsumerState<_RewardCard> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppTheme.surface,
+      isScrollControlled: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 40),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.fromLTRB(
+            24, 20, 24, MediaQuery.of(ctx).viewInsets.bottom + 40),
+        child: SingleChildScrollView(
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -234,7 +237,7 @@ class _RewardCardState extends ConsumerState<_RewardCard> {
               child: ElevatedButton.icon(
                 onPressed: () {
                   Clipboard.setData(ClipboardData(text: code));
-                  Navigator.pop(context);
+                  Navigator.pop(ctx);
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
                       content: Text(t('copied')),
@@ -248,6 +251,7 @@ class _RewardCardState extends ConsumerState<_RewardCard> {
               ),
             ),
           ],
+        ),
         ),
       ),
     );
