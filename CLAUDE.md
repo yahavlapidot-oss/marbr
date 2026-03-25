@@ -13,6 +13,14 @@ After each meaningful unit of work, automatically commit AND push to origin main
 
 ---
 
+## Change Policy / מדיניות שינויים
+
+When asked to make any change, always search for every place in the codebase that is affected — backend, business panel, Flutter app, DTOs, translations, tests — and apply the change everywhere. Never fix only one layer. A change to a feature must be complete across the full stack.
+
+כאשר מתבקש לבצע שינוי כלשהו, יש לחפש בכל מקום בקוד שמושפע מהשינוי — backend, לוח הניהול, אפליקציית Flutter, DTOs, תרגומים, טסטים — ולהחיל את השינוי בכל מקום. אין לתקן שכבה אחת בלבד. שינוי בפיצ'ר חייב להיות שלם על פני כל ה-stack.
+
+---
+
 ## Product Overview / סקירת המוצר
 
 MrBar is a two-sided promotions, raffles, and notifications platform for physical venues (bars, clubs, restaurants). Businesses launch real-time campaigns (e.g. "buy a Heineken in the next 15 min, enter a raffle for 20 free shots"), customers receive push notifications, scan a QR/enter a code at the POS, and are entered into the raffle or receive an instant reward.
