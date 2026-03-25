@@ -20,6 +20,13 @@ export class AnalyticsController {
     return this.svc.getBusinessOverview(businessId);
   }
 
+  @Get('business/:businessId/dashboard')
+  @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
+  @ApiOperation({ summary: 'Get full analytics dashboard for a business' })
+  getDashboard(@Param('businessId') businessId: string) {
+    return this.svc.getBusinessDashboard(businessId);
+  }
+
   @Get('business/:businessId/events')
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get event log for a business' })
