@@ -42,7 +42,7 @@ class ShellScreen extends ConsumerWidget {
             switch (i) {
               case 0: context.go('/home'); break;
               case 1: context.go('/discover'); break;
-              case 2: context.go('/scan'); break;
+              case 2: context.push('/scan'); break;
               case 3: context.go('/rewards'); break;
               case 4: context.go('/profile'); break;
             }

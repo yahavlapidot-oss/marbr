@@ -90,7 +90,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         routes: [
           GoRoute(path: '/home', builder: (_, _) => const HomeScreen()),
           GoRoute(path: '/discover', builder: (_, _) => const DiscoverScreen()),
-          GoRoute(path: '/scan', builder: (_, _) => const ScanScreen()),
           GoRoute(path: '/rewards', builder: (_, _) => const MyRewardsScreen()),
           GoRoute(path: '/profile', builder: (_, _) => const ProfileScreen()),
           GoRoute(path: '/notifications', builder: (_, _) => const NotificationsScreen()),
@@ -99,6 +98,7 @@ final routerProvider = Provider<GoRouter>((ref) {
           GoRoute(path: '/settings', builder: (_, _) => const SettingsScreen()),
         ],
       ),
+      GoRoute(path: '/scan', builder: (_, _) => const ScanScreen()),
       GoRoute(
         path: '/campaign/:id',
         builder: (_, state) => CampaignDetailScreen(id: state.pathParameters['id']!),
