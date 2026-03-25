@@ -69,6 +69,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     // Home screen loads campaigns without location filter (null position)
     final campaigns = ref.watch(activeCampaignsProvider(null));
     final enrollment = ref.watch(activeCampaignEnrollmentProvider);
+    // enrolledIds is set synchronously on scan success — covers the gap while
+    // activeCampaignEnrollmentProvider is refetching after invalidation.
+    final hasEnrollment = enrollment.valueOrNull != null
+        || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
 
     return Scaffold(
       body: SafeArea(
@@ -119,7 +123,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       const SizedBox(height: 24),
 
                       // Scan CTA — hidden when already enrolled in a campaign
-                      if (enrollment.valueOrNull == null) ...[
+                      if (!hasEnrollment) ...[
                         GestureDetector(
                           onTap: () => context.push('/scan'),
                           child: Container(

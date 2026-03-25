@@ -15,7 +15,8 @@ class ShellScreen extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
-    final isEnrolled = ref.watch(activeCampaignEnrollmentProvider).valueOrNull != null;
+    final isEnrolled = ref.watch(activeCampaignEnrollmentProvider).valueOrNull != null
+        || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
     final location = GoRouterState.of(context).matchedLocation;
 
     int selectedIndex = 0;
