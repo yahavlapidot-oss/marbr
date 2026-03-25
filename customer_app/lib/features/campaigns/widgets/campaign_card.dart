@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
+import '../../../core/date_time_utils.dart';
 
 class _DistanceBadge extends StatelessWidget {
   final double meters;
@@ -55,7 +56,7 @@ class CampaignCard extends ConsumerWidget {
     String t(String key) => AppL10n.of(locale, key);
 
     final business = campaign['business'] as Map<String, dynamic>?;
-    final endsAt = campaign['endsAt'] != null ? DateTime.tryParse(campaign['endsAt']) : null;
+    final endsAt = (campaign['endsAt'] as String?)?.toLocalDateTime();
     final timeLeft = endsAt != null ? endsAt.difference(DateTime.now()) : Duration.zero;
     final isUrgent = timeLeft.inMinutes < 30 && !timeLeft.isNegative;
 

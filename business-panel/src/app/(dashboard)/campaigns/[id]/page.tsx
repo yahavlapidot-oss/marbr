@@ -22,7 +22,7 @@ import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
 import { type TranslationKey } from '@/lib/i18n/translations';
-import { formatDateTime } from '@/lib/utils';
+import { formatDateTime, toDatetimeLocal, fromDatetimeLocal } from '@/lib/utils';
 
 const ROTATE_EVERY = 60;
 
@@ -44,12 +44,6 @@ function formatTimeAgo(dateStr: string, t: (key: TranslationKey) => string): str
   return t('time_d_ago').replace('{n}', String(Math.floor(hours / 24)));
 }
 
-function toDatetimeLocal(iso?: string | null): string {
-  if (!iso) return '';
-  const d = new Date(iso);
-  const offset = d.getTimezoneOffset() * 60000;
-  return new Date(d.getTime() - offset).toISOString().slice(0, 16);
-}
 
 function StatTile({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
   return (
@@ -173,8 +167,8 @@ export default function CampaignDetailPage() {
       const payload: Record<string, any> = {};
       if (formData.name) payload.name = formData.name;
       if (formData.description !== undefined) payload.description = formData.description;
-      payload.startsAt = formData.startsAt || '';
-      payload.endsAt = formData.endsAt || '';
+      payload.startsAt = formData.startsAt ? fromDatetimeLocal(formData.startsAt) : '';
+      payload.endsAt = formData.endsAt ? fromDatetimeLocal(formData.endsAt) : '';
       if (formData.pushTitle !== undefined) payload.pushTitle = formData.pushTitle;
       if (formData.pushBody !== undefined) payload.pushBody = formData.pushBody;
       if (campaignType.current !== 'SNAKE') payload.maxEntriesPerUser = formData.maxEntriesPerUser;

@@ -7,6 +7,7 @@ import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
+import '../../../core/date_time_utils.dart';
 
 final campaignProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
   final res = await createDio().get('/campaigns/$id');
@@ -45,7 +46,7 @@ class CampaignDetailScreen extends ConsumerWidget {
         data: (c) {
           final rewards = c['rewards'] as List? ?? [];
           final entries = c['_count']?['entries'] ?? 0;
-          final endsAt = c['endsAt'] != null ? DateTime.tryParse(c['endsAt']) : null;
+          final endsAt = (c['endsAt'] as String?)?.toLocalDateTime();
 
           return Column(
             children: [

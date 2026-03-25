@@ -5,6 +5,7 @@ import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
+import '../../../core/date_time_utils.dart';
 
 final myRewardsProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await createDio().get('/me/rewards');
@@ -262,7 +263,7 @@ class _RewardCardState extends ConsumerState<_RewardCard> {
     final campaign = r['campaign'] as Map<String, dynamic>? ?? {};
     final isActive = status == 'ACTIVE';
     final isRedeemed = status == 'REDEEMED';
-    final expiresAt = DateTime.tryParse((widget.reward['expiresAt'] as String?) ?? '');
+    final expiresAt = (widget.reward['expiresAt'] as String?)?.toLocalDateTime();
     final timeLeft = expiresAt?.difference(DateTime.now());
     final isExpiringSoon = timeLeft != null && timeLeft.inHours < 24 && !timeLeft.isNegative;
 

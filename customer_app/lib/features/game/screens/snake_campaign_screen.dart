@@ -7,6 +7,7 @@ import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
+import '../../../core/date_time_utils.dart';
 
 // ── Providers ─────────────────────────────────────────────────────────────────
 
@@ -392,7 +393,7 @@ class _SnakeCampaignScreenState extends ConsumerState<SnakeCampaignScreen> {
                           const SizedBox(height: 12),
                           campaign.maybeWhen(
                             data: (c) {
-                              final endsAt = c['endsAt'] != null ? DateTime.tryParse(c['endsAt']) : null;
+                              final endsAt = (c['endsAt'] as String?)?.toLocalDateTime();
                               if (endsAt == null) return const SizedBox.shrink();
                               final left = endsAt.difference(DateTime.now());
                               if (left.isNegative) {

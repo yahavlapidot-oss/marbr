@@ -5,6 +5,7 @@ import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
+import '../../../core/date_time_utils.dart';
 
 final notificationsProvider = FutureProvider<List<dynamic>>((ref) async {
   final res = await createDio().get('/me/notifications');
@@ -74,9 +75,7 @@ class NotificationsScreen extends ConsumerWidget {
               itemBuilder: (context, i) {
                 final n = list[i];
                 final isRead = n['readAt'] != null;
-                final createdAt = n['createdAt'] != null
-                    ? DateTime.tryParse(n['createdAt'])
-                    : null;
+                final createdAt = (n['createdAt'] as String?)?.toLocalDateTime();
 
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 8),
