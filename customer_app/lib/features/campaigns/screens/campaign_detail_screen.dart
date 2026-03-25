@@ -3,16 +3,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
 import '../../../core/date_time_utils.dart';
-
-final campaignProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
-  final res = await createDio().get('/campaigns/$id');
-  return Map<String, dynamic>.from(res.data);
-});
+import '../providers/campaigns_provider.dart';
 
 class CampaignDetailScreen extends ConsumerWidget {
   final String id;
@@ -24,6 +19,7 @@ class CampaignDetailScreen extends ConsumerWidget {
     String t(String key) => AppL10n.of(locale, key);
 
     final campaign = ref.watch(campaignProvider(id));
+    final enrolledLocally = ref.watch(enrolledCampaignIdsProvider).contains(id);
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -49,7 +45,7 @@ class CampaignDetailScreen extends ConsumerWidget {
           final endsAt = (c['endsAt'] as String?)?.toLocalDateTime();
           final status = c['status'] as String? ?? '';
           final isEnded = status == 'ENDED' || status == 'CANCELLED';
-          final isEnrolled = c['myEntry'] != null;
+          final isEnrolled = enrolledLocally || c['myEntry'] != null;
 
           return Column(
             children: [

@@ -7,6 +7,7 @@ import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
+import '../../campaigns/providers/campaigns_provider.dart';
 
 class ScanScreen extends ConsumerStatefulWidget {
   const ScanScreen({super.key});
@@ -49,6 +50,13 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       final campaignId = campaignData?['id'] as String?;
       final rewardName = reward?['reward']?['name'] as String?;
 
+      // Mark as enrolled locally for instant UI feedback on campaign detail
+      if (campaignId != null) {
+        ref.read(enrolledCampaignIdsProvider.notifier)
+            .update((s) => {...s, campaignId});
+        ref.invalidate(campaignProvider(campaignId));
+      }
+
       // SNAKE campaigns: navigate to snake screen instead of showing generic result
       if (campaignType == 'SNAKE' && campaignId != null) {
         _reset();
@@ -62,9 +70,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
         _result = reward != null ? t('you_won') : t('youre_in');
         _subtitle = reward != null
             ? rewardName ?? 'You got a reward!'
-            : campaignName != null
-                ? 'Entered: $campaignName'
-                : t('good_luck');
+            : campaignName ?? t('good_luck');
       });
     } catch (e) {
       String msg = t('code_error');

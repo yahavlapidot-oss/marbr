@@ -13,3 +13,16 @@ final activeCampaignsProvider =
   });
   return res.data as List;
 });
+
+/// Fetch a single campaign by ID (includes myEntry when authenticated).
+final campaignProvider =
+    FutureProvider.family<Map<String, dynamic>, String>((ref, id) async {
+  final res = await createDio().get('/campaigns/$id');
+  return Map<String, dynamic>.from(res.data);
+});
+
+/// Campaign IDs the current user has enrolled in during this session.
+/// Updated immediately after a successful scan so the UI reacts without
+/// waiting for a network re-fetch.
+final enrolledCampaignIdsProvider =
+    StateProvider<Set<String>>((ref) => const {});
