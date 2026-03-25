@@ -103,11 +103,11 @@ export default function NewCampaignPage() {
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         <Card>
-          <CardHeader><CardTitle>Basic Info</CardTitle></CardHeader>
+          <CardHeader><CardTitle>{t('campaign_basic_info')}</CardTitle></CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>{t('campaign_name')} *</Label>
-              <Input placeholder="e.g. Happy Hour Snake" {...register('name')} />
+              <Input placeholder={t('campaign_name_ph')} {...register('name')} />
               {errors.name && <p className="text-xs text-red-400">{errors.name.message}</p>}
             </div>
 
@@ -134,13 +134,13 @@ export default function NewCampaignPage() {
               <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 space-y-3">
                 <p className="text-amber-400 text-sm font-medium">🐍 {t('campaign_snake_section')}</p>
                 <p className="text-[#6b6b80] text-xs">
-                  Customers play Snake on their phone. One game per player. Top scorers win when the campaign ends.
+                  {t('campaign_snake_desc')}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
                     <Label>{t('campaign_snake_winners')}</Label>
                     <Input type="number" min={1} placeholder="3" {...register('topN', { valueAsNumber: true })} />
-                    <p className="text-[#6b6b80] text-xs">Top N scores win the reward</p>
+                    <p className="text-[#6b6b80] text-xs">{t('campaign_top_n')}</p>
                   </div>
                   <div className="space-y-1.5">
                     <Label>{t('campaign_snake_reward')}</Label>
@@ -166,7 +166,7 @@ export default function NewCampaignPage() {
 
             {!isSnake && (
               <div className="space-y-1.5">
-                <Label>Max entries per user</Label>
+                <Label>{t('campaign_max_entries')}</Label>
                 <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} />
               </div>
             )}
@@ -181,7 +181,7 @@ export default function NewCampaignPage() {
               <Input type="datetime-local" {...register('startsAt')} />
             </div>
             <div className="space-y-1.5">
-              <Label>{t('campaign_ends')} {isSnake && <span className="text-amber-400">(required for Snake)</span>}</Label>
+              <Label>{t('campaign_ends')} {isSnake && <span className="text-amber-400">{t('campaign_required_snake')}</span>}</Label>
               <Input type="datetime-local" {...register('endsAt')} />
             </div>
           </CardContent>
@@ -192,11 +192,11 @@ export default function NewCampaignPage() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label>{t('campaign_push_title')}</Label>
-              <Input placeholder={isSnake ? '🐍 Snake challenge is live!' : t('campaign_push_ph_title')} {...register('pushTitle')} />
+              <Input placeholder={isSnake ? t('campaign_push_title_ph_snake') : t('campaign_push_ph_title')} {...register('pushTitle')} />
             </div>
             <div className="space-y-1.5">
               <Label>{t('campaign_push_body')}</Label>
-              <Input placeholder={isSnake ? 'Play Snake and top the leaderboard to win!' : t('campaign_push_ph_body')} {...register('pushBody')} />
+              <Input placeholder={isSnake ? t('campaign_push_body_ph_snake') : t('campaign_push_ph_body')} {...register('pushBody')} />
             </div>
           </CardContent>
         </Card>

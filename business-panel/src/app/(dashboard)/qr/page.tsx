@@ -118,7 +118,7 @@ export default function QrPage() {
             {selectedCampaign.name}
           </p>
         )}
-        <p className="text-white/50 text-sm mb-8">Scan to enter the campaign</p>
+        <p className="text-white/50 text-sm mb-8">{t('qr_scan_hint')}</p>
 
         <div className="relative">
           <div className="rounded-2xl bg-white p-5 shadow-2xl">
@@ -172,7 +172,7 @@ export default function QrPage() {
       </div>
 
       <Card>
-        <CardHeader><CardTitle>Setup</CardTitle></CardHeader>
+        <CardHeader><CardTitle>{t('qr_setup')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-1.5">
             <Label>{t('qr_campaign')}</Label>
@@ -208,8 +208,8 @@ export default function QrPage() {
             onClick={handleGenerate}
           >
             {generate.isPending
-              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating…</>
-              : <><QrCode className="h-4 w-4 mr-2" /> Start QR Display</>
+              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('qr_generating')}</>
+              : <><QrCode className="h-4 w-4 mr-2" /> {t('qr_start')}</>
             }
           </Button>
         </CardContent>
@@ -262,7 +262,7 @@ export default function QrPage() {
                   {countdown}
                 </text>
               </svg>
-              <span className="text-[#6b6b80] text-sm">Auto-refreshes in {countdown}s</span>
+              <span className="text-[#6b6b80] text-sm">{t('qr_auto_refresh').replace('{n}', String(countdown))}</span>
             </div>
 
             <div className="flex gap-2 w-full">

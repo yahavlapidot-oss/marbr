@@ -61,7 +61,7 @@ export default function ProductsPage() {
               </div>
               <div className="space-y-1.5 col-span-2">
                 <Label>{t('products_description')}</Label>
-                <Input placeholder="Optional description" {...register('description')} />
+                <Input placeholder={t('product_desc_ph')} {...register('description')} />
               </div>
               <div className="space-y-1.5">
                 <Label>{t('products_price')}</Label>
@@ -115,7 +115,7 @@ export default function ProductsPage() {
               {p.description && <p className="text-sm text-[#6b6b80] mt-1">{p.description}</p>}
               <div className="flex items-center gap-3 mt-2 text-sm">
                 {p.price != null && <span className="text-amber-400 font-medium">₪{p.price}</span>}
-                {p.sku && <span className="text-[#6b6b80]">SKU: {p.sku}</span>}
+                {p.sku && <span className="text-[#6b6b80]">{t('product_sku')}: {p.sku}</span>}
               </div>
             </CardContent>
           </Card>

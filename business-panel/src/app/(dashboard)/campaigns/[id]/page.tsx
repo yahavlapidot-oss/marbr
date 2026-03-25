@@ -21,6 +21,7 @@ import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
+import { type TranslationKey } from '@/lib/i18n/translations';
 import { formatDateTime } from '@/lib/utils';
 
 const ROTATE_EVERY = 60;
@@ -29,21 +30,18 @@ const STATUS_VARIANT: Record<string, any> = {
   ACTIVE: 'active', PAUSED: 'paused', ENDED: 'ended', DRAFT: 'draft', SCHEDULED: 'scheduled', CANCELLED: 'destructive',
 };
 
-const METHOD_LABEL: Record<string, string> = {
-  QR_SCAN: 'QR Scan', MANUAL_CODE: 'Code', CHECKIN: 'Check-in', POS_CALLBACK: 'POS',
-};
 const METHOD_ICON: Record<string, React.ElementType> = {
   QR_SCAN: QrCode, MANUAL_CODE: Hash, CHECKIN: MapPin, POS_CALLBACK: CreditCard,
 };
 
-function formatTimeAgo(dateStr: string): string {
+function formatTimeAgo(dateStr: string, t: (key: TranslationKey) => string): string {
   const diff = Date.now() - new Date(dateStr).getTime();
   const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'just now';
-  if (mins < 60) return `${mins}m ago`;
+  if (mins < 1) return t('time_just_now');
+  if (mins < 60) return t('time_m_ago').replace('{n}', String(mins));
   const hours = Math.floor(mins / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  if (hours < 24) return t('time_h_ago').replace('{n}', String(hours));
+  return t('time_d_ago').replace('{n}', String(Math.floor(hours / 24)));
 }
 
 function toDatetimeLocal(iso?: string | null): string {
@@ -82,6 +80,10 @@ export default function CampaignDetailPage() {
   const qc = useQueryClient();
   const businessId = useAuthStore((s) => s.businessId);
   const t = useLocaleStore((s) => s.t);
+
+  const METHOD_LABEL: Record<string, string> = {
+    QR_SCAN: t('method_qr'), MANUAL_CODE: t('method_code'), CHECKIN: t('method_checkin'), POS_CALLBACK: t('method_pos'),
+  };
 
   // UI state
   const [showAddReward, setShowAddReward] = useState(false);
@@ -154,14 +156,14 @@ export default function CampaignDetailPage() {
       invalidate();
       qc.invalidateQueries({ queryKey: ['campaigns'] });
       const labels: Record<string, string> = {
-        publish: 'Campaign is now live!',
-        pause: 'Campaign paused.',
-        resume: 'Campaign resumed.',
-        end: 'Campaign ended.',
+        publish: t('campaign_now_live'),
+        pause: t('campaign_paused_msg'),
+        resume: t('campaign_resumed_msg'),
+        end: t('campaign_ended_msg'),
       };
-      toast.success(labels[action] ?? 'Updated');
+      toast.success(labels[action] ?? t('action_updated'));
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Action failed'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('action_failed')),
   });
 
   const editMutation = useMutation({
@@ -181,10 +183,10 @@ export default function CampaignDetailPage() {
     onSuccess: () => {
       invalidate();
       qc.invalidateQueries({ queryKey: ['campaigns'] });
-      toast.success('Campaign updated');
+      toast.success(t('campaign_updated'));
       setShowEdit(false);
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Update failed'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('campaign_update_failed')),
   });
 
   const addReward = useMutation({
@@ -193,15 +195,15 @@ export default function CampaignDetailPage() {
       qc.invalidateQueries({ queryKey: ['rewards', id] });
       setShowAddReward(false);
       setRewardName(''); setRewardDesc(''); setRewardInventory('1');
-      toast.success('Prize added');
+      toast.success(t('prize_added'));
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to add prize'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('prize_add_failed')),
   });
 
   const drawWinners = useMutation({
     mutationFn: (count: number) => api.post(`/rewards/campaign/${id}/draw`, { count }),
-    onSuccess: () => { invalidate(); toast.success('Winners drawn!'); },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Draw failed'),
+    onSuccess: () => { invalidate(); toast.success(t('winners_drawn')); },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('draw_failed')),
   });
 
   const drawSnakeWinners = useMutation({
@@ -209,9 +211,9 @@ export default function CampaignDetailPage() {
     onSuccess: () => {
       invalidate();
       qc.invalidateQueries({ queryKey: ['snake-leaderboard', id] });
-      toast.success('Winners drawn!');
+      toast.success(t('winners_drawn'));
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Draw failed'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('draw_failed')),
   });
 
   // QR generation
@@ -219,7 +221,7 @@ export default function CampaignDetailPage() {
     mutationFn: () =>
       api.post('/entries/qr/generate', {}, { params: { campaignId: id, branchId } }).then((r) => r.data),
     onSuccess: (data) => { setQrDataUrl(data.qrDataUrl); setCountdown(ROTATE_EVERY); },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to generate QR'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('qr_generate_failed')),
   });
 
   const stopRotation = useCallback(() => {
@@ -263,7 +265,7 @@ export default function CampaignDetailPage() {
           <X className="h-5 w-5" />
         </button>
         <p className="text-amber-400 text-lg font-semibold mb-1 tracking-wide uppercase">{data?.campaign?.name}</p>
-        <p className="text-white/50 text-sm mb-8">Scan to enter the campaign</p>
+        <p className="text-white/50 text-sm mb-8">{t('campaign_scan_to_enter')}</p>
         <div className="relative">
           <div className="rounded-2xl bg-white p-5 shadow-2xl">
             <Image src={qrDataUrl} alt="QR Code" width={300} height={300} unoptimized />
@@ -315,8 +317,8 @@ export default function CampaignDetailPage() {
           </div>
           <p className="text-[#6b6b80] text-sm mt-1">
             {campaign?.type?.replace(/_/g, ' ')}
-            {campaign?.startsAt && ` · Starts ${formatDateTime(campaign.startsAt)}`}
-            {campaign?.endsAt && ` · Ends ${formatDateTime(campaign.endsAt)}`}
+            {campaign?.startsAt && ` · ${t('campaign_starts')} ${formatDateTime(campaign.startsAt)}`}
+            {campaign?.endsAt && ` · ${t('campaign_ends')} ${formatDateTime(campaign.endsAt)}`}
           </p>
         </div>
       </div>
@@ -339,7 +341,7 @@ export default function CampaignDetailPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  if (confirm('End this campaign? This cannot be undone.')) transition.mutate('end');
+                  if (confirm(t('campaign_end_confirm'))) transition.mutate('end');
                 }}
                 disabled={isPending}
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
@@ -358,7 +360,7 @@ export default function CampaignDetailPage() {
               <Button
                 variant="outline"
                 onClick={() => {
-                  if (confirm('End this campaign? This cannot be undone.')) transition.mutate('end');
+                  if (confirm(t('campaign_end_confirm'))) transition.mutate('end');
                 }}
                 disabled={isPending}
                 className="border-red-500/30 text-red-400 hover:bg-red-500/10 hover:text-red-300"
@@ -371,7 +373,7 @@ export default function CampaignDetailPage() {
           {(campaign.status === 'ENDED' || campaign.status === 'CANCELLED') && (
             <div className="flex items-center gap-2 text-sm text-[#6b6b80]">
               <CheckCircle className="h-4 w-4" />
-              Campaign {campaign.status.toLowerCase()} — no further actions available
+              {t('campaign_status_inactive_msg').replace('{status}', campaign.status.toLowerCase())}
             </div>
           )}
         </div>
@@ -407,8 +409,8 @@ export default function CampaignDetailPage() {
                 <Input {...register('name')} />
               </div>
               <div className="space-y-1.5">
-                <Label>Description</Label>
-                <Input placeholder="Optional description" {...register('description')} />
+                <Label>{t('campaign_description')}</Label>
+                <Input placeholder={t('campaign_description_ph')} {...register('description')} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
@@ -422,7 +424,7 @@ export default function CampaignDetailPage() {
               </div>
               {!isSnake && (
                 <div className="space-y-1.5">
-                  <Label>Max entries per user</Label>
+                  <Label>{t('campaign_max_entries_label')}</Label>
                   <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} className="w-40" />
                 </div>
               )}
@@ -440,11 +442,11 @@ export default function CampaignDetailPage() {
               )}
               <div className="space-y-1.5">
                 <Label>{t('campaign_push_title')}</Label>
-                <Input placeholder="e.g. 🍺 Happy Hour is live!" {...register('pushTitle')} />
+                <Input placeholder={t('campaign_push_title_ph')} {...register('pushTitle')} />
               </div>
               <div className="space-y-1.5">
                 <Label>{t('campaign_push_body')}</Label>
-                <Input placeholder="e.g. Buy a Heineken and enter to win!" {...register('pushBody')} />
+                <Input placeholder={t('campaign_push_body_ph')} {...register('pushBody')} />
               </div>
               <div className="flex gap-2 pt-1">
                 <Button
@@ -466,7 +468,7 @@ export default function CampaignDetailPage() {
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4 text-amber-500" /> {t('campaign_detail_draw')}</CardTitle></CardHeader>
           <CardContent>
-            <p className="text-sm text-[#6b6b80] mb-4">Randomly select winners from all entries. Each draw is final.</p>
+            <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_raffle_desc')}</p>
             <div className="flex items-end gap-3">
               <div className="space-y-1.5">
                 <Label>{t('campaign_raffle_winners')}</Label>
@@ -489,12 +491,12 @@ export default function CampaignDetailPage() {
               <CardTitle className="flex items-center gap-2">
                 <Gamepad2 className="h-4 w-4 text-amber-500" />
                 {t('campaign_detail_leaderboard')}
-                <span className="text-xs text-[#6b6b80] font-normal ml-1">({totalPlayers} players · auto-refreshes)</span>
+                <span className="text-xs text-[#6b6b80] font-normal ml-1">({totalPlayers} {t('campaign_snake_players')})</span>
               </CardTitle>
             </CardHeader>
             <CardContent>
               {leaderboard.length === 0 ? (
-                <p className="text-center text-[#6b6b80] py-6">No scores yet</p>
+                <p className="text-center text-[#6b6b80] py-6">{t('campaign_no_scores')}</p>
               ) : (
                 <div className="divide-y divide-[#2a2a38]">
                   {leaderboard.map((entry: any) => (
@@ -506,7 +508,7 @@ export default function CampaignDetailPage() {
                       </span>
                       <div className="flex-1">
                         <p className="text-sm font-medium text-white">{entry.name}</p>
-                        <p className="text-xs text-[#6b6b80]">{entry.foodEaten} foods eaten</p>
+                        <p className="text-xs text-[#6b6b80]">{entry.foodEaten} {t('campaign_foods_eaten')}</p>
                       </div>
                       <span className="text-amber-500 font-bold">{entry.score.toLocaleString()}</span>
                     </div>
@@ -520,18 +522,18 @@ export default function CampaignDetailPage() {
               <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_snake_draw')}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-[#6b6b80] mb-4">Award the top scorers. Only available after the campaign ends.</p>
+              <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_top_scorers_desc')}</p>
               <Button
                 onClick={() => drawSnakeWinners.mutate()}
                 disabled={drawSnakeWinners.isPending || campaign?.status !== 'ENDED'}
                 variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
               >
                 {drawSnakeWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
-                {campaign?.status === 'ENDED' ? t('campaign_detail_snake_draw') : 'Campaign must be ended first'}
+                {campaign?.status === 'ENDED' ? t('campaign_detail_snake_draw') : t('campaign_must_end_first')}
               </Button>
               {drawSnakeWinners.isSuccess && (
                 <div className="mt-4 space-y-2">
-                  <p className="text-sm text-green-400 font-medium">✓ Winners drawn!</p>
+                  <p className="text-sm text-green-400 font-medium">{t('campaign_winners_drawn')}</p>
                   {drawSnakeWinners.data?.data?.winners?.map((w: any) => (
                     <div key={w.userId} className="text-sm text-[#a1a1b5]">
                       #{w.rank} {w.name} — {w.score.toLocaleString()} pts
@@ -561,8 +563,8 @@ export default function CampaignDetailPage() {
           </div>
           <Button className="w-full" disabled={!branchId || generateQr.isPending} onClick={() => generateQr.mutate()}>
             {generateQr.isPending
-              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> Generating…</>
-              : <><QrCode className="h-4 w-4 mr-2" /> {qrDataUrl ? 'Regenerate' : 'Generate QR'}</>
+              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('campaign_generating')}</>
+              : <><QrCode className="h-4 w-4 mr-2" /> {qrDataUrl ? t('campaign_regenerate') : t('campaign_generate_qr')}</>
             }
           </Button>
           {qrDataUrl && (
@@ -586,7 +588,7 @@ export default function CampaignDetailPage() {
                     strokeLinecap="round" transform="rotate(-90 26 26)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
                   <text x="26" y="31" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">{countdown}</text>
                 </svg>
-                <span className="text-[#6b6b80] text-sm">Auto-refreshes in {countdown}s</span>
+                <span className="text-[#6b6b80] text-sm">{t('campaign_auto_refresh').replace('{n}', String(countdown))}</span>
               </div>
               <div className="flex gap-2 w-full">
                 <Button variant="outline" className="flex-1" onClick={() => setKiosk(true)}>
@@ -630,7 +632,7 @@ export default function CampaignDetailPage() {
                     return (
                       <tr key={e.id} className="hover:bg-[#1e1e2e] transition-colors">
                         <td className="px-5 py-3">
-                          <p className="text-sm font-medium text-white">{e.user?.fullName ?? 'Unknown'}</p>
+                          <p className="text-sm font-medium text-white">{e.user?.fullName ?? t('unknown_user')}</p>
                           <p className="text-xs text-[#6b6b80]">{e.user?.email ?? e.user?.phone ?? ''}</p>
                         </td>
                         <td className="px-5 py-3">
@@ -639,7 +641,7 @@ export default function CampaignDetailPage() {
                             <span className="text-sm text-[#a1a1b5]">{METHOD_LABEL[e.method] ?? e.method}</span>
                           </div>
                         </td>
-                        <td className="px-5 py-3 text-sm text-[#6b6b80]">{formatTimeAgo(e.createdAt)}</td>
+                        <td className="px-5 py-3 text-sm text-[#6b6b80]">{formatTimeAgo(e.createdAt, t)}</td>
                       </tr>
                     );
                   })}
@@ -673,7 +675,7 @@ export default function CampaignDetailPage() {
               </div>
               <div className="space-y-1.5">
                 <Label>Description ({t('campaign_optional')})</Label>
-                <Input placeholder="Prize details..." value={rewardDesc} onChange={(e) => setRewardDesc(e.target.value)} />
+                <Input placeholder={t('campaign_prize_details_ph')} value={rewardDesc} onChange={(e) => setRewardDesc(e.target.value)} />
               </div>
               <div className="flex gap-2">
                 <Button
@@ -688,7 +690,7 @@ export default function CampaignDetailPage() {
             </div>
           )}
           {rewards.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-6 text-sm">No prizes added yet</p>
+            <p className="text-center text-[#6b6b80] py-6 text-sm">{t('campaign_no_prizes')}</p>
           ) : (
             <div className="divide-y divide-[#2a2a38]">
               {rewards.map((r: any) => (
@@ -714,7 +716,7 @@ export default function CampaignDetailPage() {
         <CardContent className="space-y-3">
           {campaign?.description && (
             <div>
-              <p className="text-xs text-[#6b6b80] mb-1">Description</p>
+              <p className="text-xs text-[#6b6b80] mb-1">{t('campaign_prize_desc_label')}</p>
               <p className="text-sm text-[#a1a1b5]">{campaign.description}</p>
             </div>
           )}
@@ -730,7 +732,7 @@ export default function CampaignDetailPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
             {!isSnake && (
               <div>
-                <p className="text-[#6b6b80]">Max entries / user</p>
+                <p className="text-[#6b6b80]">{t('campaign_max_entries_col')}</p>
                 <p className="text-white">{campaign?.maxEntriesPerUser ?? 1}</p>
               </div>
             )}

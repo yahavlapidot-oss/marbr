@@ -20,9 +20,10 @@ export default function AnalyticsPage() {
     enabled: !!businessId,
   });
 
+  const entriesLabel = t('analytics_entries_label');
   const chartData = campaigns?.map((c: any) => ({
     name: c.name.length > 16 ? c.name.slice(0, 16) + '…' : c.name,
-    Entries: c._count?.entries ?? 0,
+    [entriesLabel]: c._count?.entries ?? 0,
   })) ?? [];
 
   return (
@@ -60,7 +61,7 @@ export default function AnalyticsPage() {
                   contentStyle={{ backgroundColor: '#1a1a24', border: '1px solid #2a2a38', borderRadius: 8 }}
                   labelStyle={{ color: '#f1f1f3' }}
                 />
-                <Bar dataKey="Entries" fill="#f59e0b" radius={[4, 4, 0, 0]} />
+                <Bar dataKey={entriesLabel} fill="#f59e0b" radius={[4, 4, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           )}

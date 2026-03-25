@@ -101,25 +101,25 @@ function BillingContent() {
 
   useEffect(() => {
     if (searchParams.get('success') === 'true') {
-      showToast('Subscription updated successfully!', 'success');
+      showToast(t('billing_updated'), 'success');
     } else if (searchParams.get('cancelled') === 'true') {
-      showToast('Checkout cancelled.', 'error');
+      showToast(t('billing_cancelled'), 'error');
     }
-  }, [searchParams]);
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!businessId) return;
     api
       .get(`/billing/subscription?businessId=${businessId}`)
       .then((r) => setSub(r.data))
-      .catch(() => showToast('Failed to load subscription', 'error'))
+      .catch(() => showToast(t('billing_load_failed'), 'error'))
       .finally(() => setLoading(false));
   }, [businessId]);
 
   const parseApiError = (err: any): string => {
     const msg = err?.response?.data?.message;
     if (Array.isArray(msg)) return msg.join(', ');
-    return msg || err?.message || 'Something went wrong. Please try again.';
+    return msg || err?.message || t('billing_error');
   };
 
   const handleUpgrade = async (plan: string) => {
@@ -202,14 +202,14 @@ function BillingContent() {
                       : 'bg-red-500/15 text-red-400'
                   }`}
                 >
-                  {sub.isActive ? 'Active' : 'Inactive'}
+                  {sub.isActive ? t('billing_active') : t('inactive')}
                 </span>
               </div>
             </div>
           </div>
           {sub.currentPeriodEnd && (
             <p className="text-sm text-[#6b6b80]">
-              Renews on <span className="text-white">{formatDate(sub.currentPeriodEnd)}</span>
+              {t('billing_renews')} <span className="text-white">{formatDate(sub.currentPeriodEnd)}</span>
             </p>
           )}
         </div>
@@ -239,7 +239,7 @@ function BillingContent() {
                   <div className="absolute -top-2.5 left-1/2 -translate-x-1/2">
                     <span className="flex items-center gap-1 bg-amber-500 text-black text-xs font-bold px-2.5 py-0.5 rounded-full">
                       <Crown className="h-3 w-3" />
-                      Popular
+                      {t('billing_popular')}
                     </span>
                   </div>
                 )}
@@ -251,9 +251,9 @@ function BillingContent() {
                   </div>
                   <div className="flex items-baseline gap-1">
                     <span className="text-2xl font-bold text-white">
-                      {plan.price === 0 ? 'Free' : `₪${plan.price}`}
+                      {plan.price === 0 ? t('billing_free_price') : `₪${plan.price}`}
                     </span>
-                    {plan.price > 0 && <span className="text-xs text-[#6b6b80]">/mo</span>}
+                    {plan.price > 0 && <span className="text-xs text-[#6b6b80]">{t('billing_per_month')}</span>}
                   </div>
                 </div>
 
@@ -284,7 +284,7 @@ function BillingContent() {
                         : 'bg-[#2a2a38] text-white hover:bg-[#3a3a4e]'
                     } disabled:opacity-50`}
                   >
-                    {upgrading === plan.key ? 'Loading…' : plan.cta}
+                    {upgrading === plan.key ? t('billing_loading') : plan.cta}
                   </button>
                 )}
               </div>
@@ -302,16 +302,16 @@ function BillingContent() {
               <thead>
                 <tr className="border-b border-[#2a2a38]">
                   <th className="text-left px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
-                    Date
+                    {t('billing_date')}
                   </th>
                   <th className="text-left px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
-                    Amount
+                    {t('billing_amount')}
                   </th>
                   <th className="text-left px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
-                    Status
+                    {t('billing_status')}
                   </th>
                   <th className="text-right px-5 py-3 text-xs text-[#6b6b80] font-medium uppercase tracking-wider">
-                    Invoice
+                    {t('billing_invoice')}
                   </th>
                 </tr>
               </thead>
@@ -330,7 +330,7 @@ function BillingContent() {
                             : 'bg-yellow-500/15 text-yellow-400'
                         }`}
                       >
-                        {inv.paidAt ? 'Paid' : 'Pending'}
+                        {inv.paidAt ? t('billing_paid') : t('billing_pending')}
                       </span>
                     </td>
                     <td className="px-5 py-3.5 text-right">
@@ -342,7 +342,7 @@ function BillingContent() {
                           className="inline-flex items-center gap-1 text-amber-400 hover:text-amber-300 transition-colors"
                         >
                           <Download className="h-3.5 w-3.5" />
-                          Download
+                          {t('billing_download')}
                         </a>
                       ) : (
                         <span className="text-[#6b6b80]">—</span>

@@ -40,6 +40,7 @@ function ImageUpload({
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
   const [preview, setPreview] = useState(value || '');
+  const t = useLocaleStore((s) => s.t);
 
   useEffect(() => {
     setPreview(value || '');
@@ -101,7 +102,7 @@ function ImageUpload({
             {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin mr-1.5" /> : <Upload className="h-3.5 w-3.5 mr-1.5" />}
             {uploading ? (uploadingLabel ?? 'Uploading…') : (uploadLabel ?? 'Upload image')}
           </Button>
-          <p className="text-xs text-[#6b6b80]">JPEG, PNG, WebP — max 5 MB</p>
+          <p className="text-xs text-[#6b6b80]">{t('settings_jpeg_hint')}</p>
         </div>
         <input ref={inputRef} type="file" accept="image/*" className="hidden" onChange={handleFile} />
       </div>
@@ -149,16 +150,16 @@ export default function SettingsPage() {
         (k) => submitted[k] !== (prev as any)[k],
       );
 
-      toast.success('Changes saved!', {
+      toast.success(t('settings_saved'), {
         description: changed.length
           ? `Updated: ${changed.map((k) => labels[k]).join(', ')}`
-          : 'Your business profile is up to date.',
+          : t('settings_up_to_date'),
         duration: 4000,
       });
     },
     onError: (err: any) => {
-      toast.error('Failed to save', {
-        description: err?.response?.data?.message ?? 'Something went wrong. Try again.',
+      toast.error(t('settings_save_failed'), {
+        description: err?.response?.data?.message ?? t('settings_went_wrong'),
       });
     },
   });
@@ -225,25 +226,25 @@ export default function SettingsPage() {
 
             <div className="space-y-1.5">
               <Label>{t('settings_name')}</Label>
-              <Input placeholder="Bar Name" {...register('name', { required: true })} />
+              <Input placeholder={t('settings_bar_name_ph')} {...register('name', { required: true })} />
             </div>
             <div className="space-y-1.5">
               <Label>{t('settings_description')}</Label>
-              <Input placeholder="A brief description…" {...register('description')} />
+              <Input placeholder={t('settings_desc_ph')} {...register('description')} />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label>{t('settings_email')}</Label>
-                <Input placeholder="contact@bar.com" {...register('email')} />
+                <Input placeholder={t('settings_email_ph')} {...register('email')} />
               </div>
               <div className="space-y-1.5">
                 <Label>{t('settings_phone')}</Label>
-                <Input placeholder="+972…" {...register('phone')} />
+                <Input placeholder={t('settings_phone_ph')} {...register('phone')} />
               </div>
             </div>
             <div className="space-y-1.5">
               <Label>{t('settings_website')}</Label>
-              <Input placeholder="https://yourbar.com" {...register('website')} />
+              <Input placeholder={t('settings_website_ph')} {...register('website')} />
             </div>
 
             <div className="flex justify-end pt-2">

@@ -72,7 +72,7 @@ export default function RewardsPage() {
           {!selectedCampaign ? (
             <div className="flex flex-col items-center py-16 text-[#6b6b80]">
               <Gift className="h-10 w-10 mb-3 opacity-40" />
-              <p>Select a campaign to view rewards</p>
+              <p>{t('rewards_select_campaign')}</p>
             </div>
           ) : isLoading ? (
             <div className="divide-y divide-[#2a2a38]">

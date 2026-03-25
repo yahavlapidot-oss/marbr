@@ -44,13 +44,13 @@ export default function EmployeesPage() {
   const invite = useMutation({
     mutationFn: (data: any) => api.post(`/employees?businessId=${businessId}`, data),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['employees'] }); setShowForm(false); reset(); },
-    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to invite employee'),
+    onError: (err: any) => alert(err?.response?.data?.message ?? t('employee_invite_failed')),
   });
 
   const revoke = useMutation({
     mutationFn: (id: string) => api.delete(`/employees/${id}`),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['employees'] }),
-    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to revoke employee'),
+    onError: (err: any) => alert(err?.response?.data?.message ?? t('employee_revoke_failed')),
   });
 
   return (
@@ -158,7 +158,7 @@ export default function EmployeesPage() {
                     <td className="px-4 py-3 text-[#6b6b80]">{e.branch?.name ?? '—'}</td>
                     <td className="px-4 py-3">
                       <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${e.isActive ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {e.isActive ? t('active') : 'Revoked'}
+                        {e.isActive ? t('active') : t('employee_revoked')}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-right">

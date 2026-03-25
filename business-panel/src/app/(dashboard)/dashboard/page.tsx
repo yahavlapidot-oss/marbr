@@ -109,18 +109,18 @@ export default function DashboardPage() {
         <Button asChild>
           <Link href="/campaigns/new">
             <Plus className="h-4 w-4" />
-            New Campaign
+            {t('dashboard_new_campaign')}
           </Link>
         </Button>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Active Campaigns" value={active.length} icon={Megaphone} />
-        <StatCard title="Total Entries" value={totalEntries} icon={Users} />
-        <StatCard title="Rewards Issued" value={analytics?.totalWinners ?? '—'} icon={Gift} />
+        <StatCard title={t('dashboard_active_campaigns')} value={active.length} icon={Megaphone} />
+        <StatCard title={t('dashboard_total_entries')} value={totalEntries} icon={Users} />
+        <StatCard title={t('dashboard_rewards_issued')} value={analytics?.totalWinners ?? '—'} icon={Gift} />
         <StatCard
-          title="Conversion Rate"
+          title={t('dashboard_conversion')}
           value={analytics?.conversionRate != null ? `${analytics.conversionRate.toFixed(1)}%` : '—'}
           icon={TrendingUp}
         />
@@ -129,14 +129,14 @@ export default function DashboardPage() {
       {/* Active campaigns */}
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle>Active Campaigns</CardTitle>
+          <CardTitle>{t('dashboard_active_campaigns')}</CardTitle>
           <Button variant="outline" size="sm" asChild>
-            <Link href="/campaigns">View all</Link>
+            <Link href="/campaigns">{t('dashboard_view_all')}</Link>
           </Button>
         </CardHeader>
         <CardContent>
           {active.length === 0 ? (
-            <p className="text-center text-[#6b6b80] py-8">No active campaigns</p>
+            <p className="text-center text-[#6b6b80] py-8">{t('dashboard_no_active')}</p>
           ) : (
             <div className="space-y-3">
               {active.map((c: any) => (
@@ -148,7 +148,7 @@ export default function DashboardPage() {
                   <div>
                     <p className="font-medium text-white">{c.name}</p>
                     <p className="text-xs text-[#6b6b80] mt-1">
-                      {c.endsAt ? `Ends ${formatDateTime(c.endsAt)}` : 'No end time'}
+                      {c.endsAt ? `${t('dashboard_ends')} ${formatDateTime(c.endsAt)}` : t('dashboard_no_end')}
                       {' · '}
                       {c._count?.entries ?? 0} entries
                     </p>

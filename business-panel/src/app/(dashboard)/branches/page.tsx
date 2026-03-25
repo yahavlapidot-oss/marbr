@@ -61,18 +61,18 @@ export default function BranchesPage() {
       setMapLat(DEFAULT_LAT);
       setMapLng(DEFAULT_LNG);
       reset();
-      toast.success('Branch created');
+      toast.success(t('branch_created'));
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to create branch'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('branch_remove_failed')),
   });
 
   const remove = useMutation({
     mutationFn: (id: string) => api.delete(`/branches/${id}`),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['branches'] });
-      toast.success('Branch removed');
+      toast.success(t('branch_removed'));
     },
-    onError: () => toast.error('Failed to remove branch'),
+    onError: () => toast.error(t('branch_remove_failed')),
   });
 
   const handleLocate = async () => {
@@ -80,7 +80,7 @@ export default function BranchesPage() {
     const city = watch('city');
     const q = [address, city].filter(Boolean).join(', ');
     if (!q.trim()) {
-      toast.error('Enter an address and city first');
+      toast.error(t('branch_address_first'));
       return;
     }
     setGeocoding(true);
@@ -91,16 +91,16 @@ export default function BranchesPage() {
       );
       const results = await res.json();
       if (!results.length) {
-        toast.error('Address not found. Try a more specific address.');
+        toast.error(t('branch_not_found'));
         return;
       }
       const { lat, lon } = results[0];
       setMapLat(parseFloat(lat));
       setMapLng(parseFloat(lon));
       setLocationSet(true);
-      toast.success('Location found — drag the pin to fine-tune');
+      toast.success(t('branch_location_found'));
     } catch {
-      toast.error('Could not reach geocoder. Check your connection.');
+      toast.error(t('branch_geocoder_error'));
     } finally {
       setGeocoding(false);
     }
@@ -156,15 +156,15 @@ export default function BranchesPage() {
                   <div>
                     <Label className="flex items-center gap-1.5">
                       <MapPin className="h-3.5 w-3.5 text-amber-500" />
-                      Map Location
+                      {t('branch_map_location')}
                       {locationSet ? (
-                        <span className="text-xs text-green-400 font-normal ml-1">✓ set</span>
+                        <span className="text-xs text-green-400 font-normal ml-1">{t('branch_location_set')}</span>
                       ) : (
                         <span className="text-xs text-[#6b6b80] font-normal ml-1">({t('campaign_optional')})</span>
                       )}
                     </Label>
                     <p className="text-xs text-[#6b6b80] mt-0.5">
-                      Set coordinates so customers can discover this branch on the map
+                      {t('branch_location_hint')}
                     </p>
                   </div>
                   <Button

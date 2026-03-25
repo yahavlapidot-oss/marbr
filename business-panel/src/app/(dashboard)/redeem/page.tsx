@@ -97,7 +97,7 @@ export default function RedeemPage() {
           {success && (
             <div className="flex items-center gap-2 rounded-lg bg-green-500/10 px-4 py-3 text-green-400 text-sm">
               <CheckCircle2 className="h-4 w-4 shrink-0" />
-              Reward redeemed successfully!
+              {t('redeem_success')}
             </div>
           )}
         </CardContent>
@@ -107,7 +107,7 @@ export default function RedeemPage() {
         <Card className="border-amber-500/30">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
-              Reward Found
+              {t('redeem_found')}
               <Badge variant={reward.status === 'ACTIVE' ? 'active' : 'destructive'}>
                 {reward.status}
               </Badge>
