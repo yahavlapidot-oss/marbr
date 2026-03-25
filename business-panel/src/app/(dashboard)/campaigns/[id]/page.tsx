@@ -319,12 +319,21 @@ export default function CampaignDetailPage() {
       {/* Status controls */}
       {campaign?.status && (
         <div className="flex items-center gap-2 flex-wrap">
-          {campaign.status === 'DRAFT' && (
-            <Button onClick={() => transition.mutate('publish')} disabled={isPending} className="bg-green-600 hover:bg-green-500">
-              {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-              {t('campaigns_publish')}
-            </Button>
-          )}
+          {campaign.status === 'DRAFT' && (() => {
+            const hasRewards = (campaign.rewards?.length ?? 0) > 0;
+            return (
+              <div title={!hasRewards ? t('publish_needs_reward') : undefined}>
+                <Button
+                  onClick={() => transition.mutate('publish')}
+                  disabled={isPending || !hasRewards}
+                  className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                  {t('campaigns_publish')}
+                </Button>
+              </div>
+            );
+          })()}
           {campaign.status === 'ACTIVE' && (
             <>
               <Button variant="outline" onClick={() => transition.mutate('pause')} disabled={isPending}>

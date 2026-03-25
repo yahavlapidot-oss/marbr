@@ -186,10 +186,19 @@ export class CampaignsService {
   }
 
   async updateStatus(id: string, status: CampaignStatus, requesterId: string) {
-    const campaign = await this.prisma.campaign.findUnique({ where: { id } });
+    const campaign = await this.prisma.campaign.findUnique({
+      where: { id },
+      include: { rewards: { select: { id: true }, take: 1 } },
+    });
     if (!campaign) throw new NotFoundException('Campaign not found');
 
     this.validateTransition(campaign.status, status);
+
+    if (status === CampaignStatus.ACTIVE && campaign.rewards.length === 0) {
+      throw new BadRequestException(
+        'Cannot publish a campaign with no rewards. Add at least one reward first.',
+      );
+    }
 
     const updated = await this.prisma.campaign.update({
       where: { id },
