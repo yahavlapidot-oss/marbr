@@ -75,7 +75,7 @@ class HistoryScreen extends ConsumerWidget {
                 final e = list[i];
                 final campaign = e['campaign'];
                 final createdAt = e['createdAt'] != null
-                    ? DateTime.tryParse(e['createdAt'])
+                    ? DateTime.tryParse(e['createdAt'])?.toLocal()
                     : null;
                 final won = e['won'] == true;
 
