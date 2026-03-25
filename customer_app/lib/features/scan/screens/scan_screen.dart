@@ -156,7 +156,7 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
               child: Row(
                 children: [
                   IconButton(
-                    onPressed: () => Navigator.of(context).maybePop(),
+                    onPressed: () => context.pop(),
                     icon: Container(
                       width: 36, height: 36,
                       decoration: BoxDecoration(
