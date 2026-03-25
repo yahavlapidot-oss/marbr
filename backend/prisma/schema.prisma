@@ -243,6 +243,7 @@ model Product {
   id          String   @id @default(cuid())
   businessId  String
   name        String
+  description String?
   sku         String?
   posId       String?
   price       Float?

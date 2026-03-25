@@ -83,8 +83,8 @@ export default function CampaignDetailPage() {
   // UI state
   const [showAddReward, setShowAddReward] = useState(false);
   const [showEdit, setShowEdit] = useState(false);
-  const [rewardName, setRewardName] = useState('');
-  const [rewardDesc, setRewardDesc] = useState('');
+  const [selectedProductId, setSelectedProductId] = useState('');
+  const [rewardQty, setRewardQty] = useState('1');
   const [rewardInventory, setRewardInventory] = useState('1');
   const [drawCount, setDrawCount] = useState('1');
 
@@ -114,6 +114,12 @@ export default function CampaignDetailPage() {
   const { data: branches } = useQuery({
     queryKey: ['branches', businessId],
     queryFn: () => api.get(`/branches?businessId=${businessId}`).then((r) => r.data),
+    enabled: !!businessId,
+  });
+
+  const { data: products } = useQuery({
+    queryKey: ['products', businessId],
+    queryFn: () => api.get(`/products?businessId=${businessId}`).then((r) => r.data),
     enabled: !!businessId,
   });
 
@@ -187,7 +193,7 @@ export default function CampaignDetailPage() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['rewards', id] });
       setShowAddReward(false);
-      setRewardName(''); setRewardDesc(''); setRewardInventory('1');
+      setSelectedProductId(''); setRewardQty('1'); setRewardInventory('1');
       toast.success(t('prize_added'));
     },
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('prize_add_failed')),
@@ -657,34 +663,56 @@ export default function CampaignDetailPage() {
           </Button>
         </CardHeader>
         <CardContent className="space-y-4">
-          {showAddReward && (
+          {showAddReward && (() => {
+            const selectedProduct = (products ?? []).find((p: any) => p.id === selectedProductId);
+            const composedName = selectedProduct
+              ? `${rewardQty}× ${selectedProduct.name}`
+              : '';
+            return (
             <div className="rounded-lg border border-[#2a2a38] bg-[#1e1e2e] p-4 space-y-3">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>{t('campaign_prize_name')}</Label>
-                  <Input placeholder="e.g. Free shots" value={rewardName} onChange={(e) => setRewardName(e.target.value)} />
+                  <Label>{t('campaign_prize_product')}</Label>
+                  <select
+                    className="w-full rounded-md border border-[#2a2a38] bg-[#13131a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                    value={selectedProductId}
+                    onChange={(e) => setSelectedProductId(e.target.value)}
+                  >
+                    <option value="">{t('campaign_prize_select_product')}</option>
+                    {(products ?? []).map((p: any) => (
+                      <option key={p.id} value={p.id}>{p.name}{p.price != null ? ` — ₪${p.price}` : ''}</option>
+                    ))}
+                  </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{t('campaign_prize_qty')}</Label>
-                  <Input type="number" min="1" value={rewardInventory} onChange={(e) => setRewardInventory(e.target.value)} />
+                  <Label>{t('campaign_prize_product_qty')}</Label>
+                  <Input type="number" min="1" value={rewardQty} onChange={(e) => setRewardQty(e.target.value)} />
                 </div>
               </div>
+              {composedName && (
+                <p className="text-xs text-[#6b6b80]">{t('campaign_prize_reward_name')}: <span className="text-amber-400 font-medium">{composedName}</span></p>
+              )}
               <div className="space-y-1.5">
-                <Label>Description ({t('campaign_optional')})</Label>
-                <Input placeholder={t('campaign_prize_details_ph')} value={rewardDesc} onChange={(e) => setRewardDesc(e.target.value)} />
+                <Label>{t('campaign_prize_qty')} ({t('campaign_optional')})</Label>
+                <Input type="number" min="1" placeholder={t('campaign_prize_qty_ph')} value={rewardInventory} onChange={(e) => setRewardInventory(e.target.value)} />
               </div>
               <div className="flex gap-2">
                 <Button
                   size="sm"
-                  onClick={() => addReward.mutate({ name: rewardName, description: rewardDesc || undefined, inventory: parseInt(rewardInventory) || 1 })}
-                  disabled={!rewardName || addReward.isPending}
+                  onClick={() => addReward.mutate({
+                    name: composedName,
+                    description: selectedProduct?.description || undefined,
+                    inventory: parseInt(rewardInventory) || 1,
+                  })}
+                  disabled={!selectedProductId || addReward.isPending}
                 >
                   {addReward.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t('save')}
                 </Button>
                 <Button size="sm" variant="ghost" onClick={() => setShowAddReward(false)}>{t('cancel')}</Button>
               </div>
             </div>
-          )}
+            );
+          })()}
           {rewards.length === 0 ? (
             <p className="text-center text-[#6b6b80] py-6 text-sm">{t('campaign_no_prizes')}</p>
           ) : (

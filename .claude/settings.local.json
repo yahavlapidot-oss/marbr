@@ -48,7 +48,24 @@
       "Bash(flutter:*)",
       "Bash(xargs:*)",
       "Bash(git add:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Bash(cat:*)",
+      "Bash(npm install:*)",
+      "Bash(for f in customers analytics billing employees)",
+      "Bash(do)",
+      "Bash(echo \"=== $f ===\")",
+      "Read(//Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\(dashboard\\)/$f/**)",
+      "Bash(done)",
+      "Bash(for f in branches products rewards settings)",
+      "mcp__ide__getDiagnostics",
+      "Bash(npx tsc:*)",
+      "Bash(npm list:*)",
+      "Bash(npm run:*)",
+      "Bash(sed -n '125,132p' /Users/yahavlapidot/dev/mrbar/customer_app/lib/features/home/screens/home_screen.dart)",
+      "Bash(sed -n '202,208p' /Users/yahavlapidot/dev/mrbar/customer_app/lib/features/campaigns/screens/campaign_detail_screen.dart)",
+      "Bash(grep -n \"publish\\\\|pause\\\\|resume\\\\|\\\\/end\\\\|action\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
+      "Bash(grep -n \"reward\\\\|Reward\\\\|addReward\\\\|rewardName\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
+      "Bash(npx prisma:*)"
     ]
   }
 }
