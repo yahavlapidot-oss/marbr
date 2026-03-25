@@ -12,7 +12,7 @@ export const useLocaleStore = create<LocaleStore>()(
   persist(
     (set, get) => ({
       locale: 'he',
-      setLocale: (locale) => set({ locale }),
+      setLocale: (locale) => { set({ locale }); window.location.reload(); },
       t: (key) => translations[get().locale][key] as string,
     }),
     { name: 'mrbar-locale' },
