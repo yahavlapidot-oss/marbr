@@ -315,6 +315,14 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
                   child: Text(t('cancel')),
                 ),
               ),
+            ] else if (_success) ...[
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => context.pop(),
+                  child: Text(t('done')),
+                ),
+              ),
             ] else
               SizedBox(
                 width: double.infinity,

@@ -53,7 +53,7 @@ export class CampaignsService {
     return campaign;
   }
 
-  async findOne(id: string) {
+  async findOne(id: string, userId?: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {
@@ -65,6 +65,16 @@ export class CampaignsService {
     });
 
     if (!campaign) throw new NotFoundException('Campaign not found');
+
+    if (userId) {
+      const myEntry = await this.prisma.entry.findFirst({
+        where: { campaignId: id, userId },
+        select: { id: true, createdAt: true },
+        orderBy: { createdAt: 'desc' },
+      });
+      return { ...campaign, myEntry: myEntry ?? null };
+    }
+
     return campaign;
   }
 

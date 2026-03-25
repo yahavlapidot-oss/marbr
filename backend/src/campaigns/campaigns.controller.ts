@@ -14,6 +14,7 @@ import { CampaignsService } from './campaigns.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
@@ -37,9 +38,10 @@ export class CampaignsController {
   }
 
   @Get(':id')
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Get campaign details' })
-  findOne(@Param('id') id: string) {
-    return this.campaignsService.findOne(id);
+  findOne(@Param('id') id: string, @CurrentUser() user?: { id: string }) {
+    return this.campaignsService.findOne(id, user?.id);
   }
 
   @Get(':id/analytics')

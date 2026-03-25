@@ -47,6 +47,9 @@ class CampaignDetailScreen extends ConsumerWidget {
           final rewards = c['rewards'] as List? ?? [];
           final entries = c['_count']?['entries'] ?? 0;
           final endsAt = (c['endsAt'] as String?)?.toLocalDateTime();
+          final status = c['status'] as String? ?? '';
+          final isEnded = status == 'ENDED' || status == 'CANCELLED';
+          final isEnrolled = c['myEntry'] != null;
 
           return Column(
             children: [
@@ -87,21 +90,33 @@ class CampaignDetailScreen extends ConsumerWidget {
                               ]),
                             ),
                             const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFF22C55E).withAlpha(20),
-                                borderRadius: BorderRadius.circular(8),
-                                border: Border.all(color: const Color(0xFF22C55E).withAlpha(50)),
+                            if (isEnded)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: AppTheme.muted.withAlpha(20),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: AppTheme.muted.withAlpha(50)),
+                                ),
+                                child: Text(t('campaign_ended').toUpperCase(),
+                                  style: const TextStyle(color: AppTheme.muted, fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFF22C55E).withAlpha(20),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: const Color(0xFF22C55E).withAlpha(50)),
+                                ),
+                                child: Row(children: [
+                                  Container(width: 6, height: 6,
+                                    decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle)),
+                                  const SizedBox(width: 5),
+                                  Text(t('live_event').toUpperCase(),
+                                    style: const TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
+                                ]),
                               ),
-                              child: Row(children: [
-                                Container(width: 6, height: 6,
-                                  decoration: const BoxDecoration(color: Color(0xFF22C55E), shape: BoxShape.circle)),
-                                const SizedBox(width: 5),
-                                Text(t('live_event').toUpperCase(),
-                                  style: const TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 0.8)),
-                              ]),
-                            ),
                           ],
                         ),
                       const SizedBox(height: 20),
@@ -196,22 +211,78 @@ class CampaignDetailScreen extends ConsumerWidget {
                 ),
                 child: SizedBox(
                   width: double.infinity,
-                  child: c['type'] == 'SNAKE'
-                    ? ElevatedButton.icon(
-                        onPressed: () => context.push('/game/snake/$id'),
-                        icon: const Text('🐍', style: TextStyle(fontSize: 18)),
-                        label: Text(t('play_snake')),
-                      )
-                    : ElevatedButton.icon(
-                        onPressed: () => context.push('/scan'),
-                        icon: const Icon(Icons.qr_code_scanner, size: 20),
-                        label: Text(t('scan_qr')),
-                      ),
+                  child: isEnded
+                    ? _EndedBanner(t: t)
+                    : isEnrolled
+                      ? _EnrolledBanner(t: t)
+                      : c['type'] == 'SNAKE'
+                        ? ElevatedButton.icon(
+                            onPressed: () => context.push('/game/snake/$id'),
+                            icon: const Text('🐍', style: TextStyle(fontSize: 18)),
+                            label: Text(t('play_snake')),
+                          )
+                        : ElevatedButton.icon(
+                            onPressed: () => context.push('/scan'),
+                            icon: const Icon(Icons.qr_code_scanner, size: 20),
+                            label: Text(t('scan_qr')),
+                          ),
                 ),
               ),
             ],
           );
         },
+      ),
+    );
+  }
+}
+
+class _EnrolledBanner extends StatelessWidget {
+  final String Function(String) t;
+  const _EnrolledBanner({required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF22C55E).withAlpha(15),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: const Color(0xFF22C55E).withAlpha(60)),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 18),
+          const SizedBox(width: 8),
+          Text(t('already_enrolled'),
+            style: const TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w700, fontSize: 15)),
+        ],
+      ),
+    );
+  }
+}
+
+class _EndedBanner extends StatelessWidget {
+  final String Function(String) t;
+  const _EndedBanner({required this.t});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      decoration: BoxDecoration(
+        color: AppTheme.surface,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: AppTheme.border),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          const Icon(Icons.lock_outline, color: AppTheme.muted, size: 18),
+          const SizedBox(width: 8),
+          Text(t('campaign_ended'),
+            style: const TextStyle(color: AppTheme.muted, fontWeight: FontWeight.w600, fontSize: 15)),
+        ],
       ),
     );
   }
