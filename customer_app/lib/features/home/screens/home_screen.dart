@@ -125,7 +125,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                       // Scan CTA
                       GestureDetector(
-                        onTap: () => context.go('/scan'),
+                        onTap: () => context.push('/scan'),
                         child: Container(
                           width: double.infinity,
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),

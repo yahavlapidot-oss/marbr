@@ -202,7 +202,7 @@ class CampaignDetailScreen extends ConsumerWidget {
                         label: Text(t('play_snake')),
                       )
                     : ElevatedButton.icon(
-                        onPressed: () => context.go('/scan'),
+                        onPressed: () => context.push('/scan'),
                         icon: const Icon(Icons.qr_code_scanner, size: 20),
                         label: Text(t('scan_qr')),
                       ),
