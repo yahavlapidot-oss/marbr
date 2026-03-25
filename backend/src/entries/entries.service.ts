@@ -176,12 +176,12 @@ export class EntriesService {
     );
   }
 
-  private async assertEligible(userId: string, campaign: { id: string; maxEntriesPerUser: number | null }) {
-    if (!campaign.maxEntriesPerUser) return;
-    const count = await this.prisma.entry.count({
+  private async assertEligible(userId: string, campaign: { id: string }) {
+    const hasEntry = await this.prisma.entry.findFirst({
       where: { userId, campaignId: campaign.id, isValid: true },
+      select: { id: true },
     });
-    if (count >= campaign.maxEntriesPerUser)
+    if (hasEntry)
       throw new BadRequestException('Entry limit reached for this campaign');
   }
 

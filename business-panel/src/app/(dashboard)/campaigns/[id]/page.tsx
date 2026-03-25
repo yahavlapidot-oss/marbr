@@ -64,7 +64,6 @@ type EditForm = {
   description: string;
   startsAt: string;
   endsAt: string;
-  maxEntriesPerUser: number;
   everyN: number;
   winProbability: number;
   pushTitle: string;
@@ -135,7 +134,6 @@ export default function CampaignDetailPage() {
         description: c.description ?? '',
         startsAt: toDatetimeLocal(c.startsAt),
         endsAt: toDatetimeLocal(c.endsAt),
-        maxEntriesPerUser: c.maxEntriesPerUser ?? 1,
         everyN: c.everyN ?? 2,
         winProbability: c.winProbability ?? 0.1,
         pushTitle: c.pushTitle ?? '',
@@ -171,7 +169,6 @@ export default function CampaignDetailPage() {
       payload.endsAt = formData.endsAt ? fromDatetimeLocal(formData.endsAt) : '';
       if (formData.pushTitle !== undefined) payload.pushTitle = formData.pushTitle;
       if (formData.pushBody !== undefined) payload.pushBody = formData.pushBody;
-      if (campaignType.current !== 'SNAKE') payload.maxEntriesPerUser = formData.maxEntriesPerUser;
       if (campaignType.current === 'EVERY_N') payload.everyN = formData.everyN;
       if (campaignType.current === 'WEIGHTED_ODDS') payload.winProbability = formData.winProbability;
       return api.patch(`/campaigns/${id}`, payload);
@@ -418,12 +415,6 @@ export default function CampaignDetailPage() {
                   <Input type="datetime-local" {...register('endsAt')} />
                 </div>
               </div>
-              {!isSnake && (
-                <div className="space-y-1.5">
-                  <Label>{t('campaign_max_entries_label')}</Label>
-                  <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} className="w-40" />
-                </div>
-              )}
               {isEveryN && (
                 <div className="space-y-1.5">
                   <Label>{t('campaign_every_n')}</Label>
@@ -726,12 +717,6 @@ export default function CampaignDetailPage() {
             </div>
           )}
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
-            {!isSnake && (
-              <div>
-                <p className="text-[#6b6b80]">{t('campaign_max_entries_col')}</p>
-                <p className="text-white">{campaign?.maxEntriesPerUser ?? 1}</p>
-              </div>
-            )}
             {campaign?.everyN && (
               <div>
                 <p className="text-[#6b6b80]">{t('campaign_every_n')}</p>

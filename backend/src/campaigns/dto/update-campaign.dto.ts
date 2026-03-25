@@ -19,11 +19,6 @@ export class UpdateCampaignDto {
 
   @IsOptional()
   @IsInt()
-  @Min(1)
-  maxEntriesPerUser?: number;
-
-  @IsOptional()
-  @IsInt()
   @Min(2)
   everyN?: number;
 

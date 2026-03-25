@@ -21,7 +21,6 @@ const schema = z.object({
   type: z.enum(['RAFFLE', 'INSTANT_WIN', 'EVERY_N', 'WEIGHTED_ODDS', 'SNAKE']),
   startsAt: z.string().optional(),
   endsAt: z.string().optional(),
-  maxEntriesPerUser: z.number().int().min(1),
   everyN: z.number().int().min(2).optional(),
   winProbability: z.number().min(0).max(1).optional(),
   topN: z.number().int().min(1).optional(),
@@ -46,7 +45,7 @@ export default function NewCampaignPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { type: 'RAFFLE', maxEntriesPerUser: 1, topN: 3, rewardName: 'Winner Prize' },
+    defaultValues: { type: 'RAFFLE', topN: 3, rewardName: 'Winner Prize' },
   });
 
   const campaignType = watch('type');
@@ -65,10 +64,6 @@ export default function NewCampaignPage() {
       const rewardName = payload.rewardName;
       delete payload.topN;
       delete payload.rewardName;
-
-      if (isSnake) {
-        payload.maxEntriesPerUser = 1; // enforced for snake
-      }
 
       const res = await api.post(`/campaigns?businessId=${businessId}`, payload);
       const campaignId = res.data.id;
@@ -164,12 +159,6 @@ export default function NewCampaignPage() {
               </div>
             )}
 
-            {!isSnake && (
-              <div className="space-y-1.5">
-                <Label>{t('campaign_max_entries')}</Label>
-                <Input type="number" min={1} {...register('maxEntriesPerUser', { valueAsNumber: true })} />
-              </div>
-            )}
           </CardContent>
         </Card>
 

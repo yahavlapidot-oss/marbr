@@ -42,12 +42,6 @@ export class CreateCampaignDto {
   @Min(1)
   maxEntries?: number;
 
-  @ApiPropertyOptional({ default: 1 })
-  @IsOptional()
-  @IsInt()
-  @Min(1)
-  maxEntriesPerUser?: number;
-
   @ApiPropertyOptional({ description: 'For EVERY_N type: win every N entries' })
   @IsOptional()
   @IsInt()
