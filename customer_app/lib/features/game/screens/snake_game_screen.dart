@@ -13,13 +13,13 @@ import '../../../core/theme.dart';
 const int _kCols = 15;
 const int _kRows = 15;
 
-/// Tick interval in ms (lower = faster). Starts aggressive, gets brutal.
+/// Tick interval in ms. Starts fast, ramps to brutal — avg loss ~30 sec.
 int _intervalMs(int foodEaten) {
-  if (foodEaten < 3) return 250;
-  if (foodEaten < 7) return 200;
-  if (foodEaten < 12) return 160;
-  if (foodEaten < 18) return 130;
-  return 100;
+  if (foodEaten < 2)  return 180;
+  if (foodEaten < 5)  return 150;
+  if (foodEaten < 9)  return 120;
+  if (foodEaten < 14) return 95;
+  return 75;
 }
 
 int _computeScore(int foodEaten) => foodEaten * (foodEaten + 1) * 5;
@@ -124,9 +124,12 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
   late _GameState _gs;
   late final Ticker _ticker;
   late final AnimationController _deathAnim;
+  late final AnimationController _eatAnim;
 
   String? _gameToken;
   final _rng = math.Random();
+
+  Offset? _eatGridPos; // grid position where last apple was eaten
 
   // Smooth interpolation: lerp between prev and curr positions each frame
   List<Offset> _prevSnake = [];
@@ -144,6 +147,10 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
       vsync: this,
       duration: const Duration(milliseconds: 500),
     );
+    _eatAnim = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 380),
+    );
     _ticker = createTicker(_onTick);
     _init();
   }
@@ -152,6 +159,7 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
   void dispose() {
     _ticker.dispose();
     _deathAnim.dispose();
+    _eatAnim.dispose();
     SystemChrome.setPreferredOrientations(DeviceOrientation.values);
     super.dispose();
   }
@@ -277,6 +285,12 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
     final newFoodEaten = gs.foodEaten + (ateFood ? 1 : 0);
     final newFood = ateFood ? _randomFood(newSnake) : gs.food;
 
+    if (ateFood) {
+      _eatGridPos = gs.food;
+      _eatAnim.forward(from: 0.0);
+      HapticFeedback.mediumImpact();
+    }
+
     _currSnake = newSnake;
     _currFood = newFood;
 
@@ -395,13 +409,18 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
                         aspectRatio: _kCols / _kRows,
                         child: Padding(
                           padding: const EdgeInsets.symmetric(horizontal: 12),
-                          child: CustomPaint(
-                            painter: _SnakePainter(
-                              snake: _interpSnake,
-                              food: _interpFood,
-                              progress: _progress,
-                              cols: _kCols,
-                              rows: _kRows,
+                          child: AnimatedBuilder(
+                            animation: _eatAnim,
+                            builder: (_, child) => CustomPaint(
+                              painter: _SnakePainter(
+                                snake: _interpSnake,
+                                food: _interpFood,
+                                progress: _progress,
+                                cols: _kCols,
+                                rows: _kRows,
+                                eatProgress: _eatAnim.value,
+                                eatGridPos: _eatGridPos,
+                              ),
                             ),
                           ),
                         ),
@@ -471,41 +490,50 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
             onTap: () => context.pop(),
           ),
           const Spacer(),
-          // Score chip
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
-            decoration: BoxDecoration(
-              color: const Color(0xFF141420),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(
-                color: AppTheme.gold.withValues(alpha: 0.35),
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.gold.withValues(alpha: 0.08),
-                  blurRadius: 12,
-                  spreadRadius: 0,
+          // Score chip with eat-bounce animation
+          AnimatedBuilder(
+            animation: _eatAnim,
+            builder: (_, child) {
+              final bounce = _eatAnim.value < 0.35
+                  ? 1.0 + 0.22 * (_eatAnim.value / 0.35)
+                  : 1.0 + 0.22 * (1.0 - (_eatAnim.value - 0.35) / 0.65);
+              return Transform.scale(scale: bounce, child: child);
+            },
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 9),
+              decoration: BoxDecoration(
+                color: const Color(0xFF141420),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color: AppTheme.gold.withValues(alpha: 0.35),
                 ),
-              ],
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(
-                  '${_gs.score}',
-                  style: const TextStyle(
-                    color: AppTheme.gold,
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: -0.5,
+                boxShadow: [
+                  BoxShadow(
+                    color: AppTheme.gold.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    spreadRadius: 0,
                   ),
-                ),
-                const SizedBox(width: 10),
-                Text(
-                  '🍎 ×${_gs.foodEaten}',
-                  style: const TextStyle(color: Colors.white30, fontSize: 12),
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    '${_gs.score}',
+                    style: const TextStyle(
+                      color: AppTheme.gold,
+                      fontSize: 24,
+                      fontWeight: FontWeight.w900,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '🍎 ×${_gs.foodEaten}',
+                    style: const TextStyle(color: Colors.white30, fontSize: 12),
+                  ),
+                ],
+              ),
             ),
           ),
           const Spacer(),
@@ -686,6 +714,8 @@ class _SnakePainter extends CustomPainter {
   final double progress;    // 0→1, used for pulsing effects
   final int cols;
   final int rows;
+  final double eatProgress; // 0→1 eat burst animation
+  final Offset? eatGridPos; // grid cell where apple was eaten
 
   const _SnakePainter({
     required this.snake,
@@ -693,6 +723,8 @@ class _SnakePainter extends CustomPainter {
     required this.progress,
     required this.cols,
     required this.rows,
+    this.eatProgress = 0.0,
+    this.eatGridPos,
   });
 
   @override
@@ -702,6 +734,7 @@ class _SnakePainter extends CustomPainter {
 
     _drawBackground(canvas, size);
     _drawGrid(canvas, size, cw, ch);
+    _drawEatEffect(canvas, cw, ch);
     _drawFood(canvas, cw, ch);
     if (snake.isNotEmpty) _drawSnake(canvas, size, cw, ch);
   }
@@ -716,6 +749,59 @@ class _SnakePainter extends CustomPainter {
       ),
       Paint()..color = const Color(0xFF0A0A12),
     );
+  }
+
+  // ── Eat burst effect ───────────────────────────────────────────────────────
+
+  void _drawEatEffect(Canvas canvas, double cw, double ch) {
+    if (eatProgress <= 0 || eatGridPos == null) return;
+    final cx = (eatGridPos!.dx + 0.5) * cw;
+    final cy = (eatGridPos!.dy + 0.5) * ch;
+
+    // Ease-out curve: ring expands fast then slows
+    final t = 1.0 - math.pow(1.0 - eatProgress, 2.5);
+    final alpha = (1.0 - eatProgress).clamp(0.0, 1.0);
+    final maxR = cw * 2.2;
+
+    // Outer gold ring burst
+    canvas.drawCircle(
+      Offset(cx, cy),
+      maxR * t,
+      Paint()
+        ..color = AppTheme.gold.withValues(alpha: alpha * 0.55)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = (4.0 * (1.0 - t)).clamp(0.5, 4.0)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+
+    // Inner white flash — disappears quickly
+    if (eatProgress < 0.45) {
+      final innerAlpha = (1.0 - eatProgress / 0.45).clamp(0.0, 1.0);
+      canvas.drawCircle(
+        Offset(cx, cy),
+        maxR * 0.45 * t,
+        Paint()
+          ..color = Colors.white.withValues(alpha: innerAlpha * 0.45)
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8),
+      );
+    }
+
+    // 6 particle dots flying outward
+    const particleCount = 6;
+    for (int i = 0; i < particleCount; i++) {
+      final angle = (i / particleCount) * 2 * math.pi;
+      final dist = maxR * 0.85 * t;
+      final px = cx + math.cos(angle) * dist;
+      final py = cy + math.sin(angle) * dist;
+      final pr = (cw * 0.09 * (1.0 - t)).clamp(1.0, 6.0);
+      canvas.drawCircle(
+        Offset(px, py),
+        pr,
+        Paint()
+          ..color = (i.isEven ? AppTheme.gold : const Color(0xFFEF4444))
+              .withValues(alpha: alpha * 0.85),
+      );
+    }
   }
 
   // ── Grid dots (very subtle) ────────────────────────────────────────────────
