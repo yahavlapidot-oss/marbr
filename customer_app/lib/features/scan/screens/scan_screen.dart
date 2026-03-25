@@ -50,11 +50,12 @@ class _ScanScreenState extends ConsumerState<ScanScreen> {
       final campaignId = campaignData?['id'] as String?;
       final rewardName = reward?['reward']?['name'] as String?;
 
-      // Mark as enrolled locally for instant UI feedback on campaign detail
+      // Mark enrolled locally for instant UI feedback; refresh server-side providers
       if (campaignId != null) {
         ref.read(enrolledCampaignIdsProvider.notifier)
             .update((s) => {...s, campaignId});
         ref.invalidate(campaignProvider(campaignId));
+        ref.invalidate(activeCampaignEnrollmentProvider);
       }
 
       // SNAKE campaigns: navigate to snake screen instead of showing generic result

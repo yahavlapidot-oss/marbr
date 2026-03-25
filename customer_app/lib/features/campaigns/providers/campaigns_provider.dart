@@ -26,3 +26,12 @@ final campaignProvider =
 /// waiting for a network re-fetch.
 final enrolledCampaignIdsProvider =
     StateProvider<Set<String>>((ref) => const {});
+
+/// The campaign the current user is actively enrolled in, or null.
+/// Source of truth for enrollment state across all screens.
+final activeCampaignEnrollmentProvider =
+    FutureProvider<Map<String, dynamic>?>((ref) async {
+  final res = await createDio().get('/entries/active');
+  if (res.data == null) return null;
+  return Map<String, dynamic>.from(res.data);
+});

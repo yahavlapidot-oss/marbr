@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/api_client.dart';
+import '../../../core/api_client.dart'; // used by _confirmLeave
 import '../../../core/device_service.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
@@ -9,11 +9,6 @@ import '../../../core/locale_provider.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
 
-final activeCampaignEnrollmentProvider = FutureProvider.autoDispose<Map<String, dynamic>?>((ref) async {
-  final res = await createDio().get('/entries/active');
-  if (res.data == null) return null;
-  return Map<String, dynamic>.from(res.data);
-});
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -123,56 +118,58 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 24),
 
-                      // Scan CTA
-                      GestureDetector(
-                        onTap: () => context.push('/scan'),
-                        child: Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
-                          decoration: BoxDecoration(
-                            gradient: const LinearGradient(
-                              colors: [Color(0xFFF5C518), Color(0xFFD4A017)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                            borderRadius: BorderRadius.circular(16),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xFFF5C518).withAlpha(60),
-                                blurRadius: 20,
-                                offset: const Offset(0, 8),
+                      // Scan CTA — hidden when already enrolled in a campaign
+                      if (enrollment.valueOrNull == null) ...[
+                        GestureDetector(
+                          onTap: () => context.push('/scan'),
+                          child: Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [Color(0xFFF5C518), Color(0xFFD4A017)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              Container(
-                                width: 44,
-                                height: 44,
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withAlpha(30),
-                                  borderRadius: BorderRadius.circular(10),
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFF5C518).withAlpha(60),
+                                  blurRadius: 20,
+                                  offset: const Offset(0, 8),
                                 ),
-                                child: const Icon(Icons.qr_code_scanner, color: Colors.black, size: 24),
-                              ),
-                              const SizedBox(width: 14),
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(t('scan_qr_enter'),
-                                    style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.8)),
-                                  const SizedBox(height: 2),
-                                  Text(t('scan_purchase_code'),
-                                    style: const TextStyle(color: Colors.black54, fontSize: 12)),
-                                ],
-                              ),
-                              const Spacer(),
-                              const Icon(Icons.arrow_forward_ios, color: Colors.black54, size: 14),
-                            ],
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 44,
+                                  height: 44,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(30),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Icon(Icons.qr_code_scanner, color: Colors.black, size: 24),
+                                ),
+                                const SizedBox(width: 14),
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(t('scan_qr_enter'),
+                                      style: const TextStyle(color: Colors.black, fontWeight: FontWeight.w800, fontSize: 14, letterSpacing: 0.8)),
+                                    const SizedBox(height: 2),
+                                    Text(t('scan_purchase_code'),
+                                      style: const TextStyle(color: Colors.black54, fontSize: 12)),
+                                  ],
+                                ),
+                                const Spacer(),
+                                const Icon(Icons.arrow_forward_ios, color: Colors.black54, size: 14),
+                              ],
+                            ),
                           ),
                         ),
-                      ),
-                      const SizedBox(height: 28),
+                        const SizedBox(height: 28),
+                      ],
 
                       // Active campaign enrollment banner
                       enrollment.maybeWhen(

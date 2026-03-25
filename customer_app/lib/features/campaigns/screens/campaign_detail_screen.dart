@@ -20,6 +20,8 @@ class CampaignDetailScreen extends ConsumerWidget {
 
     final campaign = ref.watch(campaignProvider(id));
     final enrolledLocally = ref.watch(enrolledCampaignIdsProvider).contains(id);
+    final activeEnrollment = ref.watch(activeCampaignEnrollmentProvider).valueOrNull;
+    final enrolledViaActive = activeEnrollment?['id'] == id;
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -45,7 +47,7 @@ class CampaignDetailScreen extends ConsumerWidget {
           final endsAt = (c['endsAt'] as String?)?.toLocalDateTime();
           final status = c['status'] as String? ?? '';
           final isEnded = status == 'ENDED' || status == 'CANCELLED';
-          final isEnrolled = enrolledLocally || c['myEntry'] != null;
+          final isEnrolled = enrolledLocally || enrolledViaActive || c['myEntry'] != null;
 
           return Column(
             children: [

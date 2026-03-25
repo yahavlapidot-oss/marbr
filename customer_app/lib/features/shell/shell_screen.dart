@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../core/locale_provider.dart';
+import '../campaigns/providers/campaigns_provider.dart';
 
 class ShellScreen extends ConsumerWidget {
   final Widget child;
@@ -14,6 +15,7 @@ class ShellScreen extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
+    final isEnrolled = ref.watch(activeCampaignEnrollmentProvider).valueOrNull != null;
     final location = GoRouterState.of(context).matchedLocation;
 
     int selectedIndex = 0;
@@ -42,7 +44,7 @@ class ShellScreen extends ConsumerWidget {
             switch (i) {
               case 0: context.go('/home'); break;
               case 1: context.go('/discover'); break;
-              case 2: context.push('/scan'); break;
+              case 2: if (!isEnrolled) context.push('/scan'); break;
               case 3: context.go('/rewards'); break;
               case 4: context.go('/profile'); break;
             }
@@ -50,7 +52,10 @@ class ShellScreen extends ConsumerWidget {
           items: [
             BottomNavigationBarItem(icon: const Icon(Icons.home_outlined), activeIcon: const Icon(Icons.home), label: t('home')),
             BottomNavigationBarItem(icon: const Icon(Icons.explore_outlined), activeIcon: const Icon(Icons.explore), label: t('discover')),
-            BottomNavigationBarItem(icon: const Icon(Icons.qr_code_scanner), label: t('scan')),
+            BottomNavigationBarItem(
+              icon: Icon(Icons.qr_code_scanner, color: isEnrolled ? AppTheme.border : null),
+              label: t('scan'),
+            ),
             BottomNavigationBarItem(icon: const Icon(Icons.emoji_events_outlined), activeIcon: const Icon(Icons.emoji_events), label: t('my_wins')),
             BottomNavigationBarItem(icon: const Icon(Icons.person_outline), activeIcon: const Icon(Icons.person), label: t('profile')),
           ],
