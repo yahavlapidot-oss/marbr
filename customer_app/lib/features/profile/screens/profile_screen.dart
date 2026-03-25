@@ -65,7 +65,7 @@ class _ProfileContent extends StatelessWidget {
                       letterSpacing: -0.5,
                     )),
                   GestureDetector(
-                    onTap: () => context.go('/settings'),
+                    onTap: () => context.push('/settings'),
                     child: Container(
                       width: 42, height: 42,
                       decoration: BoxDecoration(
@@ -129,9 +129,9 @@ class _ProfileContent extends StatelessWidget {
                     child: Text(t('account'),
                       style: const TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
                   ),
-                  _MenuTile(icon: Icons.history, label: t('participation'), onTap: () => context.go('/history')),
-                  _MenuTile(icon: Icons.notifications_outlined, label: t('notifications_menu'), onTap: () => context.go('/notifications')),
-                  _MenuTile(icon: Icons.favorite_outline, label: t('favorite_venues'), onTap: () => context.go('/favorites')),
+                  _MenuTile(icon: Icons.history, label: t('participation'), onTap: () => context.push('/history')),
+                  _MenuTile(icon: Icons.notifications_outlined, label: t('notifications_menu'), onTap: () => context.push('/notifications')),
+                  _MenuTile(icon: Icons.favorite_outline, label: t('favorite_venues'), onTap: () => context.push('/favorites')),
 
                   const SizedBox(height: 20),
                   Padding(
@@ -139,7 +139,7 @@ class _ProfileContent extends StatelessWidget {
                     child: Text(t('more'),
                       style: const TextStyle(color: AppTheme.muted, fontSize: 11, letterSpacing: 1.5, fontWeight: FontWeight.w600)),
                   ),
-                  _MenuTile(icon: Icons.settings_outlined, label: t('settings'), onTap: () => context.go('/settings')),
+                  _MenuTile(icon: Icons.settings_outlined, label: t('settings'), onTap: () => context.push('/settings')),
                   _MenuTile(
                     icon: Icons.logout,
                     label: t('sign_out'),
