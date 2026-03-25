@@ -19,6 +19,27 @@ class ShellScreen extends ConsumerWidget {
         || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
     final location = GoRouterState.of(context).matchedLocation;
 
+    // When active enrollment disappears (campaign ended / cancelled),
+    // clear the local session cache so scan is re-enabled and show a notice.
+    ref.listen<AsyncValue<Map<String, dynamic>?>>(
+      activeCampaignEnrollmentProvider,
+      (prev, next) {
+        final hadEnrollment = prev?.valueOrNull != null;
+        final nowGone = next.valueOrNull == null && !next.isLoading;
+        if (hadEnrollment && nowGone) {
+          final localIds = ref.read(enrolledCampaignIdsProvider);
+          if (localIds.isNotEmpty) {
+            ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
+            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+              content: Text(t('campaign_ended')),
+              backgroundColor: AppTheme.surface,
+              behavior: SnackBarBehavior.floating,
+            ));
+          }
+        }
+      },
+    );
+
     int selectedIndex = 0;
     if (location.startsWith('/discover')) selectedIndex = 1;
     if (location.startsWith('/scan')) selectedIndex = 2;

@@ -74,6 +74,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final hasEnrollment = enrollment.valueOrNull != null
         || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
 
+
     return Scaffold(
       body: SafeArea(
         child: RefreshIndicator(
