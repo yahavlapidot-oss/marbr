@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/api_client.dart'; // used by _confirmLeave
 import '../../../core/device_service.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
@@ -27,38 +26,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (granted) DeviceService().registerDevice();
       });
     });
-  }
-
-  Future<void> _confirmLeave(BuildContext context, WidgetRef ref, String campaignName) async {
-    final locale = ref.read(localeProvider);
-    String t(String key) => AppL10n.of(locale, key);
-
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1a1a24),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text(t('leave_campaign'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
-        content: Text(
-          t('leave_confirm'),
-          style: const TextStyle(color: Color(0xFF9b9bae), height: 1.5),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: Text(t('stay'), style: const TextStyle(color: Color(0xFF9b9bae))),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: Text(t('leave'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700)),
-          ),
-        ],
-      ),
-    );
-    if (confirmed == true) {
-      await createDio().delete('/entries/active');
-      ref.invalidate(activeCampaignEnrollmentProvider);
-    }
   }
 
   @override
@@ -175,66 +142,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         ),
                         const SizedBox(height: 28),
                       ],
-
-                      // Active campaign enrollment banner
-                      enrollment.maybeWhen(
-                        data: (active) {
-                          if (active == null) return const SizedBox.shrink();
-                          final name = active['name'] as String? ?? 'Campaign';
-                          final type = active['type'] as String? ?? '';
-                          return Container(
-                            margin: const EdgeInsets.only(bottom: 20),
-                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFF22C55E).withAlpha(15),
-                              borderRadius: BorderRadius.circular(14),
-                              border: Border.all(color: const Color(0xFF22C55E).withAlpha(60)),
-                            ),
-                            child: Row(
-                              children: [
-                                Container(
-                                  width: 36, height: 36,
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF22C55E).withAlpha(25),
-                                    borderRadius: BorderRadius.circular(10),
-                                  ),
-                                  child: Center(
-                                    child: type == 'SNAKE'
-                                        ? const Text('🐍', style: TextStyle(fontSize: 18))
-                                        : const Icon(Icons.confirmation_number_outlined, color: Color(0xFF22C55E), size: 18),
-                                  ),
-                                ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(t('currently_enrolled'),
-                                        style: const TextStyle(color: Color(0xFF22C55E), fontSize: 10, fontWeight: FontWeight.w700, letterSpacing: 1)),
-                                      Text(name,
-                                        style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 13)),
-                                    ],
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () => _confirmLeave(context, ref, name),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                                    decoration: BoxDecoration(
-                                      color: Colors.redAccent.withAlpha(20),
-                                      borderRadius: BorderRadius.circular(8),
-                                      border: Border.all(color: Colors.redAccent.withAlpha(60)),
-                                    ),
-                                    child: Text(t('leave'),
-                                      style: const TextStyle(color: Colors.redAccent, fontSize: 12, fontWeight: FontWeight.w700)),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        },
-                        orElse: () => const SizedBox.shrink(),
-                      ),
 
                       Text(t('live_now'),
                         style: const TextStyle(color: AppTheme.subtle, fontSize: 11, fontWeight: FontWeight.w700, letterSpacing: 1.5)),

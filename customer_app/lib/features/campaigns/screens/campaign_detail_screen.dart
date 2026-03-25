@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../core/api_client.dart';
 import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
@@ -234,28 +235,75 @@ class CampaignDetailScreen extends ConsumerWidget {
   }
 }
 
-class _EnrolledBanner extends StatelessWidget {
+class _EnrolledBanner extends ConsumerWidget {
   final String Function(String) t;
   const _EnrolledBanner({required this.t});
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 14),
-      decoration: BoxDecoration(
-        color: const Color(0xFF22C55E).withAlpha(15),
-        borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: const Color(0xFF22C55E).withAlpha(60)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 18),
-          const SizedBox(width: 8),
-          Text(t('already_enrolled'),
-            style: const TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w700, fontSize: 15)),
+  Future<void> _confirmLeave(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1a1a24),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(t('leave_campaign'), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        content: Text(t('leave_confirm'), style: const TextStyle(color: Color(0xFF9b9bae), height: 1.5)),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: Text(t('stay'), style: const TextStyle(color: Color(0xFF9b9bae))),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: Text(t('leave'), style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.w700)),
+          ),
         ],
       ),
+    );
+    if (confirmed == true) {
+      await createDio().delete('/entries/active');
+      ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
+      ref.invalidate(activeCampaignEnrollmentProvider);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: const EdgeInsets.symmetric(vertical: 14),
+            decoration: BoxDecoration(
+              color: const Color(0xFF22C55E).withAlpha(15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: const Color(0xFF22C55E).withAlpha(60)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 18),
+                const SizedBox(width: 8),
+                Text(t('already_enrolled'),
+                  style: const TextStyle(color: Color(0xFF22C55E), fontWeight: FontWeight.w700, fontSize: 15)),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(width: 10),
+        GestureDetector(
+          onTap: () => _confirmLeave(context, ref),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: Colors.redAccent.withAlpha(20),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.redAccent.withAlpha(60)),
+            ),
+            child: Text(t('leave'),
+              style: const TextStyle(color: Colors.redAccent, fontSize: 14, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ],
     );
   }
 }
