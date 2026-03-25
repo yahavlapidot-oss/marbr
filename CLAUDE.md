@@ -1,49 +1,107 @@
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+קובץ זה מספק הנחיות ל-Claude Code בעת עבודה עם הקוד במאגר זה.
 
-## Git Workflow
+---
+
+## Git Workflow / זרימת עבודה עם Git
 
 After each meaningful unit of work, automatically commit AND push to origin main. No need to ask for confirmation before committing or pushing.
 
-## Product Overview
+לאחר כל יחידת עבודה משמעותית, בצע commit ו-push אוטומטי ל-origin main. אין צורך לבקש אישור לפני commit או push.
+
+---
+
+## Product Overview / סקירת המוצר
 
 MrBar is a two-sided promotions, raffles, and notifications platform for physical venues (bars, clubs, restaurants). Businesses launch real-time campaigns (e.g. "buy a Heineken in the next 15 min, enter a raffle for 20 free shots"), customers receive push notifications, scan a QR/enter a code at the POS, and are entered into the raffle or receive an instant reward.
 
-## Architecture
+MrBar היא פלטפורמה דו-צדדית למבצעים, הגרלות והתראות עבור מקומות פיזיים (ברים, מועדונים, מסעדות). עסקים משיקים קמפיינים בזמן אמת (למשל: "קנה היינקן ב-15 הדקות הקרובות, הצטרף להגרלה על 20 שוטים חינם"), לקוחות מקבלים התראות push, סורקים QR או מזינים קוד בקופה, ונכנסים להגרלה או מקבלים פרס מיידי.
+
+---
+
+## Architecture / ארכיטקטורה
 
 Three separate apps share a common backend:
+שלושה אפליקציות נפרדות חולקות backend משותף:
 
-| App | Tech | Purpose |
+| App | Tech | Purpose / מטרה |
 |-----|------|---------|
 | `backend` | Node.js + NestJS | REST API, business logic, queues |
-| `customer-app` | Flutter | iOS + Android customer app |
-| `business-panel` | Next.js | Web dashboard for business owners/staff |
+| `customer_app` | Flutter | iOS + Android customer app / אפליקציית לקוח |
+| `business-panel` | Next.js | Web dashboard for business owners/staff / לוח בקרה לבעלי עסקים |
 
 ### Backend Services (NestJS modules)
 `auth` · `users` · `businesses` · `branches` · `employees` · `campaigns` · `entries` · `rewards` · `redemptions` · `notifications` · `analytics` · `billing` · `fraud` · `admin`
 
-### Infrastructure
-- **Database:** PostgreSQL
-- **Cache / queues:** Redis + BullMQ
-- **Push notifications:** Firebase (FCM) + APNS
-- **File storage:** S3 / Cloudinary
-- **Maps:** Google Maps / Mapbox
-- **Monitoring:** Sentry + Grafana + PostHog
+### Infrastructure / תשתית
+- **Database / בסיס נתונים:** PostgreSQL
+- **Cache / queues / תורים:** Redis + BullMQ
+- **Push notifications / התראות:** Firebase (FCM) + APNS
+- **File storage / אחסון קבצים:** S3 / Cloudinary
+- **Maps / מפות:** Google Maps / Mapbox
+- **Monitoring / ניטור:** Sentry + Grafana + PostHog
 
-### Key Domain Concepts
-- **Campaign** – time-boxed promotion with eligibility rules, required product, reward, and a win mechanism (raffle / instant / every-N / weighted odds).
-- **Entry** – a participation event created when a customer scans a dynamic QR or submits a purchase code. Includes duplicate-prevention (hash + TTL + device fingerprint).
-- **Reward / UserReward** – prize allocated to a winner; has inventory cap, expiry window, and a one-time redemption QR.
-- **Redemption** – staff-side action that marks a UserReward as used; validated by branch and short-lived code.
+### Key Domain Concepts / מושגי מפתח
+- **Campaign / קמפיין** – time-boxed promotion with eligibility rules, required product, reward, and a win mechanism (raffle / instant / every-N / weighted odds). מבצע מוגבל בזמן עם כללי זכאות, מוצר נדרש, פרס ומנגנון זכייה.
+- **Entry / השתתפות** – a participation event created when a customer scans a dynamic QR or submits a purchase code. Includes duplicate-prevention (hash + TTL + device fingerprint). אירוע השתתפות שנוצר כשלקוח סורק QR דינמי או מגיש קוד רכישה.
+- **Reward / UserReward / פרס** – prize allocated to a winner; has inventory cap, expiry window, and a one-time redemption QR. פרס שהוקצה לזוכה; כולל מגבלת מלאי, חלון תפוגה וקוד QR חד-פעמי למימוש.
+- **Redemption / מימוש** – staff-side action that marks a UserReward as used; validated by branch and short-lived code. פעולה מצד הצוות שמסמנת פרס כמומש; מאומתת לפי סניף וקוד קצר-חיים.
 
-### Auth & Permissions
-- JWT access + refresh tokens, OTP via SMS, Google/Apple social login.
+### Auth & Permissions / אימות והרשאות
+- JWT access (15m) + refresh (30d) tokens, OTP via SMS, Google/Apple social login.
 - RBAC roles: `customer` | `owner` | `manager` | `bartender` | `cashier` | `hostess` | `admin`.
 
-## Commands
+### QR Entry Flow / זרימת כניסה דרך QR
+- Business panel generates a JWT-signed QR (65s expiry, auto-rotates every 60s) containing `{campaignId, branchId, ts}`.
+- Customer app scans it → POST `/entries` with the raw JWT as `code`.
+- Backend decodes the JWT to extract `campaignId` + `branchId`, then validates campaign is ACTIVE.
+- `assertCampaignActive`: status must be `ACTIVE`; `endsAt` must not have passed. **The `startsAt` guard is intentionally skipped when status is ACTIVE** — an explicit activation overrides the schedule.
 
-### Local infrastructure (PostgreSQL + Redis)
+לוח הניהול מייצר QR חתום ב-JWT (תפוגה 65 שניות) המכיל `{campaignId, branchId, ts}`. אפליקציית הלקוח סורקת → POST `/entries` עם ה-JWT הגולמי כ-`code`. ה-backend מפענח את ה-JWT לחלץ `campaignId` + `branchId`, ואז מאמת שהקמפיין פעיל.
+
+### Snake Game / משחק סנייק
+- Campaign type: snake. Customers scan a campaign QR → play a browser-based snake game → score recorded as entry.
+- 15×15 grid, Ticker-based game loop (60fps), smooth sub-tick interpolation, wall collision = instant death.
+- Leaderboard shows top scores; top scorers when campaign ends win the prize.
+
+---
+
+## Internationalization / בינאום (i18n)
+
+### Default language: Hebrew (RTL) / שפה ברירת מחדל: עברית (RTL)
+
+**Business Panel (Next.js):**
+- Font: **Heebo** (Google Fonts, hebrew + latin subsets) — elegant RTL/LTR typeface.
+- Locale store: Zustand + localStorage persistence (`mrbar-locale`). Default: `he`.
+- Translations: `src/lib/i18n/translations.ts` — flat `en`/`he` maps, 100+ keys.
+- RTL: `<html dir="rtl" lang="he">` set server-side; `LocaleHtml` client component syncs on change.
+- Language toggle: sidebar footer, above logout button (עברית / English, amber highlight for active).
+- Usage in pages: `const t = useLocaleStore(s => s.t);` then `t('key')`.
+
+**Customer App (Flutter):**
+- Font: **Heebo** via `google_fonts` package — applied as `GoogleFonts.heeboTextTheme` in `AppTheme`.
+- Locale provider: Riverpod `NotifierProvider<LocaleNotifier, Locale>` — persisted to `flutter_secure_storage`. Default: `Locale('he')`.
+- Translations: `lib/core/l10n/app_l10n.dart` — static `AppL10n.of(locale, key)` helper, 100+ keys across all screens.
+- RTL: automatic via `flutter_localizations` delegates in `MaterialApp` when locale is `he`.
+- Language toggle: Settings screen → שפה / Language section with Hebrew/English tiles.
+- Usage in screens: `final locale = ref.watch(localeProvider); String t(String key) => AppL10n.of(locale, key);`
+- Pre-loads saved locale before `runApp` via `ProviderContainer`.
+
+---
+
+## UI / UX Notes / הערות ממשק
+
+- **Business panel is mobile-responsive**: sidebar becomes slide-out drawer on mobile, tables scroll horizontally, forms collapse to single-column.
+- **DateTime timezone**: all `endsAt`/`startsAt` values from the API are UTC ISO strings (Z suffix). Always call `.toLocal()` before formatting for display in Flutter.
+- **Campaign status flow**: `DRAFT → SCHEDULED → ACTIVE ⇄ PAUSED → ENDED / CANCELLED`
+
+---
+
+## Commands / פקודות
+
+### Local infrastructure / תשתית מקומית (PostgreSQL + Redis)
 ```bash
 docker-compose up -d
 ```
@@ -60,16 +118,17 @@ npx prisma migrate dev     # create and apply a new migration
 ```
 Swagger UI: http://localhost:3000/api/docs
 
-### Business Panel (Next.js) — not yet scaffolded
+### Business Panel (Next.js)
 ```bash
 cd business-panel
-npm run dev
+npm run dev                # runs on port 3001
 ```
 
-### Customer App (Flutter) — not yet scaffolded
+### Customer App (Flutter)
 ```bash
-cd customer-app
+cd customer_app
 flutter run
+flutter pub get            # after pubspec.yaml changes
 ```
 
 ### Node.js PATH note
