@@ -136,6 +136,13 @@ export default function CampaignDetailPage() {
     refetchInterval: 10_000,
   });
 
+  const { data: pointGuessLeaderboardData } = useQuery({
+    queryKey: ['point-guess-leaderboard', id],
+    queryFn: () => api.get(`/game/point-guess/${id}/leaderboard`).then((r) => r.data),
+    enabled: !!id && !!data?.campaign && data.campaign.type === 'POINT_GUESS',
+    refetchInterval: 10_000,
+  });
+
   // Pre-populate edit form when campaign loads
   useEffect(() => {
     if (data?.campaign) {
@@ -241,6 +248,16 @@ export default function CampaignDetailPage() {
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('draw_failed')),
   });
 
+  const drawPointGuessWinners = useMutation({
+    mutationFn: () => api.post(`/game/point-guess/${id}/draw`),
+    onSuccess: () => {
+      invalidate();
+      qc.invalidateQueries({ queryKey: ['point-guess-leaderboard', id] });
+      toast.success(t('winners_drawn'));
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('draw_failed')),
+  });
+
   // QR generation
   const generateQr = useMutation({
     mutationFn: () =>
@@ -324,8 +341,11 @@ export default function CampaignDetailPage() {
   const isRaffle = campaign?.type === 'RAFFLE';
   const isSnake = campaign?.type === 'SNAKE';
   const isEveryN = campaign?.type === 'EVERY_N';
+  const isPointGuess = campaign?.type === 'POINT_GUESS';
   const leaderboard: any[] = leaderboardData?.leaderboard ?? [];
   const totalPlayers: number = leaderboardData?.totalPlayers ?? 0;
+  const pgLeaderboard: any[] = pointGuessLeaderboardData?.leaderboard ?? [];
+  const pgTotalPlayers: number = pointGuessLeaderboardData?.totalPlayers ?? 0;
   const canEdit = campaign?.status && !['ENDED', 'CANCELLED'].includes(campaign.status);
   const isPending = transition.isPending;
 
@@ -586,6 +606,69 @@ export default function CampaignDetailPage() {
                   {drawSnakeWinners.data?.data?.winners?.map((w: any) => (
                     <div key={w.userId} className="text-sm text-[#a1a1b5]">
                       #{w.rank} {w.name} — {w.score.toLocaleString()} pts
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
+
+      {/* Point Guess leaderboard + draw */}
+      {isPointGuess && (
+        <>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Hash className="h-4 w-4 text-amber-500" />
+                Leaderboard
+                <span className="text-xs text-[#6b6b80] font-normal ml-1">({pgTotalPlayers} {t('campaign_snake_players')})</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pgLeaderboard.length === 0 ? (
+                <p className="text-center text-[#6b6b80] py-6">{t('campaign_no_scores')}</p>
+              ) : (
+                <div className="divide-y divide-[#2a2a38]">
+                  {pgLeaderboard.map((entry: any) => (
+                    <div key={entry.userId} className="flex items-center gap-4 py-3">
+                      <span className={`text-lg font-bold w-6 text-center ${
+                        entry.rank === 1 ? 'text-yellow-400' : entry.rank === 2 ? 'text-slate-300' : entry.rank === 3 ? 'text-amber-600' : 'text-[#6b6b80]'
+                      }`}>
+                        {entry.rank <= 3 ? ['🥇', '🥈', '🥉'][entry.rank - 1] : entry.rank}
+                      </span>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium text-white">{entry.name}</p>
+                        <p className="text-xs text-[#6b6b80]">Guessed {entry.guess}</p>
+                      </div>
+                      <span className="text-amber-500 font-bold">{entry.score} pts</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_point_guess_draw')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_point_guess_desc')}</p>
+              <Button
+                onClick={() => drawPointGuessWinners.mutate()}
+                disabled={drawPointGuessWinners.isPending || campaign?.status !== 'ENDED'}
+                variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
+              >
+                {drawPointGuessWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
+                {campaign?.status === 'ENDED' ? t('campaign_detail_point_guess_draw') : t('campaign_must_end_first')}
+              </Button>
+              {drawPointGuessWinners.isSuccess && (
+                <div className="mt-4 space-y-2">
+                  <p className="text-sm text-green-400 font-medium">{t('campaign_winners_drawn')}</p>
+                  {drawPointGuessWinners.data?.data?.winners?.map((w: any) => (
+                    <div key={w.userId} className="text-sm text-[#a1a1b5]">
+                      #{w.rank} {w.name} — {w.score} pts (guessed {w.guess})
                     </div>
                   ))}
                 </div>

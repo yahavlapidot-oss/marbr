@@ -10,11 +10,11 @@ import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('game')
 @ApiBearerAuth()
-@Controller('game/snake')
+@Controller('game')
 export class GameController {
   constructor(private readonly svc: GameService) {}
 
-  @Post(':campaignId/start')
+  @Post('snake/:campaignId/start')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Start a snake game session — returns a signed game token' })
   start(
@@ -24,7 +24,7 @@ export class GameController {
     return this.svc.startGame(campaignId, user.id);
   }
 
-  @Post(':campaignId/submit')
+  @Post('snake/:campaignId/submit')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Submit final snake game score' })
   submit(
@@ -35,7 +35,7 @@ export class GameController {
     return this.svc.submitScore(user.id, campaignId, dto);
   }
 
-  @Get(':campaignId/leaderboard')
+  @Get('snake/:campaignId/leaderboard')
   @UseGuards(JwtAuthGuard)
   @ApiOperation({ summary: 'Get live leaderboard (top 10 + your rank)' })
   leaderboard(
@@ -45,11 +45,42 @@ export class GameController {
     return this.svc.getLeaderboard(campaignId, user.id);
   }
 
-  @Post(':campaignId/draw')
+  @Post('snake/:campaignId/draw')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Draw winners after campaign ends (owner/manager only)' })
   draw(@Param('campaignId') campaignId: string) {
     return this.svc.drawWinners(campaignId);
+  }
+
+  // ── Point Guess routes ──────────────────────────────────────────────────────
+
+  @Post('point-guess/:campaignId/score')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Submit point guess score' })
+  submitPointGuess(
+    @Param('campaignId') campaignId: string,
+    @CurrentUser() user: { id: string },
+    @Body() dto: { guess: number; actualCount: number; score: number; durationMs: number },
+  ) {
+    return this.svc.submitPointGuessScore(user.id, campaignId, dto);
+  }
+
+  @Get('point-guess/:campaignId/leaderboard')
+  @UseGuards(JwtAuthGuard)
+  @ApiOperation({ summary: 'Get point guess leaderboard' })
+  pointGuessLeaderboard(
+    @Param('campaignId') campaignId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.svc.getPointGuessLeaderboard(campaignId, user.id);
+  }
+
+  @Post('point-guess/:campaignId/draw')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Draw point guess winners' })
+  drawPointGuess(@Param('campaignId') campaignId: string) {
+    return this.svc.drawPointGuessWinners(campaignId);
   }
 }

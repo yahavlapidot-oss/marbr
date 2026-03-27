@@ -51,6 +51,7 @@ enum CampaignType {
   EVERY_N
   WEIGHTED_ODDS
   SNAKE
+  POINT_GUESS
 }
 
 enum EntryMethod {

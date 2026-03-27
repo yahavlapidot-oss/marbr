@@ -19,6 +19,8 @@ import '../features/settings/screens/settings_screen.dart';
 import '../features/shell/shell_screen.dart';
 import '../features/game/screens/snake_campaign_screen.dart';
 import '../features/game/screens/snake_game_screen.dart';
+import '../features/game/screens/point_guess_campaign_screen.dart';
+import '../features/game/screens/point_guess_game_screen.dart';
 
 /// Holds auth token in memory and notifies GoRouter when it changes.
 class AuthNotifier extends ChangeNotifier {
@@ -110,6 +112,14 @@ final routerProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/game/snake/:id/play',
         builder: (_, state) => SnakeGameScreen(campaignId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/game/point-guess/:id',
+        builder: (_, state) => PointGuessCampaignScreen(campaignId: state.pathParameters['id']!),
+      ),
+      GoRoute(
+        path: '/game/point-guess/:id/play',
+        builder: (_, state) => PointGuessGameScreen(campaignId: state.pathParameters['id']!),
       ),
     ],
   );

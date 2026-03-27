@@ -220,6 +220,12 @@ class CampaignDetailScreen extends ConsumerWidget {
                             icon: const Text('🐍', style: TextStyle(fontSize: 18)),
                             label: Text(t('play_snake')),
                           )
+                        : c['type'] == 'POINT_GUESS'
+                        ? ElevatedButton.icon(
+                            onPressed: () => context.push('/game/point-guess/$id'),
+                            icon: const Text('🔢', style: TextStyle(fontSize: 18)),
+                            label: Text(t('point_guess_title')),
+                          )
                         : ElevatedButton.icon(
                             onPressed: () => context.push('/scan'),
                             icon: const Icon(Icons.qr_code_scanner, size: 20),

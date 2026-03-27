@@ -18,7 +18,7 @@ import { useLocaleStore } from '@/lib/locale-store';
 
 const schema = z.object({
   name: z.string().min(2),
-  type: z.enum(['RAFFLE', 'INSTANT_WIN', 'EVERY_N', 'WEIGHTED_ODDS', 'SNAKE']),
+  type: z.enum(['RAFFLE', 'INSTANT_WIN', 'EVERY_N', 'WEIGHTED_ODDS', 'SNAKE', 'POINT_GUESS']),
   startsAt: z.string().optional(),
   endsAt: z.string().optional(),
   everyN: z.number().int().min(2).optional(),
@@ -50,6 +50,7 @@ export default function NewCampaignPage() {
 
   const campaignType = watch('type');
   const isSnake = campaignType === 'SNAKE';
+  const isPointGuess = campaignType === 'POINT_GUESS';
 
   const onSubmit = async (data: FormData) => {
     setError('');
@@ -68,8 +69,8 @@ export default function NewCampaignPage() {
       const res = await api.post(`/campaigns?businessId=${businessId}`, payload);
       const campaignId = res.data.id;
 
-      // For SNAKE: auto-create reward with inventory = topN
-      if (isSnake && campaignId) {
+      // For SNAKE / POINT_GUESS: auto-create reward with inventory = topN
+      if ((isSnake || isPointGuess) && campaignId) {
         await api.post(`/rewards/campaign/${campaignId}`, {
           name: rewardName || 'Winner Prize',
           inventory: topN ?? 3,
@@ -119,6 +120,7 @@ export default function NewCampaignPage() {
                   <SelectItem value="RAFFLE">{t('campaigns_type_raffle')}</SelectItem>
                   <SelectItem value="EVERY_N">{t('campaigns_type_every_n')}</SelectItem>
                   <SelectItem value="SNAKE">🐍 {t('campaigns_type_snake')}</SelectItem>
+                  <SelectItem value="POINT_GUESS">🔢 {t('campaigns_type_point_guess')}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -128,6 +130,26 @@ export default function NewCampaignPage() {
                 <p className="text-amber-400 text-sm font-medium">🐍 {t('campaign_snake_section')}</p>
                 <p className="text-[#6b6b80] text-xs">
                   {t('campaign_snake_desc')}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1.5">
+                    <Label>{t('campaign_snake_winners')}</Label>
+                    <Input type="number" min={1} placeholder="3" {...register('topN', { valueAsNumber: true })} />
+                    <p className="text-[#6b6b80] text-xs">{t('campaign_top_n')}</p>
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label>{t('campaign_snake_reward')}</Label>
+                    <Input placeholder="Free drinks" {...register('rewardName')} />
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {isPointGuess && (
+              <div className="rounded-lg bg-amber-500/10 border border-amber-500/20 p-4 space-y-3">
+                <p className="text-amber-400 text-sm font-medium">🔢 {t('campaigns_type_point_guess')}</p>
+                <p className="text-[#6b6b80] text-xs">
+                  {t('campaign_point_guess_desc')}
                 </p>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1.5">
@@ -162,7 +184,7 @@ export default function NewCampaignPage() {
               <Input type="datetime-local" {...register('startsAt')} />
             </div>
             <div className="space-y-1.5">
-              <Label>{t('campaign_ends')} {isSnake && <span className="text-amber-400">{t('campaign_required_snake')}</span>}</Label>
+              <Label>{t('campaign_ends')} {(isSnake || isPointGuess) && <span className="text-amber-400">{t('campaign_required_snake')}</span>}</Label>
               <Input type="datetime-local" {...register('endsAt')} />
             </div>
           </CardContent>

@@ -46,6 +46,7 @@ export const translations = {
     campaigns_type_raffle: 'Raffle',
     campaigns_type_every_n: 'X Winners',
     campaigns_type_snake: 'Snake Game',
+    campaigns_type_point_guess: 'Point Guess',
     campaigns_col_name: 'Name',
     campaigns_col_type: 'Type',
     campaigns_col_status: 'Status',
@@ -130,6 +131,8 @@ export const translations = {
     campaign_detail_kiosk: 'Kiosk Mode',
     campaign_detail_leaderboard: 'Leaderboard',
     campaign_detail_snake_draw: 'Draw Snake Winners',
+    campaign_detail_point_guess_draw: 'Draw Point Guess Winners',
+    campaign_point_guess_desc: 'Top guessers when campaign ends win the prize.',
     campaign_detail_config: 'Configuration',
     // Analytics page
     analytics_no_data: 'No analytics data yet',
@@ -496,6 +499,7 @@ export const translations = {
     campaigns_type_raffle: 'הגרלה',
     campaigns_type_every_n: 'X זוכים',
     campaigns_type_snake: 'משחק סנייק',
+    campaigns_type_point_guess: 'נחש את הנקודות',
     campaigns_col_name: 'שם',
     campaigns_col_type: 'סוג',
     campaigns_col_status: 'סטטוס',
@@ -580,6 +584,8 @@ export const translations = {
     campaign_detail_kiosk: 'מצב קיוסק',
     campaign_detail_leaderboard: 'לוח תוצאות',
     campaign_detail_snake_draw: 'הגרל זוכי סנייק',
+    campaign_detail_point_guess_draw: 'הגרל זוכי ניחוש הנקודות',
+    campaign_point_guess_desc: 'המנחשים המדויקים ביותר בסיום הקמפיין יזכו בפרס.',
     campaign_detail_config: 'הגדרות',
     // Analytics page
     analytics_no_data: 'אין נתוני אנליטיקה עדיין',
