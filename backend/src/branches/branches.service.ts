@@ -11,7 +11,7 @@ export class BranchesService {
   }
 
   async findByBusiness(businessId: string) {
-    return this.prisma.branch.findMany({ where: { businessId }, orderBy: { createdAt: 'asc' } });
+    return this.prisma.branch.findMany({ where: { businessId, isActive: true }, orderBy: { createdAt: 'asc' } });
   }
 
   async findOne(id: string) {
@@ -28,7 +28,7 @@ export class BranchesService {
   }
 
   async remove(id: string) {
-    await this.prisma.branch.update({ where: { id }, data: { isActive: false } });
-    return { message: 'Branch deactivated' };
+    await this.prisma.branch.delete({ where: { id } });
+    return { message: 'Branch removed' };
   }
 }
