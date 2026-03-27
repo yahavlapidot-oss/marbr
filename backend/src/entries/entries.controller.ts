@@ -43,7 +43,7 @@ export class EntriesController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.BARTENDER, UserRole.CASHIER, UserRole.HOSTESS)
   @ApiOperation({ summary: 'Generate a time-limited QR code for staff to show customers' })
-  generateQr(@Query('campaignId') campaignId: string, @Query('branchId') branchId: string) {
-    return this.svc.generateQr(campaignId, branchId);
+  generateQr(@Query('campaignId') campaignId: string) {
+    return this.svc.generateQr(campaignId);
   }
 }

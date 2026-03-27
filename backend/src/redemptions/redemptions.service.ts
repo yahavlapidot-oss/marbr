@@ -31,18 +31,14 @@ export class RedemptionsService {
       throw new BadRequestException('Reward has expired');
     }
 
-    const branch = await this.prisma.branch.findUnique({ where: { id: dto.branchId } });
-    if (!branch) throw new NotFoundException('Branch not found');
-
     const [redemption] = await this.prisma.$transaction([
       this.prisma.redemption.create({
         data: {
           userRewardId: userReward.id,
-          branchId: dto.branchId,
           staffUserId,
           notes: dto.notes,
         },
-        include: { userReward: { include: { reward: true } }, branch: true },
+        include: { userReward: { include: { reward: true } } },
       }),
       this.prisma.userReward.update({
         where: { id: userReward.id },

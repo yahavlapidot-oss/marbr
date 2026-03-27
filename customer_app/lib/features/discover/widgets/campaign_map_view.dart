@@ -19,22 +19,18 @@ class _CampaignMapViewState extends State<CampaignMapView> {
   final _mapController = MapController();
   Map<String, dynamic>? _selected;
 
-  /// Extract all (campaign, branch) pairs that have lat/lng
+  /// Extract campaigns that have business lat/lng set
   List<_CampaignPin> get _pins {
     final pins = <_CampaignPin>[];
     for (final c in widget.campaigns) {
-      final branches = c['branches'] as List<dynamic>? ?? [];
-      for (final b in branches) {
-        final branch = b['branch'] as Map<String, dynamic>?;
-        final lat = _toDouble(branch?['lat']);
-        final lng = _toDouble(branch?['lng']);
-        if (lat != null && lng != null) {
-          pins.add(_CampaignPin(
-            campaign: c,
-            branch: branch!,
-            point: LatLng(lat, lng),
-          ));
-        }
+      final business = c['business'] as Map<String, dynamic>?;
+      final lat = _toDouble(business?['lat']);
+      final lng = _toDouble(business?['lng']);
+      if (lat != null && lng != null) {
+        pins.add(_CampaignPin(
+          campaign: c,
+          point: LatLng(lat, lng),
+        ));
       }
     }
     return pins;
@@ -198,10 +194,9 @@ class _CampaignMapViewState extends State<CampaignMapView> {
 
 class _CampaignPin {
   final Map<String, dynamic> campaign;
-  final Map<String, dynamic> branch;
   final LatLng point;
 
-  const _CampaignPin({required this.campaign, required this.branch, required this.point});
+  const _CampaignPin({required this.campaign, required this.point});
 }
 
 class _CampaignBottomCard extends StatelessWidget {

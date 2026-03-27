@@ -21,7 +21,7 @@ export class BusinessesService {
   async findOne(id: string) {
     const b = await this.prisma.business.findUnique({
       where: { id },
-      include: { branches: true, subscription: true, _count: { select: { campaigns: true, employees: true } } },
+      include: { subscription: true, _count: { select: { campaigns: true, employees: true } } },
     });
     if (!b) throw new NotFoundException('Business not found');
     return b;

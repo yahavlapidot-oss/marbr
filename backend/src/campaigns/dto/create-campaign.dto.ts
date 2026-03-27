@@ -74,11 +74,5 @@ export class CreateCampaignDto {
   @IsOptional()
   @IsArray()
   @IsString({ each: true })
-  branchIds?: string[];
-
-  @ApiPropertyOptional({ type: [String] })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
   productIds?: string[];
 }

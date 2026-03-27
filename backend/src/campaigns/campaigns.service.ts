@@ -40,14 +40,11 @@ export class CampaignsService {
         pushTitle: dto.pushTitle,
         pushBody: dto.pushBody,
         budget: dto.budget,
-        branches: dto.branchIds?.length
-          ? { create: dto.branchIds.map((branchId) => ({ branchId })) }
-          : undefined,
         products: dto.productIds?.length
           ? { create: dto.productIds.map((productId) => ({ productId })) }
           : undefined,
       },
-      include: { branches: true, products: true, rewards: true },
+      include: { products: true, rewards: true },
     });
 
     return campaign;
@@ -57,7 +54,6 @@ export class CampaignsService {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {
-        branches: { include: { branch: true } },
         products: { include: { product: true } },
         rewards: true,
         _count: { select: { entries: true } },
@@ -107,7 +103,7 @@ export class CampaignsService {
   async duplicate(id: string) {
     const src = await this.prisma.campaign.findUnique({
       where: { id },
-      include: { branches: true, products: true, rewards: true },
+      include: { products: true, rewards: true },
     });
     if (!src) throw new NotFoundException('Campaign not found');
 
@@ -127,9 +123,6 @@ export class CampaignsService {
         pushTitle: src.pushTitle,
         pushBody: src.pushBody,
         budget: src.budget,
-        branches: src.branches.length
-          ? { create: src.branches.map((b) => ({ branchId: b.branchId })) }
-          : undefined,
         products: src.products.length
           ? { create: src.products.map((p) => ({ productId: p.productId, minQuantity: p.minQuantity })) }
           : undefined,

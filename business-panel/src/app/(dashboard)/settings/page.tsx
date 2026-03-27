@@ -22,6 +22,10 @@ type BusinessForm = {
   website?: string;
   email?: string;
   phone?: string;
+  address?: string;
+  city?: string;
+  lat?: number;
+  lng?: number;
 };
 
 function ImageUpload({
@@ -128,8 +132,8 @@ export default function SettingsPage() {
   }, [business, reset]);
 
   const update = useMutation({
-    mutationFn: ({ name, description, logoUrl, coverUrl, website, email, phone }: BusinessForm) =>
-      api.patch(`/businesses/${businessId}`, { name, description, logoUrl, coverUrl, website, email, phone }),
+    mutationFn: (data: BusinessForm) =>
+      api.patch(`/businesses/${businessId}`, data),
     onSuccess: (res, submitted) => {
       qc.invalidateQueries({ queryKey: ['business', businessId] });
       qc.invalidateQueries({ queryKey: ['business-sidebar', businessId] });
@@ -145,6 +149,10 @@ export default function SettingsPage() {
         email: 'Email',
         phone: 'Phone',
         website: 'Website',
+        address: 'Address',
+        city: 'City',
+        lat: 'Latitude',
+        lng: 'Longitude',
       };
       const changed = (Object.keys(labels) as (keyof BusinessForm)[]).filter(
         (k) => submitted[k] !== (prev as any)[k],
@@ -245,6 +253,27 @@ export default function SettingsPage() {
             <div className="space-y-1.5">
               <Label>{t('settings_website')}</Label>
               <Input placeholder={t('settings_website_ph')} {...register('website')} />
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t('settings_address')}</Label>
+                <Input placeholder={t('settings_address_ph')} {...register('address')} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('settings_city')}</Label>
+                <Input placeholder={t('settings_city_ph')} {...register('city')} />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <Label>{t('settings_lat')}</Label>
+                <Input type="number" step="any" placeholder="32.0853" {...register('lat', { valueAsNumber: true })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('settings_lng')}</Label>
+                <Input type="number" step="any" placeholder="34.7818" {...register('lng', { valueAsNumber: true })} />
+              </div>
             </div>
 
             <div className="flex justify-end pt-2">

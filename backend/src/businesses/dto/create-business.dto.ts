@@ -1,5 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsEnum, IsOptional, IsString, IsEmail } from 'class-validator';
+import { IsEnum, IsOptional, IsString, IsEmail, IsNumber } from 'class-validator';
 import { BusinessType } from '@prisma/client';
 
 export class CreateBusinessDto {
@@ -19,4 +19,8 @@ export class UpdateBusinessDto {
   @ApiPropertyOptional() @IsOptional() @IsString() website?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() logoUrl?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() coverUrl?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() address?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() city?: string;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() lat?: number;
+  @ApiPropertyOptional() @IsOptional() @IsNumber() lng?: number;
 }

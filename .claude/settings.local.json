@@ -65,7 +65,12 @@
       "Bash(sed -n '202,208p' /Users/yahavlapidot/dev/mrbar/customer_app/lib/features/campaigns/screens/campaign_detail_screen.dart)",
       "Bash(grep -n \"publish\\\\|pause\\\\|resume\\\\|\\\\/end\\\\|action\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
       "Bash(grep -n \"reward\\\\|Reward\\\\|addReward\\\\|rewardName\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
-      "Bash(npx prisma:*)"
+      "Bash(npx prisma:*)",
+      "Bash(grep -n \"expiresInHours\\\\|Expires\\\\|Prize\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
+      "Bash(find /Users/yahavlapidot/dev/mrbar/backend/src/branches -type f -name *.ts)",
+      "Bash(find /Users/yahavlapidot/dev/mrbar/business-panel -type f -path */settings/* -name *.tsx -o -path */settings/* -name *.ts)",
+      "Bash(find /Users/yahavlapidot/dev/mrbar/business-panel -type f \\\\\\(-name *redeem* -o -name *qr* \\\\\\))",
+      "Bash(grep -r branchId /Users/yahavlapidot/dev/mrbar/customer_app/lib --include=*.dart)"
     ]
   }
 }

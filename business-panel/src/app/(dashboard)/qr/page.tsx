@@ -17,7 +17,6 @@ export default function QrPage() {
   const businessId = useAuthStore((s) => s.businessId);
   const t = useLocaleStore((s) => s.t);
   const [campaignId, setCampaignId] = useState('');
-  const [branchId, setBranchId] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(ROTATE_EVERY);
   const [kiosk, setKiosk] = useState(false);
@@ -31,17 +30,11 @@ export default function QrPage() {
     enabled: !!businessId,
   });
 
-  const { data: branches } = useQuery({
-    queryKey: ['branches', businessId],
-    queryFn: () => api.get(`/branches?businessId=${businessId}`).then((r) => r.data),
-    enabled: !!businessId,
-  });
-
   const selectedCampaign = campaigns?.find((c: any) => c.id === campaignId);
 
   const generate = useMutation({
     mutationFn: () =>
-      api.post('/entries/qr/generate', {}, { params: { campaignId, branchId } }).then((r) => r.data),
+      api.post('/entries/qr/generate', {}, { params: { campaignId } }).then((r) => r.data),
     onSuccess: (data) => {
       setQrDataUrl(data.qrDataUrl);
       setCountdown(ROTATE_EVERY);
@@ -78,11 +71,11 @@ export default function QrPage() {
     }
   }, [qrDataUrl]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Stop rotation when campaign/branch changes
+  // Stop rotation when campaign changes
   useEffect(() => {
     stopRotation();
     setQrDataUrl(null);
-  }, [campaignId, branchId, stopRotation]);
+  }, [campaignId, stopRotation]);
 
   // Cleanup on unmount
   useEffect(() => () => stopRotation(), [stopRotation]);
@@ -188,23 +181,9 @@ export default function QrPage() {
             </select>
           </div>
 
-          <div className="space-y-1.5">
-            <Label>{t('qr_branch')}</Label>
-            <select
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-              className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
-            >
-              <option value="">{t('qr_select_branch')}</option>
-              {branches?.map((b: any) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
-              ))}
-            </select>
-          </div>
-
           <Button
             className="w-full"
-            disabled={!campaignId || !branchId || generate.isPending}
+            disabled={!campaignId || generate.isPending}
             onClick={handleGenerate}
           >
             {generate.isPending

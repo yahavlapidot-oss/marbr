@@ -1,18 +1,15 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useState, useRef } from 'react';
 import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
 
 const CODE_LENGTH = 6;
-const LAST_BRANCH_KEY = 'mrbar-last-branch';
 
 type RewardInfo = {
   id: string;
@@ -25,30 +22,14 @@ type RewardInfo = {
 };
 
 export default function RedeemPage() {
-  const businessId = useAuthStore((s) => s.businessId);
   const t = useLocaleStore((s) => s.t);
 
   const [digits, setDigits] = useState(['', '', '', '', '', '']);
-  const [branchId, setBranchId] = useState('');
   const [reward, setReward] = useState<RewardInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
-
-  const { data: branches } = useQuery({
-    queryKey: ['branches', businessId],
-    queryFn: () => api.get(`/branches?businessId=${businessId}`).then((r) => r.data),
-    enabled: !!businessId,
-  });
-
-  // Auto-select branch: restore last used, or pick first if only one
-  useEffect(() => {
-    if (!branches?.length) return;
-    const saved = localStorage.getItem(LAST_BRANCH_KEY);
-    const match = branches.find((b: any) => b.id === saved);
-    setBranchId(match ? match.id : branches.length === 1 ? branches[0].id : '');
-  }, [branches]);
 
   // Auto-lookup when all 6 digits filled
   const code = digits.join('');
@@ -70,11 +51,10 @@ export default function RedeemPage() {
   };
 
   const redeem = async () => {
-    if (!reward || !branchId) return;
+    if (!reward) return;
     setLoading(true); setError('');
     try {
-      await api.post('/staff/redeem', { code: reward.code, branchId });
-      localStorage.setItem(LAST_BRANCH_KEY, branchId);
+      await api.post('/staff/redeem', { code: reward.code });
       setSuccess(true);
       setReward(null);
       setDigits(['', '', '', '', '', '']);
@@ -199,20 +179,8 @@ export default function RedeemPage() {
 
             {reward.status === 'ACTIVE' && (
               <>
-                {(branches?.length ?? 0) > 1 && (
-                  <select
-                    value={branchId}
-                    onChange={(e) => setBranchId(e.target.value)}
-                    className="w-full rounded-lg border border-[#2a2a38] bg-[#1a1a24] px-3 py-2 text-sm text-white focus:border-amber-500 focus:outline-none"
-                  >
-                    <option value="">{t('redeem_select_branch')}</option>
-                    {(branches ?? []).map((b: any) => (
-                      <option key={b.id} value={b.id}>{b.name}</option>
-                    ))}
-                  </select>
-                )}
                 <div className="flex gap-2">
-                  <Button className="flex-1" onClick={redeem} disabled={loading || !branchId}>
+                  <Button className="flex-1" onClick={redeem} disabled={loading}>
                     {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
                     {loading ? t('redeem_confirming') : t('redeem_confirm')}
                   </Button>

@@ -161,7 +161,7 @@ model OtpCode {
 }
 
 // ---------------------------------------------------------------------------
-// Businesses & Branches
+// Businesses
 // ---------------------------------------------------------------------------
 
 model Business {
@@ -174,12 +174,15 @@ model Business {
   email       String?
   phone       String?
   website     String?
+  address     String?
+  city        String?
+  lat         Float?
+  lng         Float?
   isActive    Boolean      @default(true)
   isVerified  Boolean      @default(false)
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 
-  branches     Branch[]
   employees    Employee[]
   products     Product[]
   campaigns    Campaign[]
@@ -187,30 +190,6 @@ model Business {
   eventLogs    EventLog[]
 
   @@map("businesses")
-}
-
-model Branch {
-  id             String   @id @default(cuid())
-  businessId     String
-  name           String
-  address        String
-  city           String
-  country        String   @default("IL")
-  lat            Float?
-  lng            Float?
-  geofenceRadius Int?
-  phone          String?
-  openingHours   Json?
-  isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
-
-  business    Business         @relation(fields: [businessId], references: [id], onDelete: Cascade)
-  employees   Employee[]
-  campaigns   CampaignBranch[]
-  redemptions Redemption[]
-
-  @@map("branches")
 }
 
 // ---------------------------------------------------------------------------
@@ -221,7 +200,6 @@ model Employee {
   id         String    @id @default(cuid())
   userId     String
   businessId String
-  branchId   String?
   role       UserRole
   isActive   Boolean   @default(true)
   invitedAt  DateTime  @default(now())
@@ -229,7 +207,6 @@ model Employee {
 
   user     User     @relation(fields: [userId], references: [id])
   business Business @relation(fields: [businessId], references: [id])
-  branch   Branch?  @relation(fields: [branchId], references: [id])
 
   @@unique([userId, businessId])
   @@map("employees")
@@ -283,24 +260,12 @@ model Campaign {
   updatedAt         DateTime       @updatedAt
 
   business    Business          @relation(fields: [businessId], references: [id])
-  branches    CampaignBranch[]
   products    CampaignProduct[]
   rewards     Reward[]
   entries     Entry[]
   gameScores  GameScore[]
 
   @@map("campaigns")
-}
-
-model CampaignBranch {
-  campaignId String
-  branchId   String
-
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  branch   Branch   @relation(fields: [branchId], references: [id], onDelete: Cascade)
-
-  @@id([campaignId, branchId])
-  @@map("campaign_branches")
 }
 
 model CampaignProduct {
@@ -405,13 +370,11 @@ model UserReward {
 model Redemption {
   id           String   @id @default(cuid())
   userRewardId String   @unique
-  branchId     String
   staffUserId  String?
   notes        String?
   redeemedAt   DateTime @default(now())
 
   userReward UserReward @relation(fields: [userRewardId], references: [id])
-  branch     Branch     @relation(fields: [branchId], references: [id])
 
   @@map("redemptions")
 }
