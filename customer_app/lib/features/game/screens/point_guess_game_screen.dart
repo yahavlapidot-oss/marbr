@@ -271,7 +271,7 @@ class _PointGuessGameScreenState extends ConsumerState<PointGuessGameScreen>
                 children: [
                   AnimatedBuilder(
                     animation: _timerAnim,
-                    builder: (_, __) {
+                    builder: (_, _) {
                       return Text(
                         '$_remaining',
                         style: TextStyle(
@@ -290,7 +290,7 @@ class _PointGuessGameScreenState extends ConsumerState<PointGuessGameScreen>
                 borderRadius: BorderRadius.circular(4),
                 child: AnimatedBuilder(
                   animation: _timerAnim,
-                  builder: (_, __) => LinearProgressIndicator(
+                  builder: (_, _) => LinearProgressIndicator(
                     value: progress,
                     backgroundColor: AppTheme.border,
                     valueColor: AlwaysStoppedAnimation(
