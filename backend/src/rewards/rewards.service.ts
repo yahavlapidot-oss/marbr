@@ -43,10 +43,12 @@ export class RewardsService {
     const reward = campaign.rewards[0];
     if (!reward) return { winners: 0 };
 
-    const winnersCount = reward.inventory ?? 1;
     const entries = await this.prisma.entry.findMany({
       where: { campaignId, isValid: true },
     });
+
+    // Winners cannot exceed actual entrants
+    const winnersCount = Math.min(reward.inventory ?? 1, entries.length);
 
     // Fisher-Yates shuffle (unbiased)
     const shuffled = [...entries];

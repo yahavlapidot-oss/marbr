@@ -150,23 +150,25 @@ export class GameService {
     const reward = campaign.rewards[0];
     if (!reward) throw new BadRequestException('No reward configured for this campaign');
 
-    const winnersCount = reward.inventory ?? 1;
-
     const topScores = await this.prisma.gameScore.findMany({
       where: { campaignId },
       orderBy: { score: 'desc' },
-      take: winnersCount,
       include: { user: { select: { id: true, fullName: true } } },
     });
 
+    // Winners cannot exceed actual players
+    const winnersCount = Math.min(reward.inventory ?? 1, topScores.length);
+
     if (topScores.length === 0) return { winners: [] };
+
+    const selectedWinners = topScores.slice(0, winnersCount);
 
     const expiresAt = reward.expiresInHours
       ? new Date(Date.now() + reward.expiresInHours * 3_600_000)
       : null;
 
     await Promise.all(
-      topScores.map((g) =>
+      selectedWinners.map((g) =>
         this.prisma.userReward.create({
           data: { userId: g.userId, rewardId: reward.id, expiresAt, code: generateCode() },
         }),
@@ -175,11 +177,11 @@ export class GameService {
 
     await this.prisma.reward.update({
       where: { id: reward.id },
-      data: { allocated: { increment: topScores.length } },
+      data: { allocated: { increment: selectedWinners.length } },
     });
 
     return {
-      winners: topScores.map((g, i) => ({
+      winners: selectedWinners.map((g, i) => ({
         rank: i + 1,
         userId: g.userId,
         name: g.user.fullName,

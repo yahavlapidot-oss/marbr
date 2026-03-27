@@ -62,12 +62,13 @@ export class CampaignSchedulerService {
         const result = await this.rewards.drawRaffleWinners(campaign.id);
         winnerUserIds.push(...(result.userIds ?? []));
       } else if (campaign.type === CampaignType.SNAKE) {
-        const count = reward.inventory ?? 1;
-        const topScores = await this.prisma.gameScore.findMany({
+        const allScores = await this.prisma.gameScore.findMany({
           where: { campaignId: campaign.id },
           orderBy: { score: 'desc' },
-          take: count,
         });
+        // Winners cannot exceed actual players
+        const count = Math.min(reward.inventory ?? 1, allScores.length);
+        const topScores = allScores.slice(0, count);
 
         for (const score of topScores) {
           await this.prisma.userReward.create({
