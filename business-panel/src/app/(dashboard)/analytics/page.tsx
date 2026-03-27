@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, Trophy, CheckCircle, TrendingUp } from 'lucide-react';
+import { Users, Trophy, CheckCircle, TrendingUp, DollarSign, TrendingDown, BarChart2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,7 +44,7 @@ function StatTile({ icon: Icon, label, value }: { icon: React.ElementType; label
   );
 }
 
-type SortCol = 'entries' | 'winners' | 'conversionRate' | 'name';
+type SortCol = 'entries' | 'winners' | 'conversionRate' | 'name' | 'revenue' | 'netProfit' | 'roi';
 
 export default function AnalyticsPage() {
   const businessId = useAuthStore((s) => s.businessId);
@@ -111,6 +111,20 @@ export default function AnalyticsPage() {
         </div>
       )}
 
+      {/* Financial KPIs */}
+      {isLoading ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <StatTile icon={DollarSign} label={t('fin_revenue_total')} value={`₪${(data?.totals?.revenue ?? 0).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} />
+          <StatTile icon={TrendingDown} label={t('fin_reward_cost_total')} value={`₪${(data?.totals?.rewardCost ?? 0).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} />
+          <StatTile icon={TrendingUp} label={t('fin_profit_total')} value={`₪${(data?.totals?.netProfit ?? 0).toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} />
+          <StatTile icon={BarChart2} label={t('fin_roi_total')} value={data?.totals?.roi != null ? `${data.totals.roi.toFixed(0)}%` : '—'} />
+        </div>
+      )}
+
       {/* Entries over time */}
       <Card>
         <CardHeader><CardTitle>{t('analytics_entries_over_time')}</CardTitle></CardHeader>
@@ -174,6 +188,15 @@ export default function AnalyticsPage() {
                       {t('analytics_col_conversion')}<SortArrow col="conversionRate" />
                     </th>
                     <th className="text-end pb-3 font-medium">{t('analytics_col_ends')}</th>
+                    <th className="text-end pb-3 font-medium cursor-pointer hover:text-white select-none" onClick={() => handleSort('revenue')}>
+                      {t('analytics_col_revenue')}<SortArrow col="revenue" />
+                    </th>
+                    <th className="text-end pb-3 font-medium cursor-pointer hover:text-white select-none" onClick={() => handleSort('netProfit')}>
+                      {t('analytics_col_profit')}<SortArrow col="netProfit" />
+                    </th>
+                    <th className="text-end pb-3 font-medium cursor-pointer hover:text-white select-none" onClick={() => handleSort('roi')}>
+                      {t('analytics_col_roi')}<SortArrow col="roi" />
+                    </th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#2a2a38]">
@@ -189,6 +212,15 @@ export default function AnalyticsPage() {
                       <td className="py-3 text-end text-amber-400 font-medium">{c.conversionRate.toFixed(1)}%</td>
                       <td className="py-3 text-end text-[#6b6b80] text-xs">
                         {c.endsAt ? formatDateTime(c.endsAt) : '—'}
+                      </td>
+                      <td className="py-3 text-end text-[#6b6b80] text-xs">
+                        {c.revenue > 0 ? `₪${Math.round(c.revenue).toLocaleString()}` : '—'}
+                      </td>
+                      <td className={`py-3 text-end text-xs font-medium ${c.netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {c.revenue > 0 ? `₪${Math.round(c.netProfit).toLocaleString()}` : '—'}
+                      </td>
+                      <td className={`py-3 text-end text-xs font-medium ${c.roi != null && c.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        {c.roi != null ? `${c.roi.toFixed(0)}%` : '—'}
                       </td>
                     </tr>
                   ))}

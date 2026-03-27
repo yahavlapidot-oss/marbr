@@ -237,7 +237,12 @@ export class CampaignsService {
         where: { id },
         include: {
           products: { include: { product: true } },
-          rewards: true,
+          rewards: {
+            include: {
+              product: { select: { price: true } },
+              _count: { select: { userRewards: { where: { status: 'REDEEMED' } } } },
+            },
+          },
         },
       }),
       this.prisma.entry.count({ where: { campaignId: id, isValid: true } }),
@@ -253,6 +258,18 @@ export class CampaignsService {
 
     if (!campaign) throw new NotFoundException('Campaign not found');
 
+    const revenuePerEntry = campaign.products.reduce(
+      (sum: number, cp: any) => sum + (cp.product?.price ?? 0) * cp.minQuantity,
+      0,
+    );
+    const revenue = entryCount * revenuePerEntry;
+    const rewardCost = campaign.rewards.reduce(
+      (sum: number, r: any) => sum + r._count.userRewards * (r.quantity ?? 1) * (r.product?.price ?? 0),
+      0,
+    );
+    const netProfit = revenue - rewardCost;
+    const roi = rewardCost > 0 ? (netProfit / rewardCost) * 100 : null;
+
     return {
       campaign,
       stats: {
@@ -263,6 +280,7 @@ export class CampaignsService {
         redemptionRate: rewardCount > 0 ? (redemptionCount / rewardCount) * 100 : 0,
       },
       recentEntries,
+      financials: { revenue, rewardCost, netProfit, roi, purchases: entryCount },
     };
   }
 

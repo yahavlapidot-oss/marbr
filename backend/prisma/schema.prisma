@@ -338,6 +338,7 @@ model Reward {
   imageUrl       String?
   inventory      Int?
   allocated      Int      @default(0)
+  quantity       Int      @default(1)
   expiresInHours Int?     @default(24)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt

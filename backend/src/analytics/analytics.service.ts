@@ -48,7 +48,16 @@ export class AnalyticsService {
         this.prisma.redemption.count({ where: { userReward: { reward: { campaign: { businessId } } } } }),
         this.prisma.campaign.findMany({
           where: { businessId },
-          select: { id: true, name: true, status: true, type: true, endsAt: true, _count: { select: { entries: true } } },
+          include: {
+            products: { include: { product: { select: { price: true } } } },
+            rewards: {
+              include: {
+                product: { select: { price: true } },
+                _count: { select: { userRewards: { where: { status: 'REDEEMED' } } } },
+              },
+            },
+            _count: { select: { entries: { where: { isValid: true } } } },
+          },
           orderBy: { createdAt: 'desc' },
           take: 20,
         }),
@@ -77,9 +86,15 @@ export class AnalyticsService {
       campaigns.map(async (c) => {
         const winners = await this.prisma.userReward.count({ where: { reward: { campaignId: c.id } } });
         const entries = c._count.entries;
-        return { ...c, winners, conversionRate: entries > 0 ? (winners / entries) * 100 : 0 };
+        const financials = this.computeFinancials(entries, c.products as any, c.rewards as any);
+        return { ...c, winners, conversionRate: entries > 0 ? (winners / entries) * 100 : 0, ...financials };
       }),
     );
+
+    const totalRevenue = campaignStats.reduce((sum, c) => sum + c.revenue, 0);
+    const totalRewardCost = campaignStats.reduce((sum, c) => sum + c.rewardCost, 0);
+    const totalNetProfit = totalRevenue - totalRewardCost;
+    const totalRoi = totalRewardCost > 0 ? (totalNetProfit / totalRewardCost) * 100 : null;
 
     return {
       totals: {
@@ -88,11 +103,34 @@ export class AnalyticsService {
         redemptions: totalRedemptions,
         conversionRate: totalEntries > 0 ? (totalWinners / totalEntries) * 100 : 0,
         redemptionRate: totalWinners > 0 ? (totalRedemptions / totalWinners) * 100 : 0,
+        revenue: totalRevenue,
+        rewardCost: totalRewardCost,
+        netProfit: totalNetProfit,
+        roi: totalRoi,
       },
       entriesByDay: entriesByDayRaw.map((r) => ({ date: r.day.toISOString().slice(0, 10), count: Number(r.count) })),
       campaignStats,
       methodBreakdown: methodBreakdown.map((m) => ({ method: m.method, count: m._count._all })),
       rewardStatusBreakdown: rewardStatusBreakdown.map((r) => ({ status: r.status, count: r._count._all })),
     };
+  }
+
+  private computeFinancials(
+    entryCount: number,
+    products: Array<{ minQuantity: number; product: { price: number | null } | null }>,
+    rewards: Array<{ quantity: number; product: { price: number | null } | null; _count: { userRewards: number } }>,
+  ) {
+    const revenuePerEntry = products.reduce(
+      (sum, cp) => sum + (cp.product?.price ?? 0) * cp.minQuantity,
+      0,
+    );
+    const revenue = entryCount * revenuePerEntry;
+    const rewardCost = rewards.reduce(
+      (sum, r) => sum + r._count.userRewards * (r.quantity ?? 1) * (r.product?.price ?? 0),
+      0,
+    );
+    const netProfit = revenue - rewardCost;
+    const roi = rewardCost > 0 ? (netProfit / rewardCost) * 100 : null;
+    return { revenue, rewardCost, netProfit, roi, purchases: entryCount };
   }
 }

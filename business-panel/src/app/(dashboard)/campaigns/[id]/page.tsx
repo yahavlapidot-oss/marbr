@@ -9,7 +9,7 @@ import {
   ArrowLeft, Loader2, Users, Trophy, CheckCircle, TrendingUp,
   Plus, Shuffle, Gamepad2, Medal, QrCode, Download, Maximize2, X,
   Play, Pause, StopCircle, Pencil, ChevronDown, ChevronUp,
-  Hash, ScanLine, MapPin, CreditCard,
+  Hash, ScanLine, MapPin, CreditCard, DollarSign,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -55,6 +55,17 @@ function StatTile({ icon: Icon, label, value }: { icon: React.ElementType; label
         <p className="text-xs text-[#6b6b80]">{label}</p>
         <p className="text-xl font-bold text-white">{value}</p>
       </div>
+    </div>
+  );
+}
+
+function FinancialTile({ label, value, sub, highlight }: { label: string; value: string; sub?: string; highlight?: 'green' | 'red' | 'gold' }) {
+  const colors = { green: 'text-green-400', red: 'text-red-400', gold: 'text-amber-400' };
+  return (
+    <div className="rounded-lg border border-[#2a2a38] bg-[#1a1a24] p-4">
+      <p className="text-xs text-[#6b6b80] mb-1">{label}</p>
+      <p className={`text-xl font-bold ${highlight ? colors[highlight] : 'text-white'}`}>{value}</p>
+      {sub && <p className="text-xs text-[#6b6b80] mt-0.5">{sub}</p>}
     </div>
   );
 }
@@ -306,6 +317,8 @@ export default function CampaignDetailPage() {
   }
 
   const { campaign, stats, recentEntries } = data ?? {};
+  const financials = data?.financials;
+  const hasFinancials = financials != null && (financials.revenue > 0 || financials.rewardCost > 0);
   const rewards: any[] = rewardsData ?? [];
   const entries: any[] = recentEntries ?? [];
   const campaignProducts: any[] = campaign?.products ?? [];
@@ -413,6 +426,29 @@ export default function CampaignDetailPage() {
         <StatTile icon={CheckCircle} label={t('redeem_status_redeemed')} value={stats?.totalRedemptions ?? 0} />
         <StatTile icon={TrendingUp} label={t('campaign_detail_conversion')} value={`${stats?.conversionRate?.toFixed(1) ?? 0}%`} />
       </div>
+
+      {/* Business Impact */}
+      <Card className={campaign?.status === 'ENDED' ? 'border-amber-500/40' : ''}>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <DollarSign className="h-4 w-4 text-amber-500" />
+            {campaign?.status === 'ENDED' ? t('fin_final_results') : t('fin_business_impact')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {!hasFinancials ? (
+            <p className="text-sm text-[#6b6b80]">{t('fin_no_price_data')}</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+              <FinancialTile label={t('fin_revenue')} value={`₪${financials!.revenue.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} sub={`${financials!.purchases} ${t('fin_purchases').toLowerCase()}`} highlight="gold" />
+              <FinancialTile label={t('fin_purchases')} value={String(financials!.purchases)} />
+              <FinancialTile label={t('fin_reward_cost')} value={`₪${financials!.rewardCost.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} />
+              <FinancialTile label={t('fin_net_profit')} value={`₪${financials!.netProfit.toLocaleString('he-IL', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`} highlight={financials!.netProfit >= 0 ? 'green' : 'red'} />
+              <FinancialTile label={t('fin_roi')} value={financials!.roi != null ? `${financials!.roi.toFixed(0)}%` : '—'} sub={t('fin_roi_tooltip')} highlight={financials!.roi != null && financials!.roi >= 0 ? 'green' : financials!.roi != null ? 'red' : undefined} />
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* Edit Campaign */}
       {canEdit && (
@@ -776,6 +812,7 @@ export default function CampaignDetailPage() {
                     name: composedName,
                     description: selectedProduct?.description || undefined,
                     productId: selectedProductId || undefined,
+                    quantity: parseInt(rewardQty) || 1,
                     inventory: parseInt(rewardInventory) || 1,
                     expiresInHours: 12,
                   })}
