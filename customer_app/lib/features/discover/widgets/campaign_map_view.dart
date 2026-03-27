@@ -209,10 +209,10 @@ class _CampaignBottomCard extends StatelessWidget {
     switch (campaign['type'] as String? ?? '') {
       case 'RAFFLE':
         return 'Raffle';
+      case 'EVERY_N':
+        return 'X Winners';
       case 'INSTANT_WIN':
         return 'Instant Win';
-      case 'EVERY_N':
-        return 'Every N';
       case 'WEIGHTED_ODDS':
         return 'Weighted Odds';
       default:

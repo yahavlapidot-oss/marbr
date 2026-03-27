@@ -182,7 +182,6 @@ export default function CampaignDetailPage() {
       if (formData.pushTitle !== undefined) payload.pushTitle = formData.pushTitle;
       if (formData.pushBody !== undefined) payload.pushBody = formData.pushBody;
       if (campaignType.current === 'EVERY_N') payload.everyN = formData.everyN;
-      if (campaignType.current === 'WEIGHTED_ODDS') payload.winProbability = formData.winProbability;
       return api.patch(`/campaigns/${id}`, payload);
     },
     onSuccess: () => {
@@ -325,7 +324,6 @@ export default function CampaignDetailPage() {
   const isRaffle = campaign?.type === 'RAFFLE';
   const isSnake = campaign?.type === 'SNAKE';
   const isEveryN = campaign?.type === 'EVERY_N';
-  const isWeightedOdds = campaign?.type === 'WEIGHTED_ODDS';
   const leaderboard: any[] = leaderboardData?.leaderboard ?? [];
   const totalPlayers: number = leaderboardData?.totalPlayers ?? 0;
   const canEdit = campaign?.status && !['ENDED', 'CANCELLED'].includes(campaign.status);
@@ -489,12 +487,6 @@ export default function CampaignDetailPage() {
                 <div className="space-y-1.5">
                   <Label>{t('campaign_every_n')}</Label>
                   <Input type="number" min={2} {...register('everyN', { valueAsNumber: true })} className="w-40" />
-                </div>
-              )}
-              {isWeightedOdds && (
-                <div className="space-y-1.5">
-                  <Label>{t('campaign_odds')}</Label>
-                  <Input type="number" step="0.01" min={0} max={1} {...register('winProbability', { valueAsNumber: true })} className="w-40" />
                 </div>
               )}
               <div className="space-y-1.5">

@@ -22,8 +22,8 @@ const STATUS_VARIANT: Record<string, any> = {
 };
 
 const TYPE_LABEL: Record<string, string> = {
-  RAFFLE: 'Raffle', INSTANT_WIN: 'Instant', EVERY_N: 'Every N',
-  WEIGHTED_ODDS: 'Weighted', SNAKE: 'Snake',
+  RAFFLE: 'Raffle', EVERY_N: 'X Winners', SNAKE: 'Snake',
+  INSTANT_WIN: 'Instant Win', WEIGHTED_ODDS: 'Weighted Odds',
 };
 
 const REWARD_STATUS_COLOR: Record<string, string> = {

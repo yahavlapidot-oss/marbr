@@ -117,9 +117,7 @@ export default function NewCampaignPage() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="RAFFLE">{t('campaigns_type_raffle')}</SelectItem>
-                  <SelectItem value="INSTANT_WIN">{t('campaigns_type_instant')}</SelectItem>
                   <SelectItem value="EVERY_N">{t('campaigns_type_every_n')}</SelectItem>
-                  <SelectItem value="WEIGHTED_ODDS">{t('campaigns_type_weighted')}</SelectItem>
                   <SelectItem value="SNAKE">🐍 {t('campaigns_type_snake')}</SelectItem>
                 </SelectContent>
               </Select>
@@ -152,12 +150,6 @@ export default function NewCampaignPage() {
               </div>
             )}
 
-            {campaignType === 'WEIGHTED_ODDS' && (
-              <div className="space-y-1.5">
-                <Label>{t('campaign_odds')}</Label>
-                <Input type="number" step="0.01" min={0} max={1} placeholder="e.g. 0.1" {...register('winProbability', { valueAsNumber: true })} />
-              </div>
-            )}
 
           </CardContent>
         </Card>

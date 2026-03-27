@@ -23,6 +23,10 @@ export class CampaignsService {
   ) {}
 
   async create(businessId: string, dto: CreateCampaignDto) {
+    const removed: CampaignType[] = [CampaignType.INSTANT_WIN, CampaignType.WEIGHTED_ODDS];
+    if (removed.includes(dto.type as CampaignType)) {
+      throw new BadRequestException(`Campaign type ${dto.type} is no longer supported.`);
+    }
     await this.enforcePlanLimits(businessId, dto.type as CampaignType);
 
     const campaign = await this.prisma.campaign.create({
