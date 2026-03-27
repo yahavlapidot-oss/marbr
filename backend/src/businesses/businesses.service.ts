@@ -59,13 +59,4 @@ export class BusinessesService {
       orderBy: { createdAt: 'desc' },
     });
   }
-
-  async getCustomers(businessId: string) {
-    const entries = await this.prisma.entry.findMany({
-      where: { campaign: { businessId } },
-      include: { user: { select: { id: true, fullName: true, email: true, phone: true, createdAt: true } } },
-      distinct: ['userId'],
-    });
-    return entries.map((e) => e.user);
-  }
 }

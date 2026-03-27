@@ -49,11 +49,4 @@ export class BusinessesController {
     return this.svc.getCampaigns(id, user.id);
   }
 
-  @Get(':id/customers')
-  @UseGuards(RolesGuard)
-  @Roles(UserRole.OWNER, UserRole.MANAGER)
-  @ApiOperation({ summary: 'Get unique customers who participated in business campaigns' })
-  getCustomers(@Param('id') id: string) {
-    return this.svc.getCustomers(id);
-  }
 }

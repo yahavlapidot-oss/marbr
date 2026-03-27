@@ -9,7 +9,6 @@ import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
 import { BusinessesModule } from './businesses/businesses.module';
 import { BranchesModule } from './branches/branches.module';
-import { EmployeesModule } from './employees/employees.module';
 import { ProductsModule } from './products/products.module';
 import { CampaignsModule } from './campaigns/campaigns.module';
 import { EntriesModule } from './entries/entries.module';
@@ -36,7 +35,6 @@ import { UploadModule } from './upload/upload.module';
     UsersModule,
     BusinessesModule,
     BranchesModule,
-    EmployeesModule,
     ProductsModule,
     CampaignsModule,
     EntriesModule,
