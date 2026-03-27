@@ -13,7 +13,7 @@ export const translations = {
     nav_qr: 'QR Generator',
     nav_redeem: 'Redeem',
     nav_branches: 'Branches',
-    nav_billing: 'Billing',
+    nav_billing: 'Upgrade & Plans',
     nav_settings: 'Settings',
     nav_logout: 'Sign Out',
     // General
@@ -435,7 +435,7 @@ export const translations = {
     nav_qr: 'מחולל QR',
     nav_redeem: 'מימוש',
     nav_branches: 'סניפים',
-    nav_billing: 'חיוב',
+    nav_billing: 'שדרג ותוכניות',
     nav_settings: 'הגדרות',
     nav_logout: 'התנתק',
     // General
