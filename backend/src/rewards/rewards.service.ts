@@ -8,6 +8,7 @@ export class CreateRewardDto {
   @ApiProperty() @IsString() name: string;
   @ApiPropertyOptional() @IsOptional() @IsString() description?: string;
   @ApiPropertyOptional() @IsOptional() @IsString() imageUrl?: string;
+  @ApiPropertyOptional() @IsOptional() @IsString() productId?: string;
   @ApiPropertyOptional() @IsOptional() @IsInt() inventory?: number;
   @ApiPropertyOptional() @IsOptional() @IsInt() expiresInHours?: number;
 }

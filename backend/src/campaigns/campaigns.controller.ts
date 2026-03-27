@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Patch,
+  Delete,
   Body,
   Param,
   Query,
@@ -118,5 +119,26 @@ export class CampaignsController {
   @ApiOperation({ summary: 'End a campaign' })
   end(@Param('id') id: string, @CurrentUser() user: { id: string }) {
     return this.campaignsService.updateStatus(id, CampaignStatus.ENDED, user.id);
+  }
+
+  @Post(':id/products')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Link a product as required purchase for this campaign' })
+  addProduct(
+    @Param('id') id: string,
+    @Body() body: { productId: string; minQuantity?: number },
+  ) {
+    return this.campaignsService.addProduct(id, body.productId, body.minQuantity);
+  }
+
+  @Delete(':id/products/:productId')
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.OWNER, UserRole.MANAGER)
+  @ApiOperation({ summary: 'Remove a required product from this campaign' })
+  removeProduct(@Param('id') id: string, @Param('productId') productId: string) {
+    return this.campaignsService.removeProduct(id, productId);
   }
 }

@@ -87,9 +87,10 @@ export default function CampaignDetailPage() {
   const [rewardQty, setRewardQty] = useState('1');
   const [rewardInventory, setRewardInventory] = useState('1');
   const [drawCount, setDrawCount] = useState('1');
+  const [addingProduct, setAddingProduct] = useState(false);
+  const [reqProductId, setReqProductId] = useState('');
 
   // QR state
-  const [branchId, setBranchId] = useState('');
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [countdown, setCountdown] = useState(ROTATE_EVERY);
   const [kiosk, setKiosk] = useState(false);
@@ -109,12 +110,6 @@ export default function CampaignDetailPage() {
     queryKey: ['rewards', id],
     queryFn: () => api.get(`/rewards/campaign/${id}`).then((r) => r.data),
     enabled: !!id,
-  });
-
-  const { data: branches } = useQuery({
-    queryKey: ['branches', businessId],
-    queryFn: () => api.get(`/branches?businessId=${businessId}`).then((r) => r.data),
-    enabled: !!businessId,
   });
 
   const { data: products } = useQuery({
@@ -192,11 +187,32 @@ export default function CampaignDetailPage() {
     mutationFn: (payload: any) => api.post(`/rewards/campaign/${id}`, payload),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['rewards', id] });
+      qc.invalidateQueries({ queryKey: ['campaign-analytics', id] });
       setShowAddReward(false);
       setSelectedProductId(''); setRewardQty('1'); setRewardInventory('1');
       toast.success(t('prize_added'));
     },
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('prize_add_failed')),
+  });
+
+  const addReqProduct = useMutation({
+    mutationFn: (productId: string) => api.post(`/campaigns/${id}/products`, { productId }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaign-analytics', id] });
+      setAddingProduct(false);
+      setReqProductId('');
+      toast.success(t('campaign_req_product_add'));
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('action_failed')),
+  });
+
+  const removeReqProduct = useMutation({
+    mutationFn: (productId: string) => api.delete(`/campaigns/${id}/products/${productId}`),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['campaign-analytics', id] });
+      toast.success(t('campaign_req_product_remove'));
+    },
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? t('action_failed')),
   });
 
   const drawWinners = useMutation({
@@ -218,7 +234,7 @@ export default function CampaignDetailPage() {
   // QR generation
   const generateQr = useMutation({
     mutationFn: () =>
-      api.post('/entries/qr/generate', {}, { params: { campaignId: id, branchId } }).then((r) => r.data),
+      api.post('/entries/qr/generate', {}, { params: { campaignId: id } }).then((r) => r.data),
     onSuccess: (data) => { setQrDataUrl(data.qrDataUrl); setCountdown(ROTATE_EVERY); },
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('qr_generate_failed')),
   });
@@ -237,7 +253,6 @@ export default function CampaignDetailPage() {
   }, [stopRotation, generateQr]);
 
   useEffect(() => { if (qrDataUrl && !rotateRef.current) startRotation(); }, [qrDataUrl]); // eslint-disable-line
-  useEffect(() => { stopRotation(); setQrDataUrl(null); }, [branchId, stopRotation]);
   useEffect(() => () => stopRotation(), [stopRotation]);
 
   const downloadQr = () => {
@@ -293,6 +308,7 @@ export default function CampaignDetailPage() {
   const { campaign, stats, recentEntries } = data ?? {};
   const rewards: any[] = rewardsData ?? [];
   const entries: any[] = recentEntries ?? [];
+  const campaignProducts: any[] = campaign?.products ?? [];
   const isRaffle = campaign?.type === 'RAFFLE';
   const isSnake = campaign?.type === 'SNAKE';
   const isEveryN = campaign?.type === 'EVERY_N';
@@ -326,12 +342,15 @@ export default function CampaignDetailPage() {
       {campaign?.status && (
         <div className="flex items-center gap-2 flex-wrap">
           {campaign.status === 'DRAFT' && (() => {
-            const hasRewards = (campaign.rewards?.length ?? 0) > 0;
+            const hasRewards = rewards.length > 0;
+            const hasProducts = campaignProducts.length > 0;
+            const canPublish = hasRewards && hasProducts;
+            const hint = !hasProducts ? t('publish_needs_product') : !hasRewards ? t('publish_needs_reward') : undefined;
             return (
-              <div title={!hasRewards ? t('publish_needs_reward') : undefined}>
+              <div title={hint}>
                 <Button
                   onClick={() => transition.mutate('publish')}
-                  disabled={isPending || !hasRewards}
+                  disabled={isPending || !canPublish}
                   className="bg-green-600 hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
@@ -548,22 +567,76 @@ export default function CampaignDetailPage() {
         </>
       )}
 
+      {/* Required Purchase Product */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <div>
+            <CardTitle className="flex items-center gap-2">
+              <CreditCard className="h-4 w-4 text-amber-500" />
+              {t('campaign_req_product_title')}
+            </CardTitle>
+            <p className="text-xs text-[#6b6b80] mt-1">{t('campaign_req_product_desc')}</p>
+          </div>
+          {canEdit && (
+            <Button size="sm" variant="outline" onClick={() => setAddingProduct((v) => !v)}>
+              <Plus className="h-3.5 w-3.5" /> {t('campaign_req_product_add')}
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent className="space-y-3">
+          {addingProduct && canEdit && (
+            <div className="flex gap-2 items-end">
+              <div className="flex-1 space-y-1.5">
+                <select
+                  className="w-full rounded-md border border-[#2a2a38] bg-[#13131a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                  value={reqProductId}
+                  onChange={(e) => setReqProductId(e.target.value)}
+                >
+                  <option value="">{t('campaign_req_product_select')}</option>
+                  {(products ?? []).filter((p: any) => !campaignProducts.some((cp: any) => cp.productId === p.id)).map((p: any) => (
+                    <option key={p.id} value={p.id}>{p.name}{p.price != null ? ` — ₪${p.price}` : ''}</option>
+                  ))}
+                </select>
+              </div>
+              <Button size="sm" disabled={!reqProductId || addReqProduct.isPending} onClick={() => addReqProduct.mutate(reqProductId)}>
+                {addReqProduct.isPending ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : t('add')}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => { setAddingProduct(false); setReqProductId(''); }}>{t('cancel')}</Button>
+            </div>
+          )}
+          {campaignProducts.length === 0 ? (
+            <p className="text-sm text-[#6b6b80] py-2">{t('campaign_req_product_empty')}</p>
+          ) : (
+            <div className="divide-y divide-[#2a2a38]">
+              {campaignProducts.map((cp: any) => (
+                <div key={cp.productId} className="flex items-center justify-between py-3">
+                  <div>
+                    <p className="text-sm font-medium text-white">{cp.product?.name ?? cp.productId}</p>
+                    {cp.product?.price != null && <p className="text-xs text-[#6b6b80]">₪{cp.product.price}</p>}
+                  </div>
+                  {canEdit && (
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                      disabled={removeReqProduct.isPending}
+                      onClick={() => removeReqProduct.mutate(cp.productId)}
+                    >
+                      {t('campaign_req_product_remove')}
+                    </Button>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
       {/* QR Code */}
       <Card>
         <CardHeader><CardTitle className="flex items-center gap-2"><QrCode className="h-4 w-4 text-amber-500" /> {t('campaign_detail_qr')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="space-y-1.5">
-            <Label>{t('qr_branch')}</Label>
-            <select
-              value={branchId}
-              onChange={(e) => setBranchId(e.target.value)}
-              className="w-full rounded-md border border-[#2a2a3a] bg-[#12121a] text-white px-3 py-2 text-sm"
-            >
-              <option value="">{t('qr_select_branch')}</option>
-              {branches?.map((b: any) => <option key={b.id} value={b.id}>{b.name}</option>)}
-            </select>
-          </div>
-          <Button className="w-full" disabled={!branchId || generateQr.isPending} onClick={() => generateQr.mutate()}>
+          <Button className="w-full" disabled={generateQr.isPending} onClick={() => generateQr.mutate()}>
             {generateQr.isPending
               ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('campaign_generating')}</>
               : <><QrCode className="h-4 w-4 mr-2" /> {qrDataUrl ? t('campaign_regenerate') : t('campaign_generate_qr')}</>
@@ -702,6 +775,7 @@ export default function CampaignDetailPage() {
                   onClick={() => addReward.mutate({
                     name: composedName,
                     description: selectedProduct?.description || undefined,
+                    productId: selectedProductId || undefined,
                     inventory: parseInt(rewardInventory) || 1,
                     expiresInHours: 12,
                   })}

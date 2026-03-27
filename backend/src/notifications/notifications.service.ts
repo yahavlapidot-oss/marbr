@@ -78,20 +78,12 @@ export class NotificationsService {
   async sendNearbyNotification(campaignId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
-      include: {
-        business: true,
-        branches: { include: { branch: { select: { lat: true, lng: true } } } },
-      },
+      include: { business: true },
     });
     if (!campaign) return;
 
     const title = campaign.pushTitle ?? `${campaign.business.name} has a live promotion!`;
     const body = campaign.pushBody ?? 'Open MrBar to join now 🍺';
-
-    // Get branch coordinates that have location set
-    const branchCoords = campaign.branches
-      .map((cb) => cb.branch)
-      .filter((b): b is { lat: number; lng: number } => b.lat != null && b.lng != null);
 
     // Devices seen in the last 3 hours with a location and FCM token
     const recentDevices = await this.prisma.userDevice.findMany({
@@ -104,14 +96,17 @@ export class NotificationsService {
       select: { userId: true, lastLat: true, lastLng: true },
     });
 
-    // Keep users within 500m of any branch
+    // Keep users within 500m of the business location (if set), otherwise notify all nearby users
     const nearbyUserIds = new Set<string>();
+    const bLat = campaign.business.lat;
+    const bLng = campaign.business.lng;
     for (const device of recentDevices) {
-      for (const branch of branchCoords) {
-        if (haversineMeters(device.lastLat!, device.lastLng!, branch.lat, branch.lng) <= 500) {
+      if (bLat != null && bLng != null) {
+        if (haversineMeters(device.lastLat!, device.lastLng!, bLat, bLng) <= 500) {
           nearbyUserIds.add(device.userId);
-          break;
         }
+      } else {
+        nearbyUserIds.add(device.userId);
       }
     }
 

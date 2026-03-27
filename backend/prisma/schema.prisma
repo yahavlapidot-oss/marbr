@@ -231,6 +231,7 @@ model Product {
 
   business         Business          @relation(fields: [businessId], references: [id])
   campaignProducts CampaignProduct[]
+  rewards          Reward[]
 
   @@map("products")
 }
@@ -331,6 +332,7 @@ model GameScore {
 model Reward {
   id             String   @id @default(cuid())
   campaignId     String
+  productId      String?
   name           String
   description    String?
   imageUrl       String?
@@ -341,6 +343,7 @@ model Reward {
   updatedAt      DateTime @updatedAt
 
   campaign    Campaign     @relation(fields: [campaignId], references: [id])
+  product     Product?     @relation(fields: [productId], references: [id])
   userRewards UserReward[]
 
   @@map("rewards")

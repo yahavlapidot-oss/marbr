@@ -130,7 +130,7 @@ export class CampaignsService {
           ? { create: src.rewards.map((r) => ({ name: r.name, description: r.description, inventory: r.inventory, expiresInHours: r.expiresInHours })) }
           : undefined,
       },
-      include: { branches: true, products: true, rewards: true },
+      include: { products: true, rewards: true },
     });
   }
 
@@ -150,8 +150,7 @@ export class CampaignsService {
         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
       },
       include: {
-        business: { select: { id: true, name: true, logoUrl: true } },
-        branches: { include: { branch: { select: { lat: true, lng: true, address: true } } } },
+        business: { select: { id: true, name: true, logoUrl: true, lat: true, lng: true } },
         rewards: true,
         _count: { select: { entries: true } },
       },
@@ -168,20 +167,38 @@ export class CampaignsService {
 
     return campaigns
       .map((c) => {
-        const distances = c.branches
-          .filter((b) => b.branch.lat != null && b.branch.lng != null)
-          .map((b) => haversineMeters(userLat, userLng, b.branch.lat!, b.branch.lng!));
-        const minDist = distances.length ? Math.min(...distances) : Infinity;
-        return { ...c, _distanceMeters: minDist };
+        const bLat = c.business.lat;
+        const bLng = c.business.lng;
+        const dist = bLat != null && bLng != null
+          ? haversineMeters(userLat, userLng, bLat, bLng)
+          : Infinity;
+        return { ...c, _distanceMeters: dist };
       })
-      .filter((c) => c._distanceMeters <= radiusM || c.branches.length === 0)
+      .filter((c) => c._distanceMeters <= radiusM || c._distanceMeters === Infinity)
       .sort((a, b) => a._distanceMeters - b._distanceMeters);
+  }
+
+  async addProduct(campaignId: string, productId: string, minQuantity = 1) {
+    return this.prisma.campaignProduct.upsert({
+      where: { campaignId_productId: { campaignId, productId } },
+      create: { campaignId, productId, minQuantity },
+      update: { minQuantity },
+    });
+  }
+
+  async removeProduct(campaignId: string, productId: string) {
+    await this.prisma.campaignProduct.delete({
+      where: { campaignId_productId: { campaignId, productId } },
+    });
   }
 
   async updateStatus(id: string, status: CampaignStatus, requesterId: string) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
-      include: { rewards: { select: { id: true }, take: 1 } },
+      include: {
+        rewards: { select: { id: true }, take: 1 },
+        products: { select: { productId: true }, take: 1 },
+      },
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
 
@@ -190,6 +207,12 @@ export class CampaignsService {
     if (status === CampaignStatus.ACTIVE && campaign.rewards.length === 0) {
       throw new BadRequestException(
         'Cannot publish a campaign with no rewards. Add at least one reward first.',
+      );
+    }
+
+    if (status === CampaignStatus.ACTIVE && campaign.products.length === 0) {
+      throw new BadRequestException(
+        'Cannot publish a campaign with no required product. Add the product customers must purchase first.',
       );
     }
 
@@ -210,7 +233,13 @@ export class CampaignsService {
 
   async getAnalytics(id: string) {
     const [campaign, entryCount, rewardCount, redemptionCount, recentEntries] = await Promise.all([
-      this.prisma.campaign.findUnique({ where: { id } }),
+      this.prisma.campaign.findUnique({
+        where: { id },
+        include: {
+          products: { include: { product: true } },
+          rewards: true,
+        },
+      }),
       this.prisma.entry.count({ where: { campaignId: id, isValid: true } }),
       this.prisma.userReward.count({ where: { reward: { campaignId: id } } }),
       this.prisma.redemption.count({ where: { userReward: { reward: { campaignId: id } } } }),
