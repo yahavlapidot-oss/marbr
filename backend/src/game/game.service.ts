@@ -8,6 +8,7 @@ import {
 import { CampaignStatus, CampaignType } from '@prisma/client';
 import * as jwt from 'jsonwebtoken';
 import { PrismaService } from '../prisma/prisma.service';
+import { generateCode } from '../common/code.util';
 import { ConfigService } from '@nestjs/config';
 import { SubmitScoreDto } from './dto/submit-score.dto';
 
@@ -167,7 +168,7 @@ export class GameService {
     await Promise.all(
       topScores.map((g) =>
         this.prisma.userReward.create({
-          data: { userId: g.userId, rewardId: reward.id, expiresAt },
+          data: { userId: g.userId, rewardId: reward.id, expiresAt, code: generateCode() },
         }),
       ),
     );

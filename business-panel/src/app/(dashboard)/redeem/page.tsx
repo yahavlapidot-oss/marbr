@@ -1,17 +1,18 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2, CheckCircle2, XCircle, QrCode } from 'lucide-react';
+import { Loader2, CheckCircle2, XCircle } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
+
+const CODE_LENGTH = 6;
+const LAST_BRANCH_KEY = 'mrbar-last-branch';
 
 type RewardInfo = {
   id: string;
@@ -26,12 +27,14 @@ type RewardInfo = {
 export default function RedeemPage() {
   const businessId = useAuthStore((s) => s.businessId);
   const t = useLocaleStore((s) => s.t);
-  const [code, setCode] = useState('');
+
+  const [digits, setDigits] = useState(['', '', '', '', '', '']);
   const [branchId, setBranchId] = useState('');
   const [reward, setReward] = useState<RewardInfo | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const { data: branches } = useQuery({
     queryKey: ['branches', businessId],
@@ -39,14 +42,28 @@ export default function RedeemPage() {
     enabled: !!businessId,
   });
 
-  const lookup = async () => {
-    if (!code.trim()) return;
+  // Auto-select branch: restore last used, or pick first if only one
+  useEffect(() => {
+    if (!branches?.length) return;
+    const saved = localStorage.getItem(LAST_BRANCH_KEY);
+    const match = branches.find((b: any) => b.id === saved);
+    setBranchId(match ? match.id : branches.length === 1 ? branches[0].id : '');
+  }, [branches]);
+
+  // Auto-lookup when all 6 digits filled
+  const code = digits.join('');
+  useEffect(() => {
+    if (code.length !== CODE_LENGTH) return;
+    lookup(code);
+  }, [code]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const lookup = async (c: string) => {
     setLoading(true); setError(''); setReward(null); setSuccess(false);
     try {
-      const res = await api.get(`/staff/redeem/check/${code.trim()}`);
+      const res = await api.get(`/staff/redeem/check/${c.toUpperCase()}`);
       setReward(res.data);
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Reward not found');
+      setError(err.response?.data?.message ?? t('redeem_not_found'));
     } finally {
       setLoading(false);
     }
@@ -57,60 +74,101 @@ export default function RedeemPage() {
     setLoading(true); setError('');
     try {
       await api.post('/staff/redeem', { code: reward.code, branchId });
-      setSuccess(true); setReward(null); setCode(''); setBranchId('');
+      localStorage.setItem(LAST_BRANCH_KEY, branchId);
+      setSuccess(true);
+      setReward(null);
+      setDigits(['', '', '', '', '', '']);
+      setTimeout(() => inputRefs.current[0]?.focus(), 50);
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Redemption failed');
+      setError(err.response?.data?.message ?? t('redeem_failed'));
     } finally {
       setLoading(false);
     }
   };
 
+  const handleDigitChange = (i: number, val: string) => {
+    const ch = val.replace(/[^a-zA-Z0-9]/g, '').slice(-1).toUpperCase();
+    const next = [...digits];
+    next[i] = ch;
+    setDigits(next);
+    if (ch && i < CODE_LENGTH - 1) inputRefs.current[i + 1]?.focus();
+  };
+
+  const handleKeyDown = (i: number, e: React.KeyboardEvent) => {
+    if (e.key === 'Backspace' && !digits[i] && i > 0) {
+      inputRefs.current[i - 1]?.focus();
+    }
+  };
+
+  const handlePaste = (e: React.ClipboardEvent) => {
+    const pasted = e.clipboardData.getData('text').replace(/[^a-zA-Z0-9]/g, '').toUpperCase().slice(0, CODE_LENGTH);
+    if (pasted.length > 0) {
+      setDigits([...pasted.split(''), ...Array(CODE_LENGTH - pasted.length).fill('')]);
+      inputRefs.current[Math.min(pasted.length, CODE_LENGTH - 1)]?.focus();
+    }
+    e.preventDefault();
+  };
+
+  const reset = () => {
+    setDigits(['', '', '', '', '', '']);
+    setReward(null); setError(''); setSuccess(false);
+    setTimeout(() => inputRefs.current[0]?.focus(), 50);
+  };
+
   return (
-    <div className="max-w-lg mx-auto space-y-6">
+    <div className="max-w-md mx-auto space-y-6">
       <div>
         <h1 className="text-2xl font-bold text-white">{t('redeem_title')}</h1>
         <p className="text-[#6b6b80] text-sm mt-1">{t('redeem_subtitle')}</p>
       </div>
 
+      {/* Code input */}
       <Card>
         <CardHeader><CardTitle>{t('redeem_code')}</CardTitle></CardHeader>
         <CardContent className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              placeholder={t('redeem_code_ph')}
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && lookup()}
-            />
-            <Button onClick={lookup} disabled={loading || !code.trim()}>
-              {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <QrCode className="h-4 w-4" />}
-            </Button>
+          <div className="flex gap-2 justify-center" onPaste={handlePaste}>
+            {digits.map((d, i) => (
+              <input
+                key={i}
+                ref={(el) => { inputRefs.current[i] = el; }}
+                value={d}
+                onChange={(e) => handleDigitChange(i, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(i, e)}
+                maxLength={1}
+                className="h-14 w-11 rounded-lg border border-[#2a2a38] bg-[#1a1a24] text-center text-xl font-bold uppercase text-amber-400 focus:border-amber-500 focus:outline-none focus:ring-1 focus:ring-amber-500 transition-colors"
+                autoFocus={i === 0}
+              />
+            ))}
           </div>
+          <p className="text-center text-xs text-[#6b6b80]">{t('redeem_enter_code_hint')}</p>
+
+          {loading && (
+            <div className="flex justify-center py-2">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+            </div>
+          )}
 
           {error && (
             <div className="flex items-center gap-2 rounded-lg bg-red-500/10 px-4 py-3 text-red-400 text-sm">
-              <XCircle className="h-4 w-4 shrink-0" />
-              {error}
+              <XCircle className="h-4 w-4 shrink-0" /> {error}
             </div>
           )}
 
           {success && (
             <div className="flex items-center gap-2 rounded-lg bg-green-500/10 px-4 py-3 text-green-400 text-sm">
-              <CheckCircle2 className="h-4 w-4 shrink-0" />
-              {t('redeem_success')}
+              <CheckCircle2 className="h-4 w-4 shrink-0" /> {t('redeem_success')}
             </div>
           )}
         </CardContent>
       </Card>
 
+      {/* Reward details + confirm */}
       {reward && (
         <Card className="border-amber-500/30">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               {t('redeem_found')}
-              <Badge variant={reward.status === 'ACTIVE' ? 'active' : 'destructive'}>
-                {reward.status}
-              </Badge>
+              <Badge variant={reward.status === 'ACTIVE' ? 'active' : 'destructive'}>{reward.status}</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -141,8 +199,7 @@ export default function RedeemPage() {
 
             {reward.status === 'ACTIVE' && (
               <>
-                <div className="space-y-1.5">
-                  <Label>{t('redeem_branch')}</Label>
+                {(branches?.length ?? 0) > 1 && (
                   <select
                     value={branchId}
                     onChange={(e) => setBranchId(e.target.value)}
@@ -153,15 +210,14 @@ export default function RedeemPage() {
                       <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                   </select>
+                )}
+                <div className="flex gap-2">
+                  <Button className="flex-1" onClick={redeem} disabled={loading || !branchId}>
+                    {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
+                    {loading ? t('redeem_confirming') : t('redeem_confirm')}
+                  </Button>
+                  <Button variant="ghost" onClick={reset}>{t('cancel')}</Button>
                 </div>
-                <Button
-                  className="w-full"
-                  onClick={redeem}
-                  disabled={loading || !branchId}
-                >
-                  {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  {loading ? t('redeem_confirming') : t('redeem_confirm')}
-                </Button>
               </>
             )}
           </CardContent>

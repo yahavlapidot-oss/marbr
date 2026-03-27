@@ -403,6 +403,9 @@ export const translations = {
     // redeem
     redeem_success: 'Reward redeemed successfully!',
     redeem_found: 'Reward Found',
+    redeem_enter_code_hint: 'Type or paste the 6-character code',
+    redeem_not_found: 'Reward not found',
+    redeem_failed: 'Redemption failed',
     // analytics
     analytics_entries_label: 'Entries',
     // qr setup
@@ -822,6 +825,9 @@ export const translations = {
     // redeem
     redeem_success: 'הפרס מומש בהצלחה!',
     redeem_found: 'הפרס נמצא',
+    redeem_enter_code_hint: 'הקלד או הדבק את הקוד בן 6 תווים',
+    redeem_not_found: 'הפרס לא נמצא',
+    redeem_failed: 'המימוש נכשל',
     // analytics
     analytics_entries_label: 'השתתפויות',
     // qr setup

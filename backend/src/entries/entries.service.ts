@@ -12,6 +12,7 @@ import * as QRCode from 'qrcode';
 import { PrismaService } from '../prisma/prisma.service';
 import { ConfigService } from '@nestjs/config';
 import { ScanEntryDto } from './dto/scan.dto';
+import { generateCode } from '../common/code.util';
 
 @Injectable()
 export class EntriesService {
@@ -227,7 +228,7 @@ export class EntriesService {
 
     const [userReward] = await this.prisma.$transaction([
       this.prisma.userReward.create({
-        data: { userId, rewardId: reward.id, expiresAt },
+        data: { userId, rewardId: reward.id, expiresAt, code: generateCode() },
         include: { reward: true },
       }),
       this.prisma.reward.update({

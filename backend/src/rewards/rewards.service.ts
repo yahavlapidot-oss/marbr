@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { generateCode } from '../common/code.util';
 import { IsString, IsOptional, IsInt, IsNumber } from 'class-validator';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
@@ -61,6 +62,7 @@ export class RewardsService {
           data: {
             userId: e.userId,
             rewardId: reward.id,
+            code: generateCode(),
             expiresAt: reward.expiresInHours
               ? new Date(Date.now() + reward.expiresInHours * 3_600_000)
               : null,

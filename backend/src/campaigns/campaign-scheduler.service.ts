@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { CampaignStatus, CampaignType } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardsService } from '../rewards/rewards.service';
+import { generateCode } from '../common/code.util';
 import { NotificationsService } from '../notifications/notifications.service';
 
 @Injectable()
@@ -73,6 +74,7 @@ export class CampaignSchedulerService {
             data: {
               userId: score.userId,
               rewardId: reward.id,
+              code: generateCode(),
               expiresAt: reward.expiresInHours
                 ? new Date(Date.now() + reward.expiresInHours * 3_600_000)
                 : null,
