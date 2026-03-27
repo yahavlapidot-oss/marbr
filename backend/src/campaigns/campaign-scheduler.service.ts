@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { CampaignStatus, CampaignType } from '@prisma/client';
+import { CampaignStatus, CampaignType, RewardStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { RewardsService } from '../rewards/rewards.service';
 import { generateCode } from '../common/code.util';
@@ -15,6 +15,19 @@ export class CampaignSchedulerService {
     private readonly rewards: RewardsService,
     private readonly notifications: NotificationsService,
   ) {}
+
+  /** Runs every minute — marks ACTIVE user rewards as EXPIRED when expiresAt has passed. */
+  @Cron('* * * * *')
+  async autoExpireRewards() {
+    const now = new Date();
+    const { count } = await this.prisma.userReward.updateMany({
+      where: { status: RewardStatus.ACTIVE, expiresAt: { lte: now } },
+      data: { status: RewardStatus.EXPIRED },
+    });
+    if (count > 0) {
+      this.logger.log(`Expired ${count} user reward(s)`);
+    }
+  }
 
   /** Runs every minute — ends any ACTIVE campaign whose endsAt has passed. */
   @Cron('* * * * *')

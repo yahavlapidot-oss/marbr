@@ -703,6 +703,7 @@ export default function CampaignDetailPage() {
                     name: composedName,
                     description: selectedProduct?.description || undefined,
                     inventory: parseInt(rewardInventory) || 1,
+                    expiresInHours: 12,
                   })}
                   disabled={!selectedProductId || addReward.isPending}
                 >

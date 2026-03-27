@@ -384,6 +384,18 @@ class _RewardCardState extends ConsumerState<_RewardCard> {
                 child: Text(t('redeemed'), style: const TextStyle(color: AppTheme.muted, fontSize: 13)),
               ),
             ),
+          if (status == 'EXPIRED')
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              decoration: const BoxDecoration(
+                border: Border(top: BorderSide(color: AppTheme.border, width: 0.5)),
+                borderRadius: BorderRadius.vertical(bottom: Radius.circular(16)),
+              ),
+              child: Center(
+                child: Text(t('status_expired'), style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+              ),
+            ),
         ],
       ),
     );
