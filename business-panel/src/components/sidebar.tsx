@@ -6,7 +6,6 @@ import { useQuery } from '@tanstack/react-query';
 import {
   LayoutDashboard,
   Megaphone,
-  Gift,
   Package,
   BarChart3,
   Settings,
@@ -37,7 +36,6 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     { href: '/dashboard', icon: LayoutDashboard, label: t('nav_dashboard') },
     { href: '/campaigns', icon: Megaphone, label: t('nav_campaigns') },
     { href: '/products', icon: Package, label: t('nav_products') },
-    { href: '/rewards', icon: Gift, label: t('nav_rewards') },
     { href: '/analytics', icon: BarChart3, label: t('nav_analytics') },
     { href: '/redeem', icon: ScanLine, label: t('nav_redeem') },
     { href: '/branches', icon: Building2, label: t('nav_branches') },
