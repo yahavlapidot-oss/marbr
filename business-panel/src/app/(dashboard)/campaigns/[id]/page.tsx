@@ -533,7 +533,7 @@ export default function CampaignDetailPage() {
       )}
 
       {/* Raffle draw */}
-      {isRaffle && (
+      {isRaffle && campaign?.status !== 'ENDED' && (
         <Card>
           <CardHeader><CardTitle className="flex items-center gap-2"><Shuffle className="h-4 w-4 text-amber-500" /> {t('campaign_detail_draw')}</CardTitle></CardHeader>
           <CardContent>
@@ -586,32 +586,24 @@ export default function CampaignDetailPage() {
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_snake_draw')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_top_scorers_desc')}</p>
-              <Button
-                onClick={() => drawSnakeWinners.mutate()}
-                disabled={drawSnakeWinners.isPending || campaign?.status !== 'ENDED'}
-                variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
-              >
-                {drawSnakeWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
-                {campaign?.status === 'ENDED' ? t('campaign_detail_snake_draw') : t('campaign_must_end_first')}
-              </Button>
-              {drawSnakeWinners.isSuccess && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm text-green-400 font-medium">{t('campaign_winners_drawn')}</p>
-                  {drawSnakeWinners.data?.data?.winners?.map((w: any) => (
-                    <div key={w.userId} className="text-sm text-[#a1a1b5]">
-                      #{w.rank} {w.name} — {w.score.toLocaleString()} pts
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {campaign?.status !== 'ENDED' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_snake_draw')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_top_scorers_desc')}</p>
+                <Button
+                  onClick={() => drawSnakeWinners.mutate()}
+                  disabled={drawSnakeWinners.isPending}
+                  variant="outline"
+                >
+                  {drawSnakeWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
+                  {t('campaign_must_end_first')}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 
@@ -649,32 +641,20 @@ export default function CampaignDetailPage() {
               )}
             </CardContent>
           </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_point_guess_draw')}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_point_guess_desc')}</p>
-              <Button
-                onClick={() => drawPointGuessWinners.mutate()}
-                disabled={drawPointGuessWinners.isPending || campaign?.status !== 'ENDED'}
-                variant={campaign?.status === 'ENDED' ? 'default' : 'outline'}
-              >
-                {drawPointGuessWinners.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Medal className="h-4 w-4" />}
-                {campaign?.status === 'ENDED' ? t('campaign_detail_point_guess_draw') : t('campaign_must_end_first')}
-              </Button>
-              {drawPointGuessWinners.isSuccess && (
-                <div className="mt-4 space-y-2">
-                  <p className="text-sm text-green-400 font-medium">{t('campaign_winners_drawn')}</p>
-                  {drawPointGuessWinners.data?.data?.winners?.map((w: any) => (
-                    <div key={w.userId} className="text-sm text-[#a1a1b5]">
-                      #{w.rank} {w.name} — {w.score} pts (guessed {w.guess})
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {campaign?.status !== 'ENDED' && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2"><Trophy className="h-4 w-4 text-amber-500" /> {t('campaign_detail_point_guess_draw')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-[#6b6b80] mb-4">{t('campaign_point_guess_desc')}</p>
+                <Button variant="outline" disabled>
+                  <Medal className="h-4 w-4" />
+                  {t('campaign_must_end_first')}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </>
       )}
 
