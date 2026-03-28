@@ -39,6 +39,61 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     }).toList();
   }
 
+  /// Groups active campaigns by business to build map pin data.
+  /// Each returned item is a business-shaped map with a `campaigns` list,
+  /// so CampaignMapView can show one pin per venue.
+  /// Also merges in businesses from nearbyBusinessesProvider (for venues
+  /// without active campaigns that still have location data).
+  List<Map<String, dynamic>> _buildMapData(
+    List<dynamic> campaigns,
+    List<Map<String, dynamic>>? nearbyBiz,
+  ) {
+    final Map<String, Map<String, dynamic>> bizMap = {};
+
+    // Seed with businesses from the discover endpoint (includes venues
+    // without active campaigns as grey pins).
+    for (final biz in nearbyBiz ?? []) {
+      final id = biz['id'] as String? ?? '';
+      if (id.isEmpty) continue;
+      bizMap[id] = Map<String, dynamic>.from(biz);
+      bizMap[id]!.putIfAbsent('campaigns', () => <Map<String, dynamic>>[]);
+    }
+
+    // Merge in every active campaign's business — this is the fix:
+    // activeCampaignsProvider already includes business.lat/lng, so even
+    // businesses missing coordinates in the discover endpoint will appear.
+    for (final item in campaigns) {
+      final c = item as Map<String, dynamic>;
+      final biz = c['business'] as Map<String, dynamic>?;
+      if (biz == null) continue;
+      final bizId = biz['id'] as String? ?? '';
+      if (bizId.isEmpty || biz['lat'] == null || biz['lng'] == null) continue;
+
+      if (!bizMap.containsKey(bizId)) {
+        bizMap[bizId] = {
+          'id': bizId,
+          'name': biz['name'],
+          'lat': biz['lat'],
+          'lng': biz['lng'],
+          'logoUrl': biz['logoUrl'],
+          'address': biz['address'],
+          'city': biz['city'],
+          '_distanceMeters': c['_distanceMeters'],
+          'campaigns': <Map<String, dynamic>>[],
+        };
+      }
+
+      // Add campaign to this business's list (avoid duplicates).
+      final list = bizMap[bizId]!['campaigns'] as List;
+      final cId = c['id'] as String?;
+      if (cId != null && !list.any((e) => (e as Map)['id'] == cId)) {
+        list.add(c);
+      }
+    }
+
+    return bizMap.values.toList();
+  }
+
   Future<void> _requestLocation() async {
     await ref.read(locationProvider.notifier).requestAndGetLocation();
     // Re-fetch campaigns with new location
@@ -186,19 +241,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   final list = _filter(all);
 
                   if (_mapMode) {
-                    return businesses.when(
-                      loading: () => const Center(
-                        child: CircularProgressIndicator(
-                            color: AppTheme.gold, strokeWidth: 2),
-                      ),
-                      error: (_, _) => CampaignMapView(
-                        campaigns: list,
-                        userPosition: userPosition,
-                      ),
-                      data: (bizList) => CampaignMapView(
-                        campaigns: bizList,
-                        userPosition: userPosition,
-                      ),
+                    // Build map data from campaigns (primary source) merged with
+                    // nearby businesses (secondary — adds venues without campaigns).
+                    final mapData = _buildMapData(all, businesses.valueOrNull);
+                    return CampaignMapView(
+                      campaigns: mapData,
+                      userPosition: userPosition,
                     );
                   }
 
