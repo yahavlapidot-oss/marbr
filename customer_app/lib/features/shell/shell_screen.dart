@@ -25,10 +25,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
   void initState() {
     super.initState();
     // Poll every 30 seconds when the user is enrolled in a campaign
-    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (_trackedCampaignId != null && mounted) {
-        ref.invalidate(activeCampaignEnrollmentProvider);
-      }
+    _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      if (mounted) ref.invalidate(activeCampaignEnrollmentProvider);
     });
   }
 
@@ -87,20 +85,21 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
-    final isEnrolled = ref.watch(activeCampaignEnrollmentProvider).valueOrNull != null
-        || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
+    final enrollmentAsync = ref.watch(activeCampaignEnrollmentProvider);
+    final enrollment = enrollmentAsync.valueOrNull;
+    // Capture campaign ID on first render — ref.listen only fires on changes,
+    // so we also set it here to handle the case where the user is already enrolled.
+    if (enrollment != null) {
+      _trackedCampaignId = enrollment['id'] as String?;
+    }
+
+    final isEnrolled = enrollment != null || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
     final location = GoRouterState.of(context).matchedLocation;
 
-    // Track enrolled campaign ID and detect when it ends
+    // Detect campaign-ended transition
     ref.listen<AsyncValue<Map<String, dynamic>?>>(
       activeCampaignEnrollmentProvider,
       (prev, next) {
-        // Store campaign ID whenever we see an active enrollment
-        final current = next.valueOrNull;
-        if (current != null) {
-          _trackedCampaignId = current['id'] as String?;
-        }
-
         // Detect transition: had enrollment → now gone
         final hadEnrollment = prev?.valueOrNull != null;
         final nowGone = next.valueOrNull == null && !next.isLoading && !next.hasError;
