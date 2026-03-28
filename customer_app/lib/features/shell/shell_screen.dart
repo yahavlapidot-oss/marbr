@@ -25,6 +25,8 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
   // Cleared when the campaign ends and the popup is triggered.
   String? _trackedCampaignId;
   bool _dialogShowing = false;
+  // Prevent showing the dialog more than once per campaign end.
+  final Set<String> _handledCampaignIds = {};
 
   @override
   void initState() {
@@ -88,6 +90,9 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
 
   Future<void> _showResultDialog(String campaignId) async {
     if (_dialogShowing || !mounted) return;
+    // Each campaign end shows the dialog at most once per app session.
+    if (_handledCampaignIds.contains(campaignId)) return;
+    _handledCampaignIds.add(campaignId);
     _dialogShowing = true;
 
     try {

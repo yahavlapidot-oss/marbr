@@ -5,6 +5,7 @@ import '../../../core/theme.dart';
 import '../../../core/l10n/app_l10n.dart';
 import '../../../core/locale_provider.dart';
 import '../../../core/date_time_utils.dart';
+import '../providers/campaigns_provider.dart';
 
 class _DistanceBadge extends StatelessWidget {
   final double meters;
@@ -55,6 +56,12 @@ class CampaignCard extends ConsumerWidget {
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
+    final campaignId = campaign['id'] as String? ?? '';
+    final enrolledIds = ref.watch(enrolledCampaignIdsProvider);
+    final enrollment = ref.watch(activeCampaignEnrollmentProvider).valueOrNull;
+    final isEnrolled = enrolledIds.contains(campaignId) ||
+        (enrollment != null && enrollment['id'] == campaignId);
+
     final business = campaign['business'] as Map<String, dynamic>?;
     final endsAt = (campaign['endsAt'] as String?)?.toLocalDateTime();
     final timeLeft = endsAt != null ? endsAt.difference(DateTime.now()) : Duration.zero;
@@ -79,7 +86,14 @@ class CampaignCard extends ConsumerWidget {
         decoration: BoxDecoration(
           color: AppTheme.card,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: isUrgent ? AppTheme.gold.withAlpha(80) : AppTheme.border),
+          border: Border.all(
+            color: isEnrolled
+                ? const Color(0xFF22C55E).withAlpha(120)
+                : isUrgent
+                    ? AppTheme.gold.withAlpha(80)
+                    : AppTheme.border,
+            width: isEnrolled ? 1.5 : 1,
+          ),
         ),
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -158,26 +172,45 @@ class CampaignCard extends ConsumerWidget {
                     Text(business['name'], style: const TextStyle(color: AppTheme.muted, fontSize: 12)),
                 ],
                 const Spacer(),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
-                  decoration: BoxDecoration(
-                    color: AppTheme.gold,
-                    borderRadius: BorderRadius.circular(8),
+                if (isEnrolled)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF22C55E).withAlpha(20),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF22C55E).withAlpha(80)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.check_circle, color: Color(0xFF22C55E), size: 13),
+                        const SizedBox(width: 5),
+                        Text(t('youre_in'),
+                          style: const TextStyle(color: Color(0xFF22C55E), fontSize: 12, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
+                  )
+                else
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                    decoration: BoxDecoration(
+                      color: AppTheme.gold,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        if (campaign['type'] == 'SNAKE') ...[
+                          const Text('🐍', style: TextStyle(fontSize: 13)),
+                          const SizedBox(width: 4),
+                          Text(t('play_now'),
+                            style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                        ] else
+                          Text(t('enter_now'),
+                            style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
+                      ],
+                    ),
                   ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (campaign['type'] == 'SNAKE') ...[
-                        const Text('🐍', style: TextStyle(fontSize: 13)),
-                        const SizedBox(width: 4),
-                        Text(t('play_now'),
-                          style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
-                      ] else
-                        Text(t('enter_now'),
-                          style: const TextStyle(color: Colors.black, fontSize: 12, fontWeight: FontWeight.w800)),
-                    ],
-                  ),
-                ),
               ],
             ),
           ],
