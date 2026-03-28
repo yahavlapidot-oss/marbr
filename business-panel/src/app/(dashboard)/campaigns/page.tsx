@@ -31,6 +31,7 @@ export default function CampaignsPage() {
     queryKey: ['campaigns', businessId],
     queryFn: () => api.get(`/businesses/${businessId}/campaigns`).then((r) => r.data),
     enabled: !!businessId,
+    refetchInterval: 30_000,
   });
 
   const transition = useMutation({

@@ -43,12 +43,14 @@ export default function DashboardPage() {
     queryKey: ['campaigns', businessId],
     queryFn: () => api.get(`/businesses/${businessId}/campaigns`).then((r) => r.data),
     enabled: !!businessId,
+    refetchInterval: 30_000,
   });
 
   const { data: analytics } = useQuery({
     queryKey: ['analytics', businessId],
     queryFn: () => api.get(`/analytics/business/${businessId}`).then((r) => r.data),
     enabled: !!businessId,
+    refetchInterval: 30_000,
   });
 
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];

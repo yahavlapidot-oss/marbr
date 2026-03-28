@@ -115,6 +115,10 @@ export default function CampaignDetailPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['campaign-analytics', id],
     queryFn: () => api.get(`/campaigns/${id}/analytics`).then((r) => r.data),
+    refetchInterval: (query) => {
+      const status = query.state.data?.campaign?.status;
+      return (status === 'ACTIVE' || status === 'PAUSED') ? 10_000 : 30_000;
+    },
   });
 
   const { data: rewardsData } = useQuery({
@@ -234,7 +238,7 @@ export default function CampaignDetailPage() {
 
   const drawWinners = useMutation({
     mutationFn: (count: number) => api.post(`/rewards/campaign/${id}/draw`, { count }),
-    onSuccess: () => { invalidate(); toast.success(t('winners_drawn')); },
+    onSuccess: () => { invalidate(); qc.invalidateQueries({ queryKey: ['rewards', id] }); toast.success(t('winners_drawn')); },
     onError: (err: any) => toast.error(err?.response?.data?.message ?? t('draw_failed')),
   });
 

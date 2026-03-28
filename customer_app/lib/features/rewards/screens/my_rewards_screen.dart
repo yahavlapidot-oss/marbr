@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -22,15 +23,21 @@ class MyRewardsScreen extends ConsumerStatefulWidget {
 class _MyRewardsScreenState extends ConsumerState<MyRewardsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabs;
+  Timer? _refreshTimer;
 
   @override
   void initState() {
     super.initState();
     _tabs = TabController(length: 2, vsync: this);
+    // Auto-refresh rewards every 30s so won rewards appear without pull-to-refresh
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) ref.invalidate(myRewardsProvider);
+    });
   }
 
   @override
   void dispose() {
+    _refreshTimer?.cancel();
     _tabs.dispose();
     super.dispose();
   }

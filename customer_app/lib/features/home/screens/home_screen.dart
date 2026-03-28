@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -17,6 +18,8 @@ class HomeScreen extends ConsumerStatefulWidget {
 }
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
+  Timer? _refreshTimer;
+
   @override
   void initState() {
     super.initState();
@@ -26,6 +29,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
         if (granted) DeviceService().registerDevice();
       });
     });
+    // Auto-refresh campaigns every 60s so new/ended campaigns appear without pull-to-refresh
+    _refreshTimer = Timer.periodic(const Duration(seconds: 60), (_) {
+      if (mounted) ref.invalidate(activeCampaignsProvider(null));
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
   }
 
   @override

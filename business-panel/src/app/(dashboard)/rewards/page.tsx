@@ -33,6 +33,7 @@ export default function RewardsPage() {
     queryKey: ['rewards', selectedCampaign],
     queryFn: () => api.get(`/rewards/campaign/${selectedCampaign}`).then((r) => r.data),
     enabled: !!selectedCampaign,
+    refetchInterval: 30_000,
   });
 
   const filtered = rewards?.filter((r: any) => {

@@ -55,6 +55,7 @@ export default function AnalyticsPage() {
     queryKey: ['analytics-dashboard', businessId],
     queryFn: () => api.get(`/analytics/business/${businessId}/dashboard`).then((r) => r.data),
     enabled: !!businessId,
+    refetchInterval: 60_000,
   });
 
   const METHOD_LABEL: Record<string, string> = {

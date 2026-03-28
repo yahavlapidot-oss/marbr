@@ -10,12 +10,38 @@ import '../../../core/locale_provider.dart';
 import '../../../core/date_time_utils.dart';
 import '../providers/campaigns_provider.dart';
 
-class CampaignDetailScreen extends ConsumerWidget {
+class CampaignDetailScreen extends ConsumerStatefulWidget {
   final String id;
   const CampaignDetailScreen({super.key, required this.id});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CampaignDetailScreen> createState() => _CampaignDetailScreenState();
+}
+
+class _CampaignDetailScreenState extends ConsumerState<CampaignDetailScreen> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Auto-refresh campaign data every 30s (entry count, status, enrollment state)
+    _refreshTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (mounted) {
+        ref.invalidate(campaignProvider(widget.id));
+        ref.invalidate(activeCampaignEnrollmentProvider);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final id = widget.id;
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
