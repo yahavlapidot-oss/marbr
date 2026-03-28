@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Loader2, Save, Upload, X } from 'lucide-react';
+import { Loader2, Save, Upload, X, MapPin } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -13,6 +14,17 @@ import { Label } from '@/components/ui/label';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
+
+const LocationPicker = dynamic(() => import('@/components/location-picker'), {
+  ssr: false,
+  loading: () => (
+    <div className="rounded-xl border border-[#2a2a38] bg-[#0f0f13]" style={{ height: 280 }}>
+      <div className="h-full flex items-center justify-center">
+        <Loader2 className="h-5 w-5 animate-spin text-[#6b6b80]" />
+      </div>
+    </div>
+  ),
+});
 
 type BusinessForm = {
   name: string;
@@ -27,6 +39,45 @@ type BusinessForm = {
   lat?: number;
   lng?: number;
 };
+
+function ConfirmDialog({
+  open,
+  onConfirm,
+  onCancel,
+  isPending,
+}: {
+  open: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+  isPending: boolean;
+}) {
+  const t = useLocaleStore((s) => s.t);
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+      <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
+            <Save className="h-5 w-5 text-amber-500" />
+          </div>
+          <div>
+            <h3 className="text-white font-bold text-base">{t('settings_confirm_title')}</h3>
+            <p className="text-[#6b6b80] text-sm mt-0.5">{t('settings_confirm_body')}</p>
+          </div>
+        </div>
+        <div className="flex gap-3 justify-end pt-1">
+          <Button variant="outline" onClick={onCancel} disabled={isPending}>
+            {t('settings_confirm_cancel')}
+          </Button>
+          <Button onClick={onConfirm} disabled={isPending}>
+            {isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+            {t('settings_confirm_yes')}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 function ImageUpload({
   label,
@@ -121,6 +172,8 @@ export default function SettingsPage() {
   const qc = useQueryClient();
   const { register, handleSubmit, reset, setValue, watch } = useForm<BusinessForm>();
 
+  const [pendingData, setPendingData] = useState<BusinessForm | null>(null);
+
   const { data: business, isLoading } = useQuery({
     queryKey: ['business', businessId],
     queryFn: () => api.get(`/businesses/${businessId}`).then((r) => r.data),
@@ -135,29 +188,21 @@ export default function SettingsPage() {
     mutationFn: (data: BusinessForm) =>
       api.patch(`/businesses/${businessId}`, data),
     onSuccess: (res, submitted) => {
+      setPendingData(null);
       qc.invalidateQueries({ queryKey: ['business', businessId] });
       qc.invalidateQueries({ queryKey: ['business-sidebar', businessId] });
       setBusiness(res.data);
 
-      // Build a human-readable list of what changed
       const prev = business ?? {};
       const labels: Record<keyof BusinessForm, string> = {
-        name: 'Business name',
-        description: 'Description',
-        logoUrl: 'Logo',
-        coverUrl: 'Cover photo',
-        email: 'Email',
-        phone: 'Phone',
-        website: 'Website',
-        address: 'Address',
-        city: 'City',
-        lat: 'Latitude',
-        lng: 'Longitude',
+        name: 'Business name', description: 'Description', logoUrl: 'Logo',
+        coverUrl: 'Cover photo', email: 'Email', phone: 'Phone',
+        website: 'Website', address: 'Address', city: 'City',
+        lat: 'Latitude', lng: 'Longitude',
       };
       const changed = (Object.keys(labels) as (keyof BusinessForm)[]).filter(
         (k) => submitted[k] !== (prev as any)[k],
       );
-
       toast.success(t('settings_saved'), {
         description: changed.length
           ? `Updated: ${changed.map((k) => labels[k]).join(', ')}`
@@ -166,11 +211,15 @@ export default function SettingsPage() {
       });
     },
     onError: (err: any) => {
+      setPendingData(null);
       toast.error(t('settings_save_failed'), {
         description: err?.response?.data?.message ?? t('settings_went_wrong'),
       });
     },
   });
+
+  const lat = watch('lat');
+  const lng = watch('lng');
 
   if (isLoading) {
     return (
@@ -181,7 +230,6 @@ export default function SettingsPage() {
         </div>
         <div className="rounded-xl border border-[#2a2a38] bg-[#1a1a24] p-6 space-y-5">
           <Skeleton className="h-5 w-28 mb-2" />
-          {/* Logo + cover */}
           {Array.from({ length: 2 }).map((_, i) => (
             <div key={i} className="flex items-center gap-3">
               <Skeleton className="h-16 w-16 rounded-lg shrink-0" />
@@ -191,7 +239,6 @@ export default function SettingsPage() {
               </div>
             </div>
           ))}
-          {/* Fields */}
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="space-y-1.5">
               <Skeleton className="h-3.5 w-24" />
@@ -204,88 +251,123 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="text-2xl font-bold text-white">{t('settings_title')}</h1>
-        <p className="text-[#6b6b80] text-sm mt-1">{t('settings_subtitle')}</p>
+    <>
+      <ConfirmDialog
+        open={!!pendingData}
+        onConfirm={() => pendingData && update.mutate(pendingData)}
+        onCancel={() => setPendingData(null)}
+        isPending={update.isPending}
+      />
+
+      <div className="space-y-6 max-w-2xl">
+        <div>
+          <h1 className="text-2xl font-bold text-white">{t('settings_title')}</h1>
+          <p className="text-[#6b6b80] text-sm mt-1">{t('settings_subtitle')}</p>
+        </div>
+
+        <form onSubmit={handleSubmit((d) => setPendingData(d))} className="space-y-6">
+          <Card>
+            <CardHeader><CardTitle>{t('settings_business_info')}</CardTitle></CardHeader>
+            <CardContent className="space-y-5">
+              <ImageUpload
+                label={t('settings_logo')}
+                value={watch('logoUrl')}
+                onChange={(url) => setValue('logoUrl', url)}
+                uploadLabel={t('settings_upload')}
+                uploadingLabel={t('settings_uploading')}
+              />
+              <ImageUpload
+                label={t('settings_cover')}
+                value={watch('coverUrl')}
+                onChange={(url) => setValue('coverUrl', url)}
+                uploadLabel={t('settings_upload')}
+                uploadingLabel={t('settings_uploading')}
+              />
+              <div className="space-y-1.5">
+                <Label>{t('settings_name')}</Label>
+                <Input placeholder={t('settings_bar_name_ph')} {...register('name', { required: true })} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('settings_description')}</Label>
+                <Input placeholder={t('settings_desc_ph')} {...register('description')} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>{t('settings_email')}</Label>
+                  <Input placeholder={t('settings_email_ph')} {...register('email')} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('settings_phone')}</Label>
+                  <Input placeholder={t('settings_phone_ph')} {...register('phone')} />
+                </div>
+              </div>
+              <div className="space-y-1.5">
+                <Label>{t('settings_website')}</Label>
+                <Input placeholder={t('settings_website_ph')} {...register('website')} />
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>{t('settings_address')}</Label>
+                  <Input placeholder={t('settings_address_ph')} {...register('address')} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('settings_city')}</Label>
+                  <Input placeholder={t('settings_city_ph')} {...register('city')} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-amber-500" />
+                {t('settings_location_map')}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-[#6b6b80] text-sm">{t('settings_map_hint')}</p>
+
+              <LocationPicker
+                lat={Number(lat) || 32.0853}
+                lng={Number(lng) || 34.7818}
+                onChange={(newLat, newLng) => {
+                  setValue('lat', parseFloat(newLat.toFixed(6)));
+                  setValue('lng', parseFloat(newLng.toFixed(6)));
+                }}
+              />
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <Label>{t('settings_lat')}</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="32.0853"
+                    {...register('lat', { valueAsNumber: true })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>{t('settings_lng')}</Label>
+                  <Input
+                    type="number"
+                    step="any"
+                    placeholder="34.7818"
+                    {...register('lng', { valueAsNumber: true })}
+                  />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="flex justify-end">
+            <Button type="submit">
+              <Save className="h-4 w-4" />
+              {t('settings_save')}
+            </Button>
+          </div>
+        </form>
       </div>
-
-      <Card>
-        <CardHeader><CardTitle>{t('settings_business_info')}</CardTitle></CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit((d) => update.mutate(d))} className="space-y-5">
-            {/* Logo */}
-            <ImageUpload
-              label={t('settings_logo')}
-              value={watch('logoUrl')}
-              onChange={(url) => setValue('logoUrl', url)}
-              uploadLabel={t('settings_upload')}
-              uploadingLabel={t('settings_uploading')}
-            />
-
-            {/* Cover photo */}
-            <ImageUpload
-              label={t('settings_cover')}
-              value={watch('coverUrl')}
-              onChange={(url) => setValue('coverUrl', url)}
-              uploadLabel={t('settings_upload')}
-              uploadingLabel={t('settings_uploading')}
-            />
-
-            <div className="space-y-1.5">
-              <Label>{t('settings_name')}</Label>
-              <Input placeholder={t('settings_bar_name_ph')} {...register('name', { required: true })} />
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('settings_description')}</Label>
-              <Input placeholder={t('settings_desc_ph')} {...register('description')} />
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>{t('settings_email')}</Label>
-                <Input placeholder={t('settings_email_ph')} {...register('email')} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('settings_phone')}</Label>
-                <Input placeholder={t('settings_phone_ph')} {...register('phone')} />
-              </div>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('settings_website')}</Label>
-              <Input placeholder={t('settings_website_ph')} {...register('website')} />
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>{t('settings_address')}</Label>
-                <Input placeholder={t('settings_address_ph')} {...register('address')} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('settings_city')}</Label>
-                <Input placeholder={t('settings_city_ph')} {...register('city')} />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1.5">
-                <Label>{t('settings_lat')}</Label>
-                <Input type="number" step="any" placeholder="32.0853" {...register('lat', { valueAsNumber: true })} />
-              </div>
-              <div className="space-y-1.5">
-                <Label>{t('settings_lng')}</Label>
-                <Input type="number" step="any" placeholder="34.7818" {...register('lng', { valueAsNumber: true })} />
-              </div>
-            </div>
-
-            <div className="flex justify-end pt-2">
-              <Button type="submit" disabled={update.isPending}>
-                {update.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                {t('settings_save')}
-              </Button>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-
-    </div>
+    </>
   );
 }
