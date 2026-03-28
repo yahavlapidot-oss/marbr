@@ -157,6 +157,7 @@ class _PointGuessGameScreenState extends ConsumerState<PointGuessGameScreen>
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
+      resizeToAvoidBottomInset: true,
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios, size: 18),
@@ -259,12 +260,17 @@ class _PointGuessGameScreenState extends ConsumerState<PointGuessGameScreen>
     final progress = _remaining / _totalSeconds;
     final isUrgent = _remaining <= 5;
 
-    return Column(
-      children: [
-        // Timer bar
-        Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 0),
-          child: Column(
+    // Shrink the dot square so it fits on screen when the keyboard is open
+    final screenWidth = MediaQuery.of(context).size.width;
+    final squareSize = (screenWidth - 48).clamp(180.0, _squareSize);
+
+    return SingleChildScrollView(
+      keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
+      child: Column(
+        children: [
+          // Timer bar
+          Column(
             children: [
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -302,101 +308,104 @@ class _PointGuessGameScreenState extends ConsumerState<PointGuessGameScreen>
               ),
             ],
           ),
-        ),
 
-        const SizedBox(height: 20),
+          const SizedBox(height: 20),
 
-        // Dot square
-        Center(
-          child: Container(
-            width: _squareSize,
-            height: _squareSize,
-            decoration: BoxDecoration(
-              color: const Color(0xFF1a1a24),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppTheme.border, width: 1.5),
-              boxShadow: [
-                BoxShadow(
-                  color: AppTheme.gold.withAlpha(30),
-                  blurRadius: 20,
-                  spreadRadius: 2,
+          // Dot square — tapping it hides the keyboard
+          GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Center(
+              child: Container(
+                width: squareSize,
+                height: squareSize,
+                decoration: BoxDecoration(
+                  color: const Color(0xFF1a1a24),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: AppTheme.border, width: 1.5),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppTheme.gold.withAlpha(30),
+                      blurRadius: 20,
+                      spreadRadius: 2,
+                    ),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(14),
+                  child: CustomPaint(
+                    size: Size(squareSize, squareSize),
+                    painter: _DotPainter(positions: _dotPositions, radius: _dotRadius),
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 24),
+
+          // Guess input
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Column(
+              children: [
+                Text(
+                  t('point_guess_enter_guess'),
+                  style: const TextStyle(color: AppTheme.muted, fontSize: 13),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: _guessCtrl,
+                  focusNode: _focusNode,
+                  keyboardType: TextInputType.number,
+                  inputFormatters: [FilteringTextInputFormatter.digitsOnly],
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: AppTheme.white,
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: '???',
+                    hintStyle: TextStyle(color: AppTheme.muted.withAlpha(100), fontSize: 28),
+                    filled: true,
+                    fillColor: AppTheme.surface,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.border),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.border),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppTheme.gold, width: 2),
+                    ),
+                    contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _submit,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppTheme.gold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text(
+                      t('point_guess_submit'),
+                      style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
+                    ),
+                  ),
                 ),
               ],
             ),
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(14),
-              child: CustomPaint(
-                size: const Size(_squareSize, _squareSize),
-                painter: _DotPainter(positions: _dotPositions, radius: _dotRadius),
-              ),
-            ),
           ),
-        ),
-
-        const SizedBox(height: 24),
-
-        // Guess input
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 40),
-          child: Column(
-            children: [
-              Text(
-                t('point_guess_enter_guess'),
-                style: const TextStyle(color: AppTheme.muted, fontSize: 13),
-              ),
-              const SizedBox(height: 10),
-              TextField(
-                controller: _guessCtrl,
-                focusNode: _focusNode,
-                keyboardType: TextInputType.number,
-                inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  color: AppTheme.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.w800,
-                ),
-                decoration: InputDecoration(
-                  hintText: '???',
-                  hintStyle: TextStyle(color: AppTheme.muted.withAlpha(100), fontSize: 28),
-                  filled: true,
-                  fillColor: AppTheme.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.border),
-                  ),
-                  enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.border),
-                  ),
-                  focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppTheme.gold, width: 2),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _submit,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppTheme.gold,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: Text(
-                    t('point_guess_submit'),
-                    style: const TextStyle(fontWeight: FontWeight.w800, letterSpacing: 0.5),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
