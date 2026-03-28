@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Megaphone, Users, Gift, TrendingUp, Plus } from 'lucide-react';
+import { Megaphone, Users, TrendingUp, Plus, CheckCircle, BarChart2, Trophy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -12,19 +12,29 @@ import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
 import { formatDateTime } from '@/lib/utils';
 
-function StatCard({ title, value, icon: Icon, sub }: {
+const COLOR_MAP = {
+  amber:  { bg: 'bg-amber-500/10',  icon: 'text-amber-400',  value: 'text-amber-400'  },
+  green:  { bg: 'bg-green-500/10',  icon: 'text-green-400',  value: 'text-green-400'  },
+  blue:   { bg: 'bg-blue-500/10',   icon: 'text-blue-400',   value: 'text-blue-400'   },
+  purple: { bg: 'bg-purple-500/10', icon: 'text-purple-400', value: 'text-purple-400' },
+  rose:   { bg: 'bg-rose-500/10',   icon: 'text-rose-400',   value: 'text-rose-400'   },
+};
+
+function StatCard({ title, value, icon: Icon, sub, color = 'amber', highlight = false }: {
   title: string; value: string | number; icon: React.ElementType; sub?: string;
+  color?: keyof typeof COLOR_MAP; highlight?: boolean;
 }) {
+  const c = COLOR_MAP[color];
   return (
-    <Card>
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between mb-4">
-          <span className="text-sm text-[#6b6b80]">{title}</span>
-          <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center">
-            <Icon className="h-5 w-5 text-amber-500" />
+    <Card className={highlight ? 'ring-1 ring-amber-500/40' : ''}>
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between mb-3">
+          <span className="text-xs font-medium text-[#6b6b80] uppercase tracking-wide leading-tight">{title}</span>
+          <div className={`h-8 w-8 rounded-lg ${c.bg} flex items-center justify-center shrink-0 ml-2`}>
+            <Icon className={`h-4 w-4 ${c.icon}`} />
           </div>
         </div>
-        <div className="text-3xl font-bold text-white mb-1">{value}</div>
+        <div className={`text-3xl font-bold mb-1 ${c.value}`}>{value}</div>
         {sub && <p className="text-xs text-[#6b6b80]">{sub}</p>}
       </CardContent>
     </Card>
@@ -54,7 +64,11 @@ export default function DashboardPage() {
   });
 
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];
-  const totalEntries = analytics?.totalEntries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
+  const totalEntries = analytics?.totals?.entries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
+  const totalWinners = analytics?.totals?.winners ?? 0;
+  const totalRedemptions = analytics?.totals?.redemptions ?? 0;
+  const conversionRate: number = analytics?.conversionRate ?? 0;
+  const redemptionRate: number = analytics?.redemptionRate ?? 0;
 
   if (isLoading) {
     return (
@@ -66,8 +80,8 @@ export default function DashboardPage() {
           </div>
           <Skeleton className="h-9 w-36" />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {Array.from({ length: 4 }).map((_, i) => (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
             <Card key={i}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between mb-4">
@@ -116,15 +130,50 @@ export default function DashboardPage() {
         </Button>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title={t('dashboard_active_campaigns')} value={active.length} icon={Megaphone} />
-        <StatCard title={t('dashboard_total_entries')} value={totalEntries} icon={Users} />
-        <StatCard title={t('dashboard_rewards_issued')} value={analytics?.totalWinners ?? '—'} icon={Gift} />
+      {/* KPI tiles */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
-          title={t('dashboard_conversion')}
-          value={analytics?.conversionRate != null ? `${analytics.conversionRate.toFixed(1)}%` : '—'}
+          title={t('dashboard_active_campaigns')}
+          value={active.length}
+          icon={Megaphone}
+          color={active.length > 0 ? 'green' : 'amber'}
+          highlight={active.length > 0}
+          sub={active.length > 0 ? `${campaigns?.length ?? 0} ${t('dashboard_total_campaigns')}` : t('dashboard_no_active')}
+        />
+        <StatCard
+          title={t('analytics_kpi_entries')}
+          value={totalEntries.toLocaleString()}
+          icon={Users}
+          color="amber"
+          sub={active.length > 0 ? `${active.reduce((s: number, c: any) => s + (c._count?.entries ?? 0), 0).toLocaleString()} ${t('dashboard_in_active')}` : undefined}
+        />
+        <StatCard
+          title={t('analytics_kpi_winners')}
+          value={totalWinners.toLocaleString()}
+          icon={Trophy}
+          color="purple"
+          sub={totalEntries > 0 ? `${conversionRate.toFixed(1)}% ${t('analytics_kpi_conversion').toLowerCase()}` : undefined}
+        />
+        <StatCard
+          title={t('analytics_kpi_redemptions')}
+          value={totalRedemptions.toLocaleString()}
+          icon={CheckCircle}
+          color="blue"
+          sub={totalWinners > 0 ? `${redemptionRate.toFixed(1)}% ${t('analytics_kpi_redemption_rate').toLowerCase()}` : undefined}
+        />
+        <StatCard
+          title={t('analytics_kpi_conversion')}
+          value={totalEntries > 0 ? `${conversionRate.toFixed(1)}%` : '—'}
           icon={TrendingUp}
+          color="amber"
+          sub={t('dashboard_conversion_sub')}
+        />
+        <StatCard
+          title={t('analytics_kpi_redemption_rate')}
+          value={totalWinners > 0 ? `${redemptionRate.toFixed(1)}%` : '—'}
+          icon={BarChart2}
+          color="rose"
+          sub={t('dashboard_redemption_sub')}
         />
       </div>
 
