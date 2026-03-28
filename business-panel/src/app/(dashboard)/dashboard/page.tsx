@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Megaphone, Users, TrendingUp, Plus, CheckCircle, BarChart2, Trophy } from 'lucide-react';
+import { Megaphone, Users, TrendingUp, Plus, CheckCircle, BarChart2, Trophy, DollarSign, ShoppingBag, Wallet } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -57,18 +57,25 @@ export default function DashboardPage() {
   });
 
   const { data: analytics } = useQuery({
-    queryKey: ['analytics', businessId],
-    queryFn: () => api.get(`/analytics/business/${businessId}`).then((r) => r.data),
+    queryKey: ['analytics-dashboard', businessId],
+    queryFn: () => api.get(`/analytics/business/${businessId}/dashboard`).then((r) => r.data),
     enabled: !!businessId,
     refetchInterval: 30_000,
   });
 
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];
-  const totalEntries = analytics?.totals?.entries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
-  const totalWinners = analytics?.totals?.winners ?? 0;
-  const totalRedemptions = analytics?.totals?.redemptions ?? 0;
-  const conversionRate: number = analytics?.conversionRate ?? 0;
-  const redemptionRate: number = analytics?.redemptionRate ?? 0;
+  const totals = analytics?.totals;
+  const totalEntries: number = totals?.entries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
+  const totalWinners: number = totals?.winners ?? 0;
+  const totalRedemptions: number = totals?.redemptions ?? 0;
+  const conversionRate: number = totals?.conversionRate ?? 0;
+  const redemptionRate: number = totals?.redemptionRate ?? 0;
+  const revenue: number = totals?.revenue ?? 0;
+  const rewardCost: number = totals?.rewardCost ?? 0;
+  const netProfit: number = totals?.netProfit ?? 0;
+  const roi: number | null = totals?.roi ?? null;
+
+  const fmt = (n: number) => `₪${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 
   if (isLoading) {
     return (
@@ -90,6 +97,20 @@ export default function DashboardPage() {
                 </div>
                 <Skeleton className="h-9 w-20 mb-2" />
                 <Skeleton className="h-3 w-24" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Card key={i}>
+              <CardContent className="p-5">
+                <div className="flex items-center justify-between mb-3">
+                  <Skeleton className="h-3 w-28" />
+                  <Skeleton className="h-8 w-8 rounded-lg" />
+                </div>
+                <Skeleton className="h-8 w-24 mb-1" />
+                <Skeleton className="h-3 w-20" />
               </CardContent>
             </Card>
           ))}
@@ -175,6 +196,35 @@ export default function DashboardPage() {
           color="rose"
           sub={t('dashboard_redemption_sub')}
         />
+      </div>
+
+      {/* Financial KPIs */}
+      <div>
+        <h2 className="text-sm font-semibold text-[#6b6b80] uppercase tracking-wide mb-3">{t('dashboard_financials')}</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <StatCard
+            title={t('fin_revenue_total')}
+            value={fmt(revenue)}
+            icon={DollarSign}
+            color="green"
+            sub={t('dashboard_revenue_sub')}
+          />
+          <StatCard
+            title={t('fin_reward_cost_total')}
+            value={fmt(rewardCost)}
+            icon={ShoppingBag}
+            color="rose"
+            sub={t('dashboard_reward_cost_sub')}
+          />
+          <StatCard
+            title={t('fin_profit_total')}
+            value={fmt(netProfit)}
+            icon={Wallet}
+            color={netProfit >= 0 ? 'green' : 'rose'}
+            highlight={netProfit > 0}
+            sub={roi != null ? `ROI ${roi.toFixed(0)}%` : undefined}
+          />
+        </div>
       </div>
 
       {/* Active campaigns */}
