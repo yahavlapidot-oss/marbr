@@ -54,7 +54,7 @@ function ConfirmDialog({
   const t = useLocaleStore((s) => s.t);
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm">
       <div className="bg-[#1a1a24] border border-[#2a2a38] rounded-2xl p-6 max-w-sm w-full mx-4 space-y-4 shadow-2xl">
         <div className="flex items-center gap-3">
           <div className="h-10 w-10 rounded-full bg-amber-500/10 flex items-center justify-center shrink-0">
@@ -194,14 +194,13 @@ export default function SettingsPage() {
       setBusiness(res.data);
 
       const prev = business ?? {};
-      const labels: Record<keyof BusinessForm, string> = {
+      const labels: Partial<Record<keyof BusinessForm, string>> = {
         name: 'Business name', description: 'Description', logoUrl: 'Logo',
         coverUrl: 'Cover photo', email: 'Email', phone: 'Phone',
         website: 'Website', address: 'Address', city: 'City',
-        lat: 'Latitude', lng: 'Longitude',
       };
       const changed = (Object.keys(labels) as (keyof BusinessForm)[]).filter(
-        (k) => submitted[k] !== (prev as any)[k],
+        (k) => k in labels && submitted[k] !== (prev as any)[k],
       );
       toast.success(t('settings_saved'), {
         description: changed.length
@@ -220,6 +219,35 @@ export default function SettingsPage() {
 
   const lat = watch('lat');
   const lng = watch('lng');
+  const addressValue = watch('address');
+  const cityValue = watch('city');
+  const geocodeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    const query = [addressValue, cityValue].filter(Boolean).join(', ');
+    if (!query || query.length < 5) return;
+
+    if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
+    geocodeTimer.current = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(query)}&format=json&limit=1`,
+          { headers: { 'Accept-Language': 'en' } },
+        );
+        const data = await res.json();
+        if (data[0]) {
+          setValue('lat', parseFloat(parseFloat(data[0].lat).toFixed(6)));
+          setValue('lng', parseFloat(parseFloat(data[0].lon).toFixed(6)));
+        }
+      } catch {
+        // silent — user can still place pin manually
+      }
+    }, 800);
+
+    return () => {
+      if (geocodeTimer.current) clearTimeout(geocodeTimer.current);
+    };
+  }, [addressValue, cityValue, setValue]);
 
   if (isLoading) {
     return (
@@ -336,27 +364,6 @@ export default function SettingsPage() {
                   setValue('lng', parseFloat(newLng.toFixed(6)));
                 }}
               />
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label>{t('settings_lat')}</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="32.0853"
-                    {...register('lat', { valueAsNumber: true })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('settings_lng')}</Label>
-                  <Input
-                    type="number"
-                    step="any"
-                    placeholder="34.7818"
-                    {...register('lng', { valueAsNumber: true })}
-                  />
-                </div>
-              </div>
             </CardContent>
           </Card>
 
