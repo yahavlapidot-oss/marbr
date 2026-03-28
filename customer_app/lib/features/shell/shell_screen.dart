@@ -20,6 +20,9 @@ class ShellScreen extends ConsumerStatefulWidget {
 class _ShellScreenState extends ConsumerState<ShellScreen> {
   Timer? _pollTimer;
   StreamSubscription<String>? _fcmSub;
+  // The campaign ID the user is currently enrolled in.
+  // Set from build() (async provider) and immediately after scan (local provider).
+  // Cleared when the campaign ends and the popup is triggered.
   String? _trackedCampaignId;
   bool _dialogShowing = false;
 
@@ -27,27 +30,36 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
   void initState() {
     super.initState();
 
-    // Real-time path: FCM data message arrives immediately when backend ends campaign
-    _fcmSub = NotificationsService().onCampaignEnded.listen(_handleCampaignEnded);
+    // FCM real-time path: fires the moment the backend sends the push notification.
+    _fcmSub = NotificationsService().onCampaignEnded.listen(_onFcmCampaignEnded);
 
-    // Polling path: every 10s directly check /entries/active and compare to tracked ID
+    // Polling path: every 10s, directly check /entries/active.
+    // The timer is self-contained — it reads the API directly and updates
+    // _trackedCampaignId from the response so it doesn't depend solely on build().
     _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
       if (!mounted || _dialogShowing) return;
-      // Always invalidate to keep the UI enrollment state fresh
-      ref.invalidate(activeCampaignEnrollmentProvider);
-      // Only check for campaign end if we are tracking an enrollment
-      if (_trackedCampaignId == null) return;
       try {
         final res = await createDio().get('/entries/active');
-        if (!mounted || _dialogShowing || _trackedCampaignId == null) return;
-        if (res.data == null) {
-          // Campaign ended — server returned null enrollment
+        if (!mounted || _dialogShowing) return;
+
+        final newId = res.data?['id'] as String?;
+
+        if (newId != null) {
+          // Still enrolled — update tracked ID from fresh server data.
+          _trackedCampaignId = newId;
+          // Keep the Riverpod provider in sync.
+          ref.invalidate(activeCampaignEnrollmentProvider);
+        } else if (_trackedCampaignId != null) {
+          // Was enrolled, now null → campaign ended.
           final campaignId = _trackedCampaignId!;
           _trackedCampaignId = null;
-          _handleCampaignEnded(campaignId);
+          ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
+          ref.invalidate(activeCampaignEnrollmentProvider);
+          _showResultDialog(campaignId);
         }
+        // else: not enrolled before and not now — nothing to do.
       } catch (_) {
-        // Network error — try again next tick
+        // Network error — try again next tick.
       }
     });
   }
@@ -59,54 +71,59 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     super.dispose();
   }
 
-  void _handleCampaignEnded(String campaignId) {
+  /// Called when an FCM data message announces the campaign ended.
+  /// The campaignId comes from the FCM payload — reliable even before the
+  /// poll timer fires.
+  void _onFcmCampaignEnded(String campaignId) {
     if (_dialogShowing || !mounted) return;
-    // Clear local enrollment state
+    _trackedCampaignId = null;
     ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
     ref.invalidate(activeCampaignEnrollmentProvider);
-    _onCampaignEnded(campaignId);
+    _showResultDialog(campaignId);
   }
 
-  Future<void> _onCampaignEnded(String campaignId) async {
+  Future<void> _showResultDialog(String campaignId) async {
     if (_dialogShowing || !mounted) return;
     _dialogShowing = true;
 
-    // Wait for backend to finish drawing winners
-    await Future.delayed(const Duration(seconds: 3));
-    if (!mounted) { _dialogShowing = false; return; }
-
-    // Check if the user won
-    Map<String, dynamic>? myUserReward;
     try {
-      final res = await createDio().get('/campaigns/$campaignId');
-      myUserReward = res.data['myUserReward'] as Map<String, dynamic>?;
-    } catch (_) {}
+      // Give the backend a moment to finish drawing winners before fetching.
+      await Future.delayed(const Duration(seconds: 3));
+      if (!mounted) return;
 
-    if (!mounted) { _dialogShowing = false; return; }
+      // Fetch whether the user won.
+      Map<String, dynamic>? myUserReward;
+      try {
+        final res = await createDio().get('/campaigns/$campaignId');
+        myUserReward = res.data['myUserReward'] as Map<String, dynamic>?;
+      } catch (_) {}
 
-    final locale = ref.read(localeProvider);
-    String t(String key) => AppL10n.of(locale, key);
+      if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      barrierColor: Colors.black.withAlpha(180),
-      builder: (_) => _CampaignResultDialog(
-        won: myUserReward != null,
-        rewardName: myUserReward?['reward']?['name'] as String?,
-        t: t,
-        onViewReward: () {
-          Navigator.of(context).pop();
-          context.go('/rewards');
-        },
-        onGoHome: () {
-          Navigator.of(context).pop();
-          context.go('/home');
-        },
-      ),
-    );
+      final locale = ref.read(localeProvider);
+      String t(String key) => AppL10n.of(locale, key);
 
-    _dialogShowing = false;
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        barrierColor: Colors.black.withAlpha(180),
+        builder: (_) => _CampaignResultDialog(
+          won: myUserReward != null,
+          rewardName: myUserReward?['reward']?['name'] as String?,
+          t: t,
+          onViewReward: () {
+            Navigator.of(context).pop();
+            context.go('/rewards');
+          },
+          onGoHome: () {
+            Navigator.of(context).pop();
+            context.go('/home');
+          },
+        ),
+      );
+    } finally {
+      _dialogShowing = false;
+    }
   }
 
   @override
@@ -114,13 +131,20 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
-    // Keep _trackedCampaignId in sync with server enrollment state
+    // Seed _trackedCampaignId from the async server enrollment provider.
     final enrollment = ref.watch(activeCampaignEnrollmentProvider).valueOrNull;
     if (enrollment != null) {
       _trackedCampaignId = enrollment['id'] as String?;
     }
 
-    final isEnrolled = enrollment != null || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
+    // Also seed from the local provider set immediately after a QR scan — this
+    // covers the gap between a successful scan and the async provider resolving.
+    final localIds = ref.watch(enrolledCampaignIdsProvider);
+    if (localIds.isNotEmpty && _trackedCampaignId == null) {
+      _trackedCampaignId = localIds.first;
+    }
+
+    final isEnrolled = enrollment != null || localIds.isNotEmpty;
     final location = GoRouterState.of(context).matchedLocation;
 
     int selectedIndex = 0;
@@ -294,7 +318,7 @@ class _CampaignResultDialog extends StatelessWidget {
 
                 const SizedBox(height: 28),
 
-                // CTA button
+                // Primary CTA
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(
