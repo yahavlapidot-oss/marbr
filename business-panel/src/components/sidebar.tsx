@@ -10,7 +10,6 @@ import {
   BarChart3,
   Settings,
   ScanLine,
-  Building2,
   LogOut,
   Beer,
   CreditCard,
@@ -38,8 +37,7 @@ export function Sidebar({ mobileOpen = false, onMobileClose }: SidebarProps) {
     { href: '/products', icon: Package, label: t('nav_products') },
     { href: '/analytics', icon: BarChart3, label: t('nav_analytics') },
     { href: '/redeem', icon: ScanLine, label: t('nav_redeem') },
-    { href: '/branches', icon: Building2, label: t('nav_branches') },
-    { href: '/billing', icon: CreditCard, label: t('nav_billing') },
+{ href: '/billing', icon: CreditCard, label: t('nav_billing') },
     { href: '/settings', icon: Settings, label: t('nav_settings') },
   ];
 
