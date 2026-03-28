@@ -286,6 +286,13 @@ export default function CampaignDetailPage() {
   useEffect(() => { if (qrDataUrl && !rotateRef.current) startRotation(); }, [qrDataUrl]); // eslint-disable-line
   useEffect(() => () => stopRotation(), [stopRotation]);
 
+  // Auto-generate QR when campaign becomes ACTIVE
+  useEffect(() => {
+    if (data?.campaign?.status === 'ACTIVE' && !qrDataUrl && !generateQr.isPending) {
+      generateQr.mutate();
+    }
+  }, [data?.campaign?.status]); // eslint-disable-line
+
   const downloadQr = () => {
     if (!qrDataUrl) return;
     const a = document.createElement('a'); a.href = qrDataUrl; a.download = `qr-campaign-${id}.png`; a.click();
@@ -439,6 +446,73 @@ export default function CampaignDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* QR Code — shown prominently for active/paused campaigns */}
+      {(campaign?.status === 'ACTIVE' || campaign?.status === 'PAUSED') && (
+        <Card className="border-amber-500/30 bg-[#13131a]">
+          <CardContent className="p-5">
+            <div className="flex flex-col sm:flex-row items-center gap-6">
+              {/* QR image or loading state */}
+              <div className="flex flex-col items-center gap-3 shrink-0">
+                {generateQr.isPending || (!qrDataUrl) ? (
+                  <div className="rounded-xl bg-white p-4 shadow-xl w-[180px] h-[180px] flex items-center justify-center">
+                    <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <div className="rounded-xl bg-white p-4 shadow-xl">
+                      <Image src={qrDataUrl} alt="QR Code" width={160} height={160} unoptimized />
+                    </div>
+                    <svg className="absolute -inset-2 w-[calc(100%+16px)] h-[calc(100%+16px)]" viewBox="0 0 212 212">
+                      <circle cx="106" cy="106" r="100" fill="none" stroke="#ffffff10" strokeWidth="3" />
+                      <circle cx="106" cy="106" r="100" fill="none" stroke="#F5C518" strokeWidth="3"
+                        strokeDasharray={circumference * (100 / 24)} strokeDashoffset={dashOffset * (100 / 24)}
+                        strokeLinecap="round" transform="rotate(-90 106 106)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
+                    </svg>
+                  </div>
+                )}
+              </div>
+
+              {/* Info + actions */}
+              <div className="flex-1 w-full space-y-3">
+                <div>
+                  <p className="text-white font-semibold text-base">{t('campaign_detail_qr')}</p>
+                  <p className="text-[#6b6b80] text-sm mt-0.5">{t('campaign_detail_qr_rotate')}</p>
+                </div>
+
+                {qrDataUrl && (
+                  <div className="flex items-center gap-2 text-sm">
+                    <svg className="w-6 h-6 shrink-0" viewBox="0 0 52 52">
+                      <circle cx="26" cy="26" r="24" fill="none" stroke="#2a2a3a" strokeWidth="3" />
+                      <circle cx="26" cy="26" r="24" fill="none" stroke="#F5C518" strokeWidth="3"
+                        strokeDasharray={circumference} strokeDashoffset={dashOffset}
+                        strokeLinecap="round" transform="rotate(-90 26 26)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
+                      <text x="26" y="31" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">{countdown}</text>
+                    </svg>
+                    <span className="text-[#6b6b80]">{t('campaign_auto_refresh').replace('{n}', String(countdown))}</span>
+                  </div>
+                )}
+
+                <div className="flex flex-wrap gap-2">
+                  <Button size="sm" variant="outline" onClick={() => generateQr.mutate()} disabled={generateQr.isPending}>
+                    <QrCode className="h-4 w-4 mr-1" /> {qrDataUrl ? t('campaign_regenerate') : t('campaign_generate_qr')}
+                  </Button>
+                  {qrDataUrl && (
+                    <>
+                      <Button size="sm" variant="outline" onClick={() => setKiosk(true)}>
+                        <Maximize2 className="h-4 w-4 mr-1" /> {t('campaign_detail_kiosk')}
+                      </Button>
+                      <Button size="sm" variant="outline" onClick={downloadQr}>
+                        <Download className="h-4 w-4 mr-1" /> {t('qr_download')}
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Stats */}
@@ -722,53 +796,6 @@ export default function CampaignDetailPage() {
                   )}
                 </div>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* QR Code */}
-      <Card>
-        <CardHeader><CardTitle className="flex items-center gap-2"><QrCode className="h-4 w-4 text-amber-500" /> {t('campaign_detail_qr')}</CardTitle></CardHeader>
-        <CardContent className="space-y-4">
-          <Button className="w-full" disabled={generateQr.isPending} onClick={() => generateQr.mutate()}>
-            {generateQr.isPending
-              ? <><Loader2 className="h-4 w-4 animate-spin mr-2" /> {t('campaign_generating')}</>
-              : <><QrCode className="h-4 w-4 mr-2" /> {qrDataUrl ? t('campaign_regenerate') : t('campaign_generate_qr')}</>
-            }
-          </Button>
-          {qrDataUrl && (
-            <div className="flex flex-col items-center gap-4 pt-2">
-              <div className="relative">
-                <div className="rounded-xl bg-white p-4 shadow-xl">
-                  <Image src={qrDataUrl} alt="QR Code" width={200} height={200} unoptimized />
-                </div>
-                <svg className="absolute -inset-2 w-[calc(100%+16px)] h-[calc(100%+16px)]" viewBox="0 0 244 244">
-                  <circle cx="122" cy="122" r="118" fill="none" stroke="#ffffff10" strokeWidth="3" />
-                  <circle cx="122" cy="122" r="118" fill="none" stroke="#F5C518" strokeWidth="3"
-                    strokeDasharray={circumference * (118 / 24)} strokeDashoffset={dashOffset * (118 / 24)}
-                    strokeLinecap="round" transform="rotate(-90 122 122)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
-                </svg>
-              </div>
-              <div className="flex items-center gap-2">
-                <svg className="w-7 h-7" viewBox="0 0 52 52">
-                  <circle cx="26" cy="26" r="24" fill="none" stroke="#2a2a3a" strokeWidth="3" />
-                  <circle cx="26" cy="26" r="24" fill="none" stroke="#F5C518" strokeWidth="3"
-                    strokeDasharray={circumference} strokeDashoffset={dashOffset}
-                    strokeLinecap="round" transform="rotate(-90 26 26)" style={{ transition: 'stroke-dashoffset 1s linear' }} />
-                  <text x="26" y="31" textAnchor="middle" fill="white" fontSize="13" fontWeight="bold">{countdown}</text>
-                </svg>
-                <span className="text-[#6b6b80] text-sm">{t('campaign_auto_refresh').replace('{n}', String(countdown))}</span>
-              </div>
-              <div className="flex gap-2 w-full">
-                <Button variant="outline" className="flex-1" onClick={() => setKiosk(true)}>
-                  <Maximize2 className="h-4 w-4 mr-1" /> {t('campaign_detail_kiosk')}
-                </Button>
-                <Button variant="outline" className="flex-1" onClick={downloadQr}>
-                  <Download className="h-4 w-4 mr-1" /> {t('qr_download')}
-                </Button>
-              </div>
-              <p className="text-[#6b6b80] text-xs text-center">{t('campaign_detail_qr_rotate')}</p>
             </div>
           )}
         </CardContent>
