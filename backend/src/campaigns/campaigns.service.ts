@@ -119,6 +119,16 @@ export class CampaignsService {
     });
     if (!src) throw new NotFoundException('Campaign not found');
 
+    const sub = await this.prisma.subscription.findUnique({ where: { businessId: src.businessId } });
+    const plan = sub?.plan ?? SubscriptionPlan.FREE;
+    if (!PLAN_LIMITS[plan].duplication) {
+      throw new ForbiddenException({
+        message: 'Campaign duplication requires the STARTER plan or higher',
+        requiredPlan: SubscriptionPlan.STARTER,
+        currentPlan: plan,
+      });
+    }
+
     return this.prisma.campaign.create({
       data: {
         businessId: src.businessId,
@@ -313,29 +323,30 @@ export class CampaignsService {
   private async enforcePlanLimits(businessId: string, type: CampaignType) {
     const sub = await this.prisma.subscription.findUnique({ where: { businessId } });
     const plan = sub?.plan ?? SubscriptionPlan.FREE;
-    const limit = PLAN_LIMITS[plan];
+    const limits = PLAN_LIMITS[plan];
 
-    // SNAKE campaigns require at least STARTER
-    if (type === CampaignType.SNAKE && plan === SubscriptionPlan.FREE) {
+    // Advanced campaign types require STARTER+
+    const advancedTypes: CampaignType[] = [CampaignType.SNAKE, CampaignType.POINT_GUESS, CampaignType.WEIGHTED_ODDS];
+    if (advancedTypes.includes(type) && !limits.advancedCampaignTypes) {
       throw new ForbiddenException({
-        message: 'Snake campaigns require the STARTER plan or higher',
+        message: `${type} campaigns require the STARTER plan or higher`,
         requiredPlan: SubscriptionPlan.STARTER,
         currentPlan: plan,
       });
     }
 
-    if (limit < Infinity) {
+    if (limits.campaigns < Infinity) {
       const activeCount = await this.prisma.campaign.count({
         where: {
           businessId,
           status: { in: [CampaignStatus.ACTIVE, CampaignStatus.SCHEDULED, CampaignStatus.PAUSED] },
         },
       });
-      if (activeCount >= limit) {
+      if (activeCount >= limits.campaigns) {
         throw new ForbiddenException({
-          message: `Campaign limit reached for your ${plan} plan (max ${limit} active campaigns)`,
+          message: `Campaign limit reached for your ${plan} plan (max ${limits.campaigns} active campaigns)`,
           currentPlan: plan,
-          limit,
+          limit: limits.campaigns,
         });
       }
     }

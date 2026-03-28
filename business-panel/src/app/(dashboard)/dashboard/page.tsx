@@ -1,7 +1,7 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { Megaphone, Users, TrendingUp, Plus, CheckCircle, BarChart2, Trophy, DollarSign, ShoppingBag, Wallet } from 'lucide-react';
+import { Megaphone, Users, TrendingUp, Plus, CheckCircle, BarChart2, Trophy, DollarSign, ShoppingBag, Wallet, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import Link from 'next/link';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -63,6 +63,13 @@ export default function DashboardPage() {
     refetchInterval: 30_000,
   });
 
+  const { data: subscription } = useQuery({
+    queryKey: ['subscription', businessId],
+    queryFn: () => api.get(`/billing/subscription?businessId=${businessId}`).then((r) => r.data),
+    enabled: !!businessId,
+    staleTime: 5 * 60_000,
+  });
+
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];
   const totals = analytics?.totals;
   const totalEntries: number = totals?.entries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
@@ -76,6 +83,7 @@ export default function DashboardPage() {
   const roi: number | null = totals?.roi ?? null;
 
   const fmt = (n: number) => `₪${n.toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
+  const isFreePlan = !subscription || subscription.plan === 'FREE';
 
   if (isLoading) {
     return (
@@ -201,30 +209,45 @@ export default function DashboardPage() {
       {/* Financial KPIs */}
       <div>
         <h2 className="text-sm font-semibold text-[#6b6b80] uppercase tracking-wide mb-3">{t('dashboard_financials')}</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <StatCard
-            title={t('fin_revenue_total')}
-            value={fmt(revenue)}
-            icon={DollarSign}
-            color="green"
-            sub={t('dashboard_revenue_sub')}
-          />
-          <StatCard
-            title={t('fin_reward_cost_total')}
-            value={fmt(rewardCost)}
-            icon={ShoppingBag}
-            color="rose"
-            sub={t('dashboard_reward_cost_sub')}
-          />
-          <StatCard
-            title={t('fin_profit_total')}
-            value={fmt(netProfit)}
-            icon={Wallet}
-            color={netProfit >= 0 ? 'green' : 'rose'}
-            highlight={netProfit > 0}
-            sub={roi != null ? `ROI ${roi.toFixed(0)}%` : undefined}
-          />
-        </div>
+        {isFreePlan ? (
+          <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6 flex flex-col sm:flex-row items-center gap-4">
+            <div className="h-10 w-10 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
+              <Lock className="h-5 w-5 text-amber-400" />
+            </div>
+            <div className="flex-1 text-center sm:text-left">
+              <p className="font-semibold text-white">{t('billing_upgrade_prompt_financial')}</p>
+              <p className="text-[#6b6b80] text-sm mt-0.5">{t('billing_upgrade_prompt_financial_sub')}</p>
+            </div>
+            <a href="/billing" className="shrink-0 px-4 py-2 bg-amber-500 text-black text-sm font-bold rounded-lg hover:bg-amber-400 transition-colors">
+              {t('billing_upgrade_cta')}
+            </a>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard
+              title={t('fin_revenue_total')}
+              value={fmt(revenue)}
+              icon={DollarSign}
+              color="green"
+              sub={t('dashboard_revenue_sub')}
+            />
+            <StatCard
+              title={t('fin_reward_cost_total')}
+              value={fmt(rewardCost)}
+              icon={ShoppingBag}
+              color="rose"
+              sub={t('dashboard_reward_cost_sub')}
+            />
+            <StatCard
+              title={t('fin_profit_total')}
+              value={fmt(netProfit)}
+              icon={Wallet}
+              color={netProfit >= 0 ? 'green' : 'rose'}
+              highlight={netProfit > 0}
+              sub={roi != null ? `ROI ${roi.toFixed(0)}%` : undefined}
+            />
+          </div>
+        )}
       </div>
 
       {/* Active campaigns */}

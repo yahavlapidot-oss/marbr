@@ -33,7 +33,18 @@ const PLANS = [
     name: 'Free',
     price: 0,
     campaigns: 1,
-    features: ['1 active campaign', 'Basic dashboard', 'QR code scanning', 'Manual redemption'],
+    features: [
+      '1 active campaign',
+      'RAFFLE, INSTANT WIN, EVERY-N campaigns',
+      'QR code scanning & redemptions',
+      'Push notifications',
+      'Basic analytics (entries & winners)',
+    ],
+    locked: [
+      'Snake, Point Guess, Weighted campaigns',
+      'Financial analytics & ROI',
+      'Campaign duplication',
+    ],
     cta: null,
   },
   {
@@ -43,41 +54,44 @@ const PLANS = [
     campaigns: 5,
     features: [
       '5 active campaigns',
-      'Snake game campaigns',
-      'Full analytics',
+      'ALL campaign types (Snake, Point Guess, Weighted)',
+      'Financial analytics & ROI tracking',
+      'Campaign duplication',
       'Push notifications',
-      'Priority support',
+      'Priority email support',
     ],
+    locked: ['Analytics event log'],
     cta: 'Upgrade to Starter',
     highlight: false,
   },
   {
     key: 'GROWTH',
     name: 'Growth',
-    price: 349,
+    price: 299,
     campaigns: 20,
     features: [
       '20 active campaigns',
       'Everything in Starter',
-      'Analytics export',
-      'Multi-branch support',
-      'Custom branding',
+      'Analytics event log',
+      'Priority support',
     ],
+    locked: [],
     cta: 'Upgrade to Growth',
     highlight: true,
   },
   {
     key: 'ENTERPRISE',
     name: 'Enterprise',
-    price: 999,
+    price: 799,
     campaigns: -1,
     features: [
-      'Unlimited campaigns',
+      'Unlimited active campaigns',
       'Everything in Growth',
+      'Custom POS & CRM integrations',
       'Dedicated account manager',
       'SLA guarantee',
-      'Custom integrations',
     ],
+    locked: [],
     cta: 'Upgrade to Enterprise',
     highlight: false,
   },
@@ -257,10 +271,16 @@ function BillingContent() {
                   </div>
                 </div>
 
-                <ul className="space-y-2 flex-1 mb-5">
+                <ul className="space-y-2 mb-3 flex-1">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-sm text-[#a1a1b5]">
                       <Check className="h-3.5 w-3.5 text-green-400 mt-0.5 shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                  {'locked' in plan && plan.locked.length > 0 && plan.locked.map((f) => (
+                    <li key={f} className="flex items-start gap-2 text-sm text-[#3a3a4e]">
+                      <span className="mt-0.5 shrink-0 text-[#3a3a4e]">✕</span>
                       {f}
                     </li>
                   ))}

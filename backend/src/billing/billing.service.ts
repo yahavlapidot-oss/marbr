@@ -9,11 +9,19 @@ import { SubscriptionPlan } from '@prisma/client';
 import Stripe from 'stripe';
 import { PrismaService } from '../prisma/prisma.service';
 
-export const PLAN_LIMITS: Record<SubscriptionPlan, number> = {
-  FREE: 1,
-  STARTER: 5,
-  GROWTH: 20,
-  ENTERPRISE: Infinity,
+export interface PlanFeatures {
+  campaigns: number;
+  advancedCampaignTypes: boolean; // WEIGHTED_ODDS, SNAKE, POINT_GUESS
+  duplication: boolean;
+  financialAnalytics: boolean;
+  eventLog: boolean;
+}
+
+export const PLAN_LIMITS: Record<SubscriptionPlan, PlanFeatures> = {
+  FREE:       { campaigns: 1,        advancedCampaignTypes: false, duplication: false, financialAnalytics: false, eventLog: false },
+  STARTER:    { campaigns: 5,        advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: false },
+  GROWTH:     { campaigns: 20,       advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: true  },
+  ENTERPRISE: { campaigns: Infinity, advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: true  },
 };
 
 const STRIPE_PRICE_MAP: Record<Exclude<SubscriptionPlan, 'FREE'>, string> = {

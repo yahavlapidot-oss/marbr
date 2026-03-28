@@ -274,6 +274,9 @@ export const translations = {
     billing_current: 'Current Plan',
     billing_upgrade_portal: 'Downgrade via portal',
     billing_contact_downgrade: 'Contact us to downgrade',
+    billing_upgrade_prompt_financial: 'Unlock Financial Analytics',
+    billing_upgrade_prompt_financial_sub: 'Upgrade to Starter to see revenue, reward cost, and ROI across all campaigns',
+    billing_upgrade_cta: 'Upgrade Now',
     // Settings
     settings_title: 'Settings',
     settings_subtitle: 'Update your business profile',
@@ -740,6 +743,9 @@ export const translations = {
     billing_current: 'תוכנית נוכחית',
     billing_upgrade_portal: 'שדרוג לאחור דרך הפורטל',
     billing_contact_downgrade: 'צור קשר לשדרוג לאחור',
+    billing_upgrade_prompt_financial: 'פתח אנליטיקת הכנסות',
+    billing_upgrade_prompt_financial_sub: 'שדרג ל-Starter כדי לראות הכנסות, עלות פרסים ו-ROI על כל הקמפיינים',
+    billing_upgrade_cta: 'שדרג עכשיו',
     // Settings
     settings_title: 'הגדרות',
     settings_subtitle: 'עדכן את פרופיל העסק שלך',
