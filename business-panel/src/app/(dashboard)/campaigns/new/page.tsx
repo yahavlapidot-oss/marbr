@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { useQuery } from '@tanstack/react-query';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { Loader2, ArrowLeft } from 'lucide-react';
@@ -24,7 +25,6 @@ const schema = z.object({
   everyN: z.number().int().min(2).optional(),
   winProbability: z.number().min(0).max(1).optional(),
   topN: z.number().int().min(1).optional(),
-  rewardName: z.string().optional(),
   pushTitle: z.string().optional(),
   pushBody: z.string().optional(),
 });
@@ -36,6 +36,13 @@ export default function NewCampaignPage() {
   const businessId = useAuthStore((s) => s.businessId);
   const t = useLocaleStore((s) => s.t);
   const [error, setError] = useState('');
+  const [rewardProductId, setRewardProductId] = useState('');
+
+  const { data: products = [] } = useQuery({
+    queryKey: ['products', businessId],
+    queryFn: () => api.get(`/products?businessId=${businessId}`).then((r) => r.data),
+    enabled: !!businessId,
+  });
 
   const {
     register,
@@ -45,7 +52,7 @@ export default function NewCampaignPage() {
     formState: { errors, isSubmitting },
   } = useForm<FormData>({
     resolver: zodResolver(schema),
-    defaultValues: { type: 'RAFFLE', topN: 3, rewardName: 'Winner Prize' },
+    defaultValues: { type: 'RAFFLE', topN: 3 },
   });
 
   const campaignType = watch('type');
@@ -62,17 +69,17 @@ export default function NewCampaignPage() {
       else payload.endsAt = new Date(payload.endsAt).toISOString();
 
       const topN = payload.topN;
-      const rewardName = payload.rewardName;
       delete payload.topN;
-      delete payload.rewardName;
 
       const res = await api.post(`/campaigns?businessId=${businessId}`, payload);
       const campaignId = res.data.id;
 
-      // For SNAKE / POINT_GUESS: auto-create reward with inventory = topN
+      // For SNAKE / POINT_GUESS: auto-create reward linked to the selected product
       if ((isSnake || isPointGuess) && campaignId) {
+        const selectedProduct = (products as any[]).find((p: any) => p.id === rewardProductId);
         await api.post(`/rewards/campaign/${campaignId}`, {
-          name: rewardName || 'Winner Prize',
+          name: selectedProduct ? selectedProduct.name : 'Winner Prize',
+          productId: selectedProduct?.id || undefined,
           inventory: topN ?? 3,
         });
       }
@@ -139,7 +146,16 @@ export default function NewCampaignPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>{t('campaign_snake_reward')}</Label>
-                    <Input placeholder="Free drinks" {...register('rewardName')} />
+                    <select
+                      className="w-full rounded-md border border-[#2a2a38] bg-[#13131a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      value={rewardProductId}
+                      onChange={(e) => setRewardProductId(e.target.value)}
+                    >
+                      <option value="">{t('campaign_prize_select_product')}</option>
+                      {(products as any[]).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name}{p.price != null ? ` — ₪${p.price}` : ''}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
@@ -159,7 +175,16 @@ export default function NewCampaignPage() {
                   </div>
                   <div className="space-y-1.5">
                     <Label>{t('campaign_snake_reward')}</Label>
-                    <Input placeholder="Free drinks" {...register('rewardName')} />
+                    <select
+                      className="w-full rounded-md border border-[#2a2a38] bg-[#13131a] px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-amber-500"
+                      value={rewardProductId}
+                      onChange={(e) => setRewardProductId(e.target.value)}
+                    >
+                      <option value="">{t('campaign_prize_select_product')}</option>
+                      {(products as any[]).map((p: any) => (
+                        <option key={p.id} value={p.id}>{p.name}{p.price != null ? ` — ₪${p.price}` : ''}</option>
+                      ))}
+                    </select>
                   </div>
                 </div>
               </div>
