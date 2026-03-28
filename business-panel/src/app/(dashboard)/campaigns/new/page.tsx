@@ -16,6 +16,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
+import { usePlan, planAtLeast } from '@/lib/use-plan';
+import { UpgradeModal } from '@/components/upgrade-modal';
 
 const schema = z.object({
   name: z.string().min(2),
@@ -37,6 +39,10 @@ export default function NewCampaignPage() {
   const t = useLocaleStore((s) => s.t);
   const [error, setError] = useState('');
   const [rewardProductId, setRewardProductId] = useState('');
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState<'advanced_types' | 'campaign_limit'>('advanced_types');
+  const plan = usePlan();
+  const ADVANCED_TYPES = ['SNAKE', 'POINT_GUESS', 'WEIGHTED_ODDS'];
 
   const { data: products = [] } = useQuery({
     queryKey: ['products', businessId],
@@ -86,11 +92,25 @@ export default function NewCampaignPage() {
 
       router.push('/campaigns');
     } catch (err: any) {
-      setError(err.response?.data?.message ?? 'Failed to create campaign');
+      const status = err.response?.status;
+      const body = err.response?.data;
+      if (status === 403 && body?.requiredPlan) {
+        setUpgradeReason('campaign_limit');
+        setUpgradeOpen(true);
+        return;
+      }
+      setError(body?.message ?? 'Failed to create campaign');
     }
   };
 
   return (
+    <>
+    <UpgradeModal
+      open={upgradeOpen}
+      onClose={() => setUpgradeOpen(false)}
+      requiredPlan="STARTER"
+      featureName={upgradeReason === 'campaign_limit' ? t('upgrade_campaign_limit') : t('upgrade_advanced_types')}
+    />
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon" asChild>
@@ -118,7 +138,14 @@ export default function NewCampaignPage() {
               <Label>{t('campaign_type')} *</Label>
               <Select
                 value={campaignType}
-                onValueChange={(v) => setValue('type', v as FormData['type'])}
+                onValueChange={(v) => {
+                  if (ADVANCED_TYPES.includes(v) && !planAtLeast(plan, 'STARTER')) {
+                    setUpgradeReason('advanced_types');
+                    setUpgradeOpen(true);
+                    return;
+                  }
+                  setValue('type', v as FormData['type']);
+                }}
               >
                 <SelectTrigger>
                   <SelectValue placeholder={t('campaign_type_select')} />
@@ -244,5 +271,6 @@ export default function NewCampaignPage() {
         </div>
       </form>
     </div>
+    </>
   );
 }

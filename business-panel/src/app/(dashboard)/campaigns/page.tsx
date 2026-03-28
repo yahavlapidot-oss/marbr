@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, Play, Pause, StopCircle, Loader2, BarChart2, Copy } from 'lucide-react';
+import { Plus, Play, Pause, StopCircle, Loader2, BarChart2, Copy, Lock } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
 import { toast } from 'sonner';
 import Link from 'next/link';
@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
+import { usePlan, planAtLeast } from '@/lib/use-plan';
+import { UpgradeModal } from '@/components/upgrade-modal';
 import { formatDateTime } from '@/lib/utils';
 
 const STATUS_VARIANT: Record<string, any> = {
@@ -29,7 +31,9 @@ export default function CampaignsPage() {
   const { businessId, business: storedBusiness } = useAuthStore();
   const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
+  const plan = usePlan();
   const [page, setPage] = useState(1);
+  const [upgradeOpen, setUpgradeOpen] = useState(false);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', businessId],
@@ -51,7 +55,13 @@ export default function CampaignsPage() {
       qc.invalidateQueries({ queryKey: ['campaigns'] });
       toast.success(`"${res.data.name}" created as a draft`);
     },
-    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Duplicate failed'),
+    onError: (err: any) => {
+      if (err?.response?.status === 403 && err?.response?.data?.requiredPlan) {
+        setUpgradeOpen(true);
+        return;
+      }
+      toast.error(err?.response?.data?.message ?? 'Duplicate failed');
+    },
   });
 
   const headers = [
@@ -64,6 +74,13 @@ export default function CampaignsPage() {
   ];
 
   return (
+    <>
+    <UpgradeModal
+      open={upgradeOpen}
+      onClose={() => setUpgradeOpen(false)}
+      requiredPlan="STARTER"
+      featureName={t('upgrade_duplicate')}
+    />
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
@@ -208,11 +225,17 @@ export default function CampaignsPage() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          title={t('campaigns_duplicate')}
-                          onClick={() => duplicate.mutate(c.id)}
+                          title={planAtLeast(plan, 'STARTER') ? t('campaigns_duplicate') : t('upgrade_duplicate')}
+                          onClick={() => {
+                            if (!planAtLeast(plan, 'STARTER')) { setUpgradeOpen(true); return; }
+                            duplicate.mutate(c.id);
+                          }}
                           disabled={duplicate.isPending}
                         >
-                          <Copy className="h-4 w-4 text-[#6b6b80]" />
+                          {planAtLeast(plan, 'STARTER')
+                            ? <Copy className="h-4 w-4 text-[#6b6b80]" />
+                            : <Lock className="h-4 w-4 text-[#6b6b80]" />
+                          }
                         </Button>
                         <Button variant="ghost" size="icon" title="Analytics" asChild>
                           <Link href={`/campaigns/${c.id}`}>
@@ -269,5 +292,6 @@ export default function CampaignsPage() {
         </CardContent>
       </Card>
     </div>
+    </>
   );
 }

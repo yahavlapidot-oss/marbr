@@ -2,13 +2,14 @@
 
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Users, Trophy, CheckCircle, TrendingUp, DollarSign, TrendingDown, BarChart2 } from 'lucide-react';
+import { Users, Trophy, CheckCircle, TrendingUp, DollarSign, TrendingDown, BarChart2, Lock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
+import { usePlan, planAtLeast } from '@/lib/use-plan';
 import { formatDateTime } from '@/lib/utils';
 import {
   AreaChart, Area,
@@ -49,6 +50,8 @@ type SortCol = 'entries' | 'winners' | 'conversionRate' | 'name' | 'revenue' | '
 export default function AnalyticsPage() {
   const businessId = useAuthStore((s) => s.businessId);
   const t = useLocaleStore((s) => s.t);
+  const plan = usePlan();
+  const isFreePlan = !planAtLeast(plan, 'STARTER');
   const [sort, setSort] = useState<{ col: SortCol; dir: 'asc' | 'desc' }>({ col: 'entries', dir: 'desc' });
 
   const { data, isLoading } = useQuery({
@@ -116,6 +119,22 @@ export default function AnalyticsPage() {
       {isLoading ? (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 rounded-lg" />)}
+        </div>
+      ) : isFreePlan ? (
+        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-5 flex flex-col sm:flex-row items-center gap-4">
+          <div className="h-10 w-10 rounded-lg bg-amber-500/15 flex items-center justify-center shrink-0">
+            <Lock className="h-5 w-5 text-amber-400" />
+          </div>
+          <div className="flex-1 text-center sm:text-start">
+            <p className="font-semibold text-white">{t('billing_upgrade_prompt_financial')}</p>
+            <p className="text-sm text-[#6b6b80] mt-0.5">{t('billing_upgrade_prompt_financial_sub')}</p>
+          </div>
+          <a
+            href="/billing"
+            className="shrink-0 px-4 py-2 bg-amber-500 hover:bg-amber-400 text-black text-sm font-bold rounded-lg transition-colors"
+          >
+            {t('billing_upgrade_cta')}
+          </a>
         </div>
       ) : (
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -189,6 +208,7 @@ export default function AnalyticsPage() {
                       {t('analytics_col_conversion')}<SortArrow col="conversionRate" />
                     </th>
                     <th className="text-end pb-3 font-medium">{t('analytics_col_ends')}</th>
+                    {!isFreePlan && <>
                     <th className="text-end pb-3 font-medium cursor-pointer hover:text-white select-none" onClick={() => handleSort('revenue')}>
                       {t('analytics_col_revenue')}<SortArrow col="revenue" />
                     </th>
@@ -198,6 +218,7 @@ export default function AnalyticsPage() {
                     <th className="text-end pb-3 font-medium cursor-pointer hover:text-white select-none" onClick={() => handleSort('roi')}>
                       {t('analytics_col_roi')}<SortArrow col="roi" />
                     </th>
+                    </>}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-[#2a2a38]">
@@ -214,6 +235,7 @@ export default function AnalyticsPage() {
                       <td className="py-3 text-end text-[#6b6b80] text-xs">
                         {c.endsAt ? formatDateTime(c.endsAt) : '—'}
                       </td>
+                      {!isFreePlan && <>
                       <td className="py-3 text-end text-[#6b6b80] text-xs">
                         {c.revenue > 0 ? `₪${Math.round(c.revenue).toLocaleString()}` : '—'}
                       </td>
@@ -223,6 +245,7 @@ export default function AnalyticsPage() {
                       <td className={`py-3 text-end text-xs font-medium ${c.roi != null && c.roi >= 0 ? 'text-green-400' : 'text-red-400'}`}>
                         {c.roi != null ? `${c.roi.toFixed(0)}%` : '—'}
                       </td>
+                      </>}
                     </tr>
                   ))}
                 </tbody>
