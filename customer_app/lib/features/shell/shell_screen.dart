@@ -1,17 +1,89 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../core/locale_provider.dart';
+import '../../core/api_client.dart';
 import '../campaigns/providers/campaigns_provider.dart';
 
-class ShellScreen extends ConsumerWidget {
+class ShellScreen extends ConsumerStatefulWidget {
   final Widget child;
   const ShellScreen({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ShellScreen> createState() => _ShellScreenState();
+}
+
+class _ShellScreenState extends ConsumerState<ShellScreen> {
+  Timer? _pollTimer;
+  String? _trackedCampaignId; // campaign ID we're currently tracking
+  bool _dialogShowing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Poll every 30 seconds when the user is enrolled in a campaign
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (_trackedCampaignId != null && mounted) {
+        ref.invalidate(activeCampaignEnrollmentProvider);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _pollTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _onCampaignEnded(String campaignId) async {
+    if (_dialogShowing || !mounted) return;
+    _dialogShowing = true;
+
+    // Give the backend 2 seconds to finish drawing winners
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted) return;
+
+    // Check if the user won by fetching campaign detail (with auth)
+    Map<String, dynamic>? myUserReward;
+    try {
+      final res = await createDio().get('/campaigns/$campaignId');
+      myUserReward = res.data['myUserReward'] as Map<String, dynamic>?;
+    } catch (_) {
+      // If fetch fails, assume not winner — don't block the popup
+    }
+
+    if (!mounted) return;
+
+    final locale = ref.read(localeProvider);
+    String t(String key) => AppL10n.of(locale, key);
+
+    await showGeneralDialog(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black.withAlpha(180),
+      pageBuilder: (_, _, _) => _CampaignResultDialog(
+        won: myUserReward != null,
+        rewardName: myUserReward?['reward']?['name'] as String?,
+        t: t,
+        onViewReward: () {
+          Navigator.of(context).pop();
+          context.go('/rewards');
+        },
+        onGoHome: () {
+          Navigator.of(context).pop();
+          context.go('/home');
+        },
+      ),
+    );
+
+    _dialogShowing = false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
     String t(String key) => AppL10n.of(locale, key);
 
@@ -19,22 +91,33 @@ class ShellScreen extends ConsumerWidget {
         || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
     final location = GoRouterState.of(context).matchedLocation;
 
-    // When active enrollment disappears (campaign ended / cancelled),
-    // clear the local session cache so scan is re-enabled and show a notice.
+    // Track enrolled campaign ID and detect when it ends
     ref.listen<AsyncValue<Map<String, dynamic>?>>(
       activeCampaignEnrollmentProvider,
       (prev, next) {
+        // Store campaign ID whenever we see an active enrollment
+        final current = next.valueOrNull;
+        if (current != null) {
+          _trackedCampaignId = current['id'] as String?;
+        }
+
+        // Detect transition: had enrollment → now gone
         final hadEnrollment = prev?.valueOrNull != null;
-        final nowGone = next.valueOrNull == null && !next.isLoading;
+        final nowGone = next.valueOrNull == null && !next.isLoading && !next.hasError;
+
         if (hadEnrollment && nowGone) {
+          final campaignId = _trackedCampaignId;
+          _trackedCampaignId = null;
+
+          // Clear local session state
           final localIds = ref.read(enrolledCampaignIdsProvider);
           if (localIds.isNotEmpty) {
             ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
-            ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-              content: Text(t('campaign_ended')),
-              backgroundColor: AppTheme.surface,
-              behavior: SnackBarBehavior.floating,
-            ));
+          }
+
+          // Show result popup
+          if (campaignId != null) {
+            _onCampaignEnded(campaignId);
           }
         }
       },
@@ -47,7 +130,7 @@ class ShellScreen extends ConsumerWidget {
     if (location.startsWith('/profile')) selectedIndex = 4;
 
     return Scaffold(
-      body: child,
+      body: widget.child,
       bottomNavigationBar: Container(
         decoration: const BoxDecoration(
           color: AppTheme.surface,
@@ -81,6 +164,177 @@ class ShellScreen extends ConsumerWidget {
             BottomNavigationBarItem(icon: const Icon(Icons.emoji_events_outlined), activeIcon: const Icon(Icons.emoji_events), label: t('my_wins')),
             BottomNavigationBarItem(icon: const Icon(Icons.person_outline), activeIcon: const Icon(Icons.person), label: t('profile')),
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Campaign result dialog ───────────────────────────────────────────────────
+
+class _CampaignResultDialog extends StatelessWidget {
+  final bool won;
+  final String? rewardName;
+  final String Function(String) t;
+  final VoidCallback onViewReward;
+  final VoidCallback onGoHome;
+
+  const _CampaignResultDialog({
+    required this.won,
+    this.rewardName,
+    required this.t,
+    required this.onViewReward,
+    required this.onGoHome,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 28),
+        child: Material(
+          color: Colors.transparent,
+          child: Container(
+            decoration: BoxDecoration(
+              color: AppTheme.card,
+              borderRadius: BorderRadius.circular(28),
+              border: Border.all(
+                color: won ? AppTheme.gold.withAlpha(120) : AppTheme.border,
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: won
+                      ? AppTheme.gold.withAlpha(40)
+                      : Colors.black.withAlpha(80),
+                  blurRadius: 40,
+                  spreadRadius: 4,
+                ),
+              ],
+            ),
+            padding: const EdgeInsets.all(28),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Icon ring
+                Container(
+                  width: 80,
+                  height: 80,
+                  decoration: BoxDecoration(
+                    color: won
+                        ? AppTheme.gold.withAlpha(25)
+                        : AppTheme.surface,
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: won
+                          ? AppTheme.gold.withAlpha(100)
+                          : AppTheme.border,
+                      width: 2,
+                    ),
+                  ),
+                  child: Center(
+                    child: Text(
+                      won ? '🎉' : '😊',
+                      style: const TextStyle(fontSize: 38),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 20),
+
+                Text(
+                  won ? t('result_won_title') : t('result_lost_title'),
+                  style: TextStyle(
+                    color: won ? AppTheme.gold : AppTheme.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.3,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 10),
+
+                if (won && rewardName != null) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: AppTheme.gold.withAlpha(18),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: AppTheme.gold.withAlpha(60)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.emoji_events, color: AppTheme.gold, size: 16),
+                        const SizedBox(width: 6),
+                        Text(
+                          rewardName!,
+                          style: const TextStyle(
+                            color: AppTheme.gold,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+
+                Text(
+                  won ? t('result_won_sub') : t('result_lost_sub'),
+                  style: const TextStyle(
+                    color: AppTheme.subtle,
+                    fontSize: 14,
+                    height: 1.5,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+
+                const SizedBox(height: 28),
+
+                // CTA button
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: won ? onViewReward : onGoHome,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: won ? AppTheme.gold : AppTheme.surface,
+                      foregroundColor: won ? Colors.black : AppTheme.white,
+                      padding: const EdgeInsets.symmetric(vertical: 15),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                        side: won
+                            ? BorderSide.none
+                            : const BorderSide(color: AppTheme.border),
+                      ),
+                      elevation: 0,
+                      textStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    child: Text(won ? t('result_view_reward') : t('result_go_home')),
+                  ),
+                ),
+
+                if (won) ...[
+                  const SizedBox(height: 10),
+                  TextButton(
+                    onPressed: onGoHome,
+                    child: Text(
+                      t('result_go_home'),
+                      style: const TextStyle(
+                          color: AppTheme.muted,
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+          ),
         ),
       ),
     );

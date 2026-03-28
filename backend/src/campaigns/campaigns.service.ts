@@ -69,12 +69,18 @@ export class CampaignsService {
     if (!campaign) throw new NotFoundException('Campaign not found');
 
     if (userId) {
-      const myEntry = await this.prisma.entry.findFirst({
-        where: { campaignId: id, userId },
-        select: { id: true, createdAt: true },
-        orderBy: { createdAt: 'desc' },
-      });
-      return { ...campaign, myEntry: myEntry ?? null };
+      const [myEntry, myUserReward] = await Promise.all([
+        this.prisma.entry.findFirst({
+          where: { campaignId: id, userId },
+          select: { id: true, createdAt: true },
+          orderBy: { createdAt: 'desc' },
+        }),
+        this.prisma.userReward.findFirst({
+          where: { reward: { campaignId: id }, userId },
+          select: { id: true, status: true, reward: { select: { name: true } } },
+        }),
+      ]);
+      return { ...campaign, myEntry: myEntry ?? null, myUserReward: myUserReward ?? null };
     }
 
     return campaign;
