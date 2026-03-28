@@ -798,10 +798,10 @@ export const translations = {
     upgrade_financial_analytics: 'אנליטיקת הכנסות',
     upgrade_event_log: 'יומן פעילות מלא',
     // Plan names
-    plan_free_name: 'חינם',
-    plan_starter_name: 'סטארטר',
-    plan_growth_name: 'צמיחה',
-    plan_enterprise_name: 'ארגוני',
+    plan_free_name: 'Free',
+    plan_starter_name: 'Starter',
+    plan_growth_name: 'Growth',
+    plan_enterprise_name: 'Enterprise',
     // Plan CTAs
     plan_starter_cta: 'שדרג ל-Starter',
     plan_growth_cta: 'שדרג ל-Growth',
