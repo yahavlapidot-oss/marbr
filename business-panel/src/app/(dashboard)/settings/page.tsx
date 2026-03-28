@@ -185,8 +185,10 @@ export default function SettingsPage() {
   }, [business, reset]);
 
   const update = useMutation({
-    mutationFn: (data: BusinessForm) =>
-      api.patch(`/businesses/${businessId}`, data),
+    mutationFn: (data: BusinessForm) => {
+      const { name, description, email, phone, website, logoUrl, coverUrl, address, city, lat, lng } = data;
+      return api.patch(`/businesses/${businessId}`, { name, description, email, phone, website, logoUrl, coverUrl, address, city, lat, lng });
+    },
     onSuccess: (res, submitted) => {
       setPendingData(null);
       qc.invalidateQueries({ queryKey: ['business', businessId] });
