@@ -1,4 +1,5 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
+import { UserRole } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { generateCode } from '../common/code.util';
 import { IsString, IsOptional, IsInt, IsNumber } from 'class-validator';
@@ -18,7 +19,16 @@ export class CreateRewardDto {
 export class RewardsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async createForCampaign(campaignId: string, dto: CreateRewardDto) {
+  private async assertCampaignOwnership(userId: string, userRole: UserRole, campaignId: string): Promise<void> {
+    if (userRole === UserRole.ADMIN) return;
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, select: { businessId: true } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    const employee = await this.prisma.employee.findFirst({ where: { userId, businessId: campaign.businessId, isActive: true } });
+    if (!employee) throw new ForbiddenException('You do not have access to this campaign');
+  }
+
+  async createForCampaign(campaignId: string, dto: CreateRewardDto, userId: string, userRole: UserRole) {
+    await this.assertCampaignOwnership(userId, userRole, campaignId);
     return this.prisma.reward.create({ data: { campaignId, ...dto } });
   }
 
@@ -35,7 +45,8 @@ export class RewardsService {
     return r;
   }
 
-  async drawRaffleWinners(campaignId: string) {
+  async drawRaffleWinners(campaignId: string, userId?: string, userRole?: UserRole) {
+    if (userId && userRole) await this.assertCampaignOwnership(userId, userRole, campaignId);
     const campaign = await this.prisma.campaign.findUnique({
       where: { id: campaignId },
       include: { rewards: true },

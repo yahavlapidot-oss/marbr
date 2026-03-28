@@ -12,7 +12,7 @@ export function usePlan(): Plan {
     queryKey: ['subscription', businessId],
     queryFn: () => api.get(`/billing/subscription?businessId=${businessId}`).then((r) => r.data),
     enabled: !!businessId,
-    staleTime: 5 * 60_000,
+    staleTime: 60_000,
   });
   return (data?.plan as Plan) ?? 'FREE';
 }

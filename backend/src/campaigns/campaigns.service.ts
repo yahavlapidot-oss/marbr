@@ -86,9 +86,19 @@ export class CampaignsService {
     return campaign;
   }
 
-  async update(id: string, dto: UpdateCampaignDto) {
+  // ─── Ownership guard ────────────────────────────────────────────────────────
+  private async assertBusinessEmployee(userId: string, userRole: UserRole, businessId: string): Promise<void> {
+    if (userRole === UserRole.ADMIN) return;
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId, businessId, isActive: true },
+    });
+    if (!employee) throw new ForbiddenException('You do not have access to this resource');
+  }
+
+  async update(id: string, dto: UpdateCampaignDto, userId: string, userRole: UserRole) {
     const campaign = await this.prisma.campaign.findUnique({ where: { id } });
     if (!campaign) throw new NotFoundException('Campaign not found');
+    await this.assertBusinessEmployee(userId, userRole, campaign.businessId);
     if (
       campaign.status === CampaignStatus.ENDED ||
       campaign.status === CampaignStatus.CANCELLED
@@ -112,12 +122,13 @@ export class CampaignsService {
     });
   }
 
-  async duplicate(id: string) {
+  async duplicate(id: string, userId: string, userRole: UserRole) {
     const src = await this.prisma.campaign.findUnique({
       where: { id },
       include: { products: true, rewards: true },
     });
     if (!src) throw new NotFoundException('Campaign not found');
+    await this.assertBusinessEmployee(userId, userRole, src.businessId);
 
     const sub = await this.prisma.subscription.findUnique({ where: { businessId: src.businessId } });
     const plan = sub?.plan ?? SubscriptionPlan.FREE;
@@ -200,7 +211,10 @@ export class CampaignsService {
       .sort((a, b) => a._distanceMeters - b._distanceMeters);
   }
 
-  async addProduct(campaignId: string, productId: string, minQuantity = 1) {
+  async addProduct(campaignId: string, productId: string, minQuantity = 1, userId: string, userRole: UserRole) {
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, select: { businessId: true } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    await this.assertBusinessEmployee(userId, userRole, campaign.businessId);
     return this.prisma.campaignProduct.upsert({
       where: { campaignId_productId: { campaignId, productId } },
       create: { campaignId, productId, minQuantity },
@@ -208,13 +222,16 @@ export class CampaignsService {
     });
   }
 
-  async removeProduct(campaignId: string, productId: string) {
+  async removeProduct(campaignId: string, productId: string, userId: string, userRole: UserRole) {
+    const campaign = await this.prisma.campaign.findUnique({ where: { id: campaignId }, select: { businessId: true } });
+    if (!campaign) throw new NotFoundException('Campaign not found');
+    await this.assertBusinessEmployee(userId, userRole, campaign.businessId);
     await this.prisma.campaignProduct.delete({
       where: { campaignId_productId: { campaignId, productId } },
     });
   }
 
-  async updateStatus(id: string, status: CampaignStatus, requesterId: string) {
+  async updateStatus(id: string, status: CampaignStatus, requesterId: string, requesterRole: UserRole) {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {
@@ -224,6 +241,7 @@ export class CampaignsService {
       },
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
+    await this.assertBusinessEmployee(requesterId, requesterRole, campaign.businessId);
 
     this.validateTransition(campaign.status, status);
 
@@ -267,7 +285,7 @@ export class CampaignsService {
     return updated;
   }
 
-  async getAnalytics(id: string) {
+  async getAnalytics(id: string, userId: string, userRole: UserRole) {
     const [campaign, entryCount, rewardCount, redemptionCount, recentEntries] = await Promise.all([
       this.prisma.campaign.findUnique({
         where: { id },
@@ -293,6 +311,7 @@ export class CampaignsService {
     ]);
 
     if (!campaign) throw new NotFoundException('Campaign not found');
+    await this.assertBusinessEmployee(userId, userRole, campaign.businessId);
 
     const revenuePerEntry = campaign.products.reduce(
       (sum: number, cp: any) => sum + (cp.product?.price ?? 0) * cp.minQuantity,

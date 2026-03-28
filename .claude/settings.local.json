@@ -73,7 +73,16 @@
       "Bash(grep -r branchId /Users/yahavlapidot/dev/mrbar/customer_app/lib --include=*.dart)",
       "Bash(grep -n \"point\\\\|POINT\\\\|guess\\\\|GUESS\\\\|draw\\\\|Draw\\\\|winner\\\\|Winner\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
       "Bash(grep -v \"^Analyzing\\\\|^No issues\\\\|^$\")",
-      "Bash(grep -n \"useQuery\\\\|refetchInterval\\\\|queryKey\\\\|drawWinners\\\\|invalidateQueries\\\\|rewards.*id\\\\|campaign-analytics\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)"
+      "Bash(grep -n \"useQuery\\\\|refetchInterval\\\\|queryKey\\\\|drawWinners\\\\|invalidateQueries\\\\|rewards.*id\\\\|campaign-analytics\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
+      "Bash(ls -la /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/dashboard/)",
+      "Bash(grep -r \"UserRole\\\\|employee\\\\|staff\" /Users/yahavlapidot/dev/mrbar/backend/src/businesses/*.ts)",
+      "Bash(grep -r eventLog /Users/yahavlapidot/dev/mrbar/business-panel --include=*.tsx --include=*.ts -l)",
+      "Bash(grep -rn \"branch\\\\|Branch\" /Users/yahavlapidot/dev/mrbar/business-panel/src --include=*.tsx --include=*.ts)",
+      "Bash(ls -la /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/)",
+      "Bash(grep -v \"^$\")",
+      "Bash(ls -la /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/8)",
+      "Bash(wc:*)",
+      "Bash(grep \"\"\"@radix-ui/react-dialog\"\"\" /Users/yahavlapidot/dev/mrbar/business-panel/package.json)"
     ]
   }
 }

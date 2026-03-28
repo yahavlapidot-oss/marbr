@@ -125,6 +125,7 @@ model User {
   fraudFlags       FraudFlag[]
   employeeProfiles Employee[]
   gameScores       GameScore[]
+  staffRedemptions Redemption[]       @relation("StaffRedemptions")
 
   @@map("users")
 }
@@ -267,6 +268,7 @@ model Campaign {
   entries     Entry[]
   gameScores  GameScore[]
 
+  @@index([businessId])
   @@map("campaigns")
 }
 
@@ -345,7 +347,7 @@ model Reward {
   updatedAt      DateTime @updatedAt
 
   campaign    Campaign     @relation(fields: [campaignId], references: [id])
-  product     Product?     @relation(fields: [productId], references: [id])
+  product     Product?     @relation(fields: [productId], references: [id], onDelete: SetNull)
   userRewards UserReward[]
 
   @@map("rewards")
@@ -380,6 +382,7 @@ model Redemption {
   redeemedAt   DateTime @default(now())
 
   userReward UserReward @relation(fields: [userRewardId], references: [id])
+  staffUser  User?      @relation("StaffRedemptions", fields: [staffUserId], references: [id], onDelete: SetNull)
 
   @@map("redemptions")
 }

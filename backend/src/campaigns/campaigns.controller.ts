@@ -50,8 +50,8 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get campaign analytics' })
-  getAnalytics(@Param('id') id: string) {
-    return this.campaignsService.getAnalytics(id);
+  getAnalytics(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
+    return this.campaignsService.getAnalytics(id, user.id, user.role);
   }
 
   @Post()
@@ -60,7 +60,7 @@ export class CampaignsController {
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Create a new campaign' })
   create(
-    @CurrentUser() user: { id: string; businessId?: string },
+    @CurrentUser() user: { id: string; role: UserRole },
     @Body() dto: CreateCampaignDto,
     @Query('businessId') businessId: string,
   ) {
@@ -72,8 +72,12 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Update campaign fields' })
-  update(@Param('id') id: string, @Body() dto: UpdateCampaignDto) {
-    return this.campaignsService.update(id, dto);
+  update(
+    @Param('id') id: string,
+    @Body() dto: UpdateCampaignDto,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.campaignsService.update(id, dto, user.id, user.role);
   }
 
   @Post(':id/duplicate')
@@ -81,8 +85,8 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Duplicate a campaign as a new DRAFT' })
-  duplicate(@Param('id') id: string) {
-    return this.campaignsService.duplicate(id);
+  duplicate(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
+    return this.campaignsService.duplicate(id, user.id, user.role);
   }
 
   @Patch(':id/publish')
@@ -90,8 +94,8 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Publish campaign (DRAFT → ACTIVE)' })
-  publish(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.campaignsService.updateStatus(id, CampaignStatus.ACTIVE, user.id);
+  publish(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
+    return this.campaignsService.updateStatus(id, CampaignStatus.ACTIVE, user.id, user.role);
   }
 
   @Patch(':id/pause')
@@ -99,8 +103,8 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Pause active campaign' })
-  pause(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.campaignsService.updateStatus(id, CampaignStatus.PAUSED, user.id);
+  pause(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
+    return this.campaignsService.updateStatus(id, CampaignStatus.PAUSED, user.id, user.role);
   }
 
   @Patch(':id/resume')
@@ -108,8 +112,8 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Resume paused campaign' })
-  resume(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.campaignsService.updateStatus(id, CampaignStatus.ACTIVE, user.id);
+  resume(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
+    return this.campaignsService.updateStatus(id, CampaignStatus.ACTIVE, user.id, user.role);
   }
 
   @Patch(':id/end')
@@ -117,8 +121,8 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'End a campaign' })
-  end(@Param('id') id: string, @CurrentUser() user: { id: string }) {
-    return this.campaignsService.updateStatus(id, CampaignStatus.ENDED, user.id);
+  end(@Param('id') id: string, @CurrentUser() user: { id: string; role: UserRole }) {
+    return this.campaignsService.updateStatus(id, CampaignStatus.ENDED, user.id, user.role);
   }
 
   @Post(':id/products')
@@ -129,8 +133,9 @@ export class CampaignsController {
   addProduct(
     @Param('id') id: string,
     @Body() body: { productId: string; minQuantity?: number },
+    @CurrentUser() user: { id: string; role: UserRole },
   ) {
-    return this.campaignsService.addProduct(id, body.productId, body.minQuantity);
+    return this.campaignsService.addProduct(id, body.productId, body.minQuantity, user.id, user.role);
   }
 
   @Delete(':id/products/:productId')
@@ -138,7 +143,11 @@ export class CampaignsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Remove a required product from this campaign' })
-  removeProduct(@Param('id') id: string, @Param('productId') productId: string) {
-    return this.campaignsService.removeProduct(id, productId);
+  removeProduct(
+    @Param('id') id: string,
+    @Param('productId') productId: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.campaignsService.removeProduct(id, productId, user.id, user.role);
   }
 }

@@ -1,10 +1,11 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, ForbiddenException, Get, Param, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SubscriptionPlan, UserRole } from '@prisma/client';
 import { AnalyticsService } from './analytics.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { PrismaService } from '../prisma/prisma.service';
 import { PLAN_LIMITS } from '../billing/billing.service';
 
@@ -23,10 +24,20 @@ export class AnalyticsController {
     return sub?.plan ?? SubscriptionPlan.FREE;
   }
 
+  private async assertBusinessAccess(userId: string, userRole: UserRole, businessId: string): Promise<void> {
+    if (userRole === UserRole.ADMIN) return;
+    const employee = await this.prisma.employee.findFirst({ where: { userId, businessId, isActive: true } });
+    if (!employee) throw new ForbiddenException('You do not have access to this business');
+  }
+
   @Get('business/:businessId')
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get analytics overview for a business' })
-  async getOverview(@Param('businessId') businessId: string) {
+  async getOverview(
+    @Param('businessId') businessId: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    await this.assertBusinessAccess(user.id, user.role, businessId);
     const plan = await this.getPlan(businessId);
     const data = await this.svc.getBusinessOverview(businessId);
     if (!PLAN_LIMITS[plan].financialAnalytics) {
@@ -39,7 +50,11 @@ export class AnalyticsController {
   @Get('business/:businessId/dashboard')
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get full analytics dashboard for a business' })
-  async getDashboard(@Param('businessId') businessId: string) {
+  async getDashboard(
+    @Param('businessId') businessId: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    await this.assertBusinessAccess(user.id, user.role, businessId);
     const plan = await this.getPlan(businessId);
     const data = await this.svc.getBusinessDashboard(businessId);
     if (!PLAN_LIMITS[plan].financialAnalytics) {
@@ -57,7 +72,11 @@ export class AnalyticsController {
   @Get('business/:businessId/events')
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Get event log for a business' })
-  async getEvents(@Param('businessId') businessId: string) {
+  async getEvents(
+    @Param('businessId') businessId: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    await this.assertBusinessAccess(user.id, user.role, businessId);
     const plan = await this.getPlan(businessId);
     if (!PLAN_LIMITS[plan].eventLog) return [];
     return this.svc.getEventLog(businessId);

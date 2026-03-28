@@ -14,10 +14,16 @@ export class RedemptionsService {
   async redeem(staffUserId: string, dto: RedeemDto) {
     const userReward = await this.prisma.userReward.findUnique({
       where: { code: dto.code },
-      include: { reward: { include: { campaign: true } } },
+      include: { reward: { include: { campaign: { select: { businessId: true } } } } },
     });
 
     if (!userReward) throw new NotFoundException('Reward not found');
+
+    // Verify the staff member belongs to the campaign's business
+    const employee = await this.prisma.employee.findFirst({
+      where: { userId: staffUserId, businessId: userReward.reward.campaign.businessId, isActive: true },
+    });
+    if (!employee) throw new BadRequestException('You are not authorised to redeem rewards for this business');
 
     if (userReward.status !== RewardStatus.ACTIVE) {
       throw new BadRequestException(`Reward is already ${userReward.status.toLowerCase()}`);

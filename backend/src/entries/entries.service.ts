@@ -52,7 +52,6 @@ export class EntriesService {
     if (!campaign) throw new NotFoundException('Campaign not found');
 
     this.assertCampaignActive(campaign);
-    await this.assertEligible(userId, campaign);
 
     // One active campaign per user — check if user is enrolled in a different active campaign
     await this.assertNotInAnotherCampaign(userId, campaignId);
@@ -62,8 +61,15 @@ export class EntriesService {
       ? crypto.createHash('sha256').update(dto.code).digest('hex')
       : null;
 
-    const [entry] = await this.prisma.$transaction([
-      this.prisma.entry.create({
+    // assertEligible runs inside the transaction to prevent duplicate entries from race conditions
+    const entry = await this.prisma.$transaction(async (tx) => {
+      const hasEntry = await tx.entry.findFirst({
+        where: { userId, campaignId, isValid: true },
+        select: { id: true },
+      });
+      if (hasEntry) throw new BadRequestException('Entry limit reached for this campaign');
+
+      const newEntry = await tx.entry.create({
         data: {
           campaignId,
           userId,
@@ -72,12 +78,13 @@ export class EntriesService {
           purchaseRef: dto.purchaseRef,
           metadata: { lat: dto.lat, lng: dto.lng },
         },
-      }),
-      this.prisma.user.update({
+      });
+      await tx.user.update({
         where: { id: userId },
         data: { currentCampaignId: campaignId },
-      }),
-    ]);
+      });
+      return newEntry;
+    });
 
     const userReward = await this.processWinEngine(userId, campaign, entry.id);
     return { entry, reward: userReward ?? null, campaign: { id: campaign.id, name: campaign.name, type: campaign.type } };
@@ -148,15 +155,6 @@ export class EntriesService {
     );
   }
 
-  private async assertEligible(userId: string, campaign: { id: string }) {
-    const hasEntry = await this.prisma.entry.findFirst({
-      where: { userId, campaignId: campaign.id, isValid: true },
-      select: { id: true },
-    });
-    if (hasEntry)
-      throw new BadRequestException('Entry limit reached for this campaign');
-  }
-
   private async processWinEngine(
     userId: string,
     campaign: {
@@ -170,7 +168,6 @@ export class EntriesService {
   ) {
     const reward = campaign.rewards[0];
     if (!reward) return null;
-    if (reward.inventory !== null && reward.allocated >= reward.inventory) return null;
 
     let didWin = false;
 
@@ -197,16 +194,22 @@ export class EntriesService {
       ? new Date(Date.now() + reward.expiresInHours * 3_600_000)
       : null;
 
-    const [userReward] = await this.prisma.$transaction([
-      this.prisma.userReward.create({
+    // Atomic: increment allocated only if inventory not yet exhausted (prevents oversell race condition)
+    const userReward = await this.prisma.$transaction(async (tx) => {
+      const updated = await tx.reward.updateMany({
+        where: {
+          id: reward.id,
+          OR: [{ inventory: null }, { allocated: { lt: reward.inventory! } }],
+        },
+        data: { allocated: { increment: 1 } },
+      });
+      if (updated.count === 0) return null; // inventory was exhausted by a concurrent request
+
+      return tx.userReward.create({
         data: { userId, rewardId: reward.id, expiresAt, code: generateCode() },
         include: { reward: true },
-      }),
-      this.prisma.reward.update({
-        where: { id: reward.id },
-        data: { allocated: { increment: 1 } },
-      }),
-    ]);
+      });
+    });
 
     return userReward;
   }

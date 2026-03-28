@@ -5,6 +5,7 @@ import { RewardsService, CreateRewardDto } from './rewards.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
 @ApiTags('rewards')
 @ApiBearerAuth()
@@ -17,8 +18,12 @@ export class RewardsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Add reward to campaign' })
-  create(@Param('campaignId') campaignId: string, @Body() dto: CreateRewardDto) {
-    return this.svc.createForCampaign(campaignId, dto);
+  create(
+    @Param('campaignId') campaignId: string,
+    @Body() dto: CreateRewardDto,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.svc.createForCampaign(campaignId, dto, user.id, user.role);
   }
 
   @Get('campaign/:campaignId')
@@ -37,7 +42,10 @@ export class RewardsController {
   @UseGuards(RolesGuard)
   @Roles(UserRole.OWNER, UserRole.MANAGER)
   @ApiOperation({ summary: 'Draw raffle winners for a campaign' })
-  draw(@Param('campaignId') campaignId: string) {
-    return this.svc.drawRaffleWinners(campaignId);
+  draw(
+    @Param('campaignId') campaignId: string,
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    return this.svc.drawRaffleWinners(campaignId, user.id, user.role);
   }
 }
