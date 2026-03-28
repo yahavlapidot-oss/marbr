@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, Play, Pause, StopCircle, Loader2, BarChart2, Copy } from 'lucide-react';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,10 +23,13 @@ const STATUS_VARIANT: Record<string, any> = {
   CANCELLED: 'destructive',
 };
 
+const PAGE_SIZE = 10;
+
 export default function CampaignsPage() {
   const { businessId, business: storedBusiness } = useAuthStore();
   const t = useLocaleStore((s) => s.t);
   const qc = useQueryClient();
+  const [page, setPage] = useState(1);
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', businessId],
@@ -113,6 +117,7 @@ export default function CampaignsPage() {
               </Button>
             </div>
           ) : (
+            <>
             <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
@@ -125,7 +130,7 @@ export default function CampaignsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#2a2a38]">
-                {campaigns.map((c: any) => (
+                {campaigns.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE).map((c: any) => (
                   <tr key={c.id} className="hover:bg-[#1e1e2e] transition-colors">
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-3">
@@ -221,6 +226,45 @@ export default function CampaignsPage() {
               </tbody>
             </table>
             </div>
+            {campaigns.length > PAGE_SIZE && (
+              <div className="flex items-center justify-between px-6 py-4 border-t border-[#2a2a38]">
+                <p className="text-sm text-[#6b6b80]">
+                  {(page - 1) * PAGE_SIZE + 1}–{Math.min(page * PAGE_SIZE, campaigns.length)} / {campaigns.length}
+                </p>
+                <div className="flex items-center gap-1">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => p - 1)}
+                    disabled={page === 1}
+                    className="px-3"
+                  >
+                    ‹
+                  </Button>
+                  {Array.from({ length: Math.ceil(campaigns.length / PAGE_SIZE) }, (_, i) => i + 1).map((p) => (
+                    <Button
+                      key={p}
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setPage(p)}
+                      className={`px-3 ${p === page ? 'bg-amber-500/20 text-amber-400' : 'text-[#6b6b80]'}`}
+                    >
+                      {p}
+                    </Button>
+                  ))}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setPage((p) => p + 1)}
+                    disabled={page === Math.ceil(campaigns.length / PAGE_SIZE)}
+                    className="px-3"
+                  >
+                    ›
+                  </Button>
+                </div>
+              </div>
+            )}
+            </>
           )}
         </CardContent>
       </Card>
