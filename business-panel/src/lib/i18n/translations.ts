@@ -286,6 +286,39 @@ export const translations = {
     upgrade_advanced_types: 'Advanced Campaign Types',
     upgrade_financial_analytics: 'Financial Analytics',
     upgrade_event_log: 'Activity Audit Log',
+    // Plan names
+    plan_free_name: 'Free',
+    plan_starter_name: 'Starter',
+    plan_growth_name: 'Growth',
+    plan_enterprise_name: 'Enterprise',
+    // Plan CTAs
+    plan_starter_cta: 'Upgrade to Starter',
+    plan_growth_cta: 'Upgrade to Growth',
+    plan_enterprise_cta: 'Upgrade to Enterprise',
+    // Shared plan feature strings (reused across billing page + upgrade modal)
+    plan_feat_advanced_types: 'Snake 🐍, Point Guess 🔢, Weighted Odds campaigns',
+    plan_feat_financials: 'Financial analytics (revenue, reward cost, ROI)',
+    plan_feat_duplication: 'Campaign duplication',
+    plan_feat_event_log: 'Full activity audit log',
+    plan_feat_everything_free: 'Everything in Free',
+    plan_feat_everything_starter: 'Everything in Starter',
+    plan_feat_everything_growth: 'Everything in Growth',
+    // Free plan features
+    plan_free_f1: '1 active campaign',
+    plan_free_f2: 'Raffle, Instant Win, Every-N campaigns',
+    plan_free_f3: 'Customer QR scanning & entry',
+    plan_free_f4: 'Rewards & redemptions',
+    plan_free_f5: 'Push notifications',
+    plan_free_f6: 'Analytics — entries, winners, conversion rate',
+    // Starter plan features
+    plan_starter_f1: '5 active campaigns',
+    plan_starter_f2: 'All campaign types (Snake 🐍, Point Guess 🔢, Weighted Odds)',
+    plan_starter_f3: 'Campaign duplication',
+    plan_starter_f4: 'Financial analytics — revenue, reward cost, ROI',
+    // Growth plan features
+    plan_growth_f1: '20 active campaigns',
+    // Enterprise plan features
+    plan_enterprise_f1: 'Unlimited active campaigns',
     // Settings
     settings_title: 'Settings',
     settings_subtitle: 'Update your business profile',
@@ -764,6 +797,39 @@ export const translations = {
     upgrade_advanced_types: 'סוגי קמפיינים מתקדמים',
     upgrade_financial_analytics: 'אנליטיקת הכנסות',
     upgrade_event_log: 'יומן פעילות מלא',
+    // Plan names
+    plan_free_name: 'חינם',
+    plan_starter_name: 'סטארטר',
+    plan_growth_name: 'צמיחה',
+    plan_enterprise_name: 'ארגוני',
+    // Plan CTAs
+    plan_starter_cta: 'שדרג ל-Starter',
+    plan_growth_cta: 'שדרג ל-Growth',
+    plan_enterprise_cta: 'שדרג ל-Enterprise',
+    // Shared plan feature strings
+    plan_feat_advanced_types: 'סנייק 🐍, ניחוש נקודות 🔢, הסתברות משוקללת',
+    plan_feat_financials: 'אנליטיקה פיננסית (הכנסות, עלות פרסים, ROI)',
+    plan_feat_duplication: 'שכפול קמפיינים',
+    plan_feat_event_log: 'יומן פעילות מלא',
+    plan_feat_everything_free: 'כל מה שב-Free',
+    plan_feat_everything_starter: 'כל מה שב-Starter',
+    plan_feat_everything_growth: 'כל מה שב-Growth',
+    // Free plan features
+    plan_free_f1: 'קמפיין פעיל אחד',
+    plan_free_f2: 'קמפיינים: הגרלה, זכייה מיידית, כל-N',
+    plan_free_f3: 'סריקת QR והצטרפות לקוחות',
+    plan_free_f4: 'פרסים ומימושים',
+    plan_free_f5: 'התראות Push',
+    plan_free_f6: 'אנליטיקה — הצטרפויות, זוכים, שיעור המרה',
+    // Starter plan features
+    plan_starter_f1: '5 קמפיינים פעילים',
+    plan_starter_f2: 'כל סוגי הקמפיינים (סנייק 🐍, ניחוש נקודות 🔢, הסתברות משוקללת)',
+    plan_starter_f3: 'שכפול קמפיינים',
+    plan_starter_f4: 'אנליטיקה פיננסית — הכנסות, עלות פרסים, ROI',
+    // Growth plan features
+    plan_growth_f1: '20 קמפיינים פעילים',
+    // Enterprise plan features
+    plan_enterprise_f1: 'קמפיינים פעילים ללא הגבלה',
     // Settings
     settings_title: 'הגדרות',
     settings_subtitle: 'עדכן את פרופיל העסק שלך',

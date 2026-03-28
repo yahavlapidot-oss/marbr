@@ -27,77 +27,77 @@ interface Invoice {
   createdAt: string;
 }
 
-const PLANS = [
-  {
-    key: 'FREE',
-    name: 'Free',
-    price: 0,
-    campaigns: 1,
-    features: [
-      '1 active campaign',
-      'Raffle, Instant Win, Every-N campaigns',
-      'Customer QR scanning & entry',
-      'Rewards & redemptions',
-      'Push notifications',
-      'Analytics — entries, winners, conversion rate',
-    ],
-    locked: [
-      'Snake 🐍, Point Guess 🔢, Weighted Odds campaigns',
-      'Financial analytics (revenue, reward cost, ROI)',
-      'Campaign duplication',
-    ],
-    cta: null,
-  },
-  {
-    key: 'STARTER',
-    name: 'Starter',
-    price: 149,
-    campaigns: 5,
-    features: [
-      '5 active campaigns',
-      'All campaign types: Raffle, Instant, Every-N,\nWeighted Odds, Snake 🐍, Point Guess 🔢',
-      'Campaign duplication',
-      'Financial analytics — revenue, reward cost, ROI',
-      'Everything in Free',
-    ],
-    locked: ['Full activity audit log'],
-    cta: 'Upgrade to Starter',
-    highlight: false,
-  },
-  {
-    key: 'GROWTH',
-    name: 'Growth',
-    price: 299,
-    campaigns: 20,
-    features: [
-      '20 active campaigns',
-      'Full activity audit log',
-      'Everything in Starter',
-    ],
-    locked: [],
-    cta: 'Upgrade to Growth',
-    highlight: true,
-  },
-  {
-    key: 'ENTERPRISE',
-    name: 'Enterprise',
-    price: 799,
-    campaigns: -1,
-    features: [
-      'Unlimited active campaigns',
-      'Everything in Growth',
-    ],
-    locked: [],
-    cta: 'Upgrade to Enterprise',
-    highlight: false,
-  },
-] as const;
-
 const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'ENTERPRISE'];
 
 function BillingContent() {
   const { businessId } = useAuthStore();
   const t = useLocaleStore((s) => s.t);
+
+  const PLANS = [
+    {
+      key: 'FREE',
+      name: t('plan_free_name'),
+      price: 0,
+      campaigns: 1,
+      features: [
+        t('plan_free_f1'),
+        t('plan_free_f2'),
+        t('plan_free_f3'),
+        t('plan_free_f4'),
+        t('plan_free_f5'),
+        t('plan_free_f6'),
+      ],
+      locked: [
+        t('plan_feat_advanced_types'),
+        t('plan_feat_financials'),
+        t('plan_feat_duplication'),
+      ],
+      cta: null as string | null,
+    },
+    {
+      key: 'STARTER',
+      name: t('plan_starter_name'),
+      price: 149,
+      campaigns: 5,
+      features: [
+        t('plan_starter_f1'),
+        t('plan_starter_f2'),
+        t('plan_starter_f3'),
+        t('plan_starter_f4'),
+        t('plan_feat_everything_free'),
+      ],
+      locked: [t('plan_feat_event_log')],
+      cta: t('plan_starter_cta'),
+      highlight: false,
+    },
+    {
+      key: 'GROWTH',
+      name: t('plan_growth_name'),
+      price: 299,
+      campaigns: 20,
+      features: [
+        t('plan_growth_f1'),
+        t('plan_feat_event_log'),
+        t('plan_feat_everything_starter'),
+      ],
+      locked: [] as string[],
+      cta: t('plan_growth_cta'),
+      highlight: true,
+    },
+    {
+      key: 'ENTERPRISE',
+      name: t('plan_enterprise_name'),
+      price: 799,
+      campaigns: -1,
+      features: [
+        t('plan_enterprise_f1'),
+        t('plan_feat_everything_growth'),
+      ],
+      locked: [] as string[],
+      cta: t('plan_enterprise_cta'),
+      highlight: false,
+    },
+  ];
   const searchParams = useSearchParams();
   const [sub, setSub] = useState<Subscription | null>(null);
   const [loading, setLoading] = useState(true);

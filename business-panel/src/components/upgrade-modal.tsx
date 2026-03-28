@@ -5,30 +5,7 @@ import { X, Zap } from 'lucide-react';
 import Link from 'next/link';
 import { useLocaleStore } from '@/lib/locale-store';
 import type { Plan } from '@/lib/use-plan';
-
-const PLAN_FEATURES: Record<Exclude<Plan, 'FREE'>, string[]> = {
-  STARTER: [
-    'Up to 5 active campaigns',
-    'Snake 🐍, Point Guess 🔢, Weighted Odds campaigns',
-    'Campaign duplication',
-    'Financial analytics — revenue, reward cost, ROI',
-  ],
-  GROWTH: [
-    'Up to 20 active campaigns',
-    'Full activity audit log',
-    'Everything in Starter',
-  ],
-  ENTERPRISE: [
-    'Unlimited active campaigns',
-    'Everything in Growth',
-  ],
-};
-
-const PLAN_PRICE: Record<Exclude<Plan, 'FREE'>, string> = {
-  STARTER: '₪149/mo',
-  GROWTH: '₪299/mo',
-  ENTERPRISE: '₪799/mo',
-};
+import type { TranslationKey } from '@/lib/i18n/translations';
 
 interface UpgradeModalProps {
   open: boolean;
@@ -39,6 +16,30 @@ interface UpgradeModalProps {
 
 export function UpgradeModal({ open, onClose, requiredPlan, featureName }: UpgradeModalProps) {
   const t = useLocaleStore((s) => s.t);
+
+  const PLAN_FEATURES: Record<Exclude<Plan, 'FREE'>, string[]> = {
+    STARTER: [
+      t('plan_starter_f1'),
+      t('plan_feat_advanced_types'),
+      t('plan_feat_duplication'),
+      t('plan_starter_f4'),
+    ],
+    GROWTH: [
+      t('plan_growth_f1'),
+      t('plan_feat_event_log'),
+      t('plan_feat_everything_starter'),
+    ],
+    ENTERPRISE: [
+      t('plan_enterprise_f1'),
+      t('plan_feat_everything_growth'),
+    ],
+  };
+
+  const PLAN_PRICE: Record<Exclude<Plan, 'FREE'>, string> = {
+    STARTER: `₪149${t('billing_per_month')}`,
+    GROWTH: `₪299${t('billing_per_month')}`,
+    ENTERPRISE: `₪799${t('billing_per_month')}`,
+  };
 
   return (
     <Dialog.Root open={open} onOpenChange={(v) => { if (!v) onClose(); }}>
@@ -69,7 +70,9 @@ export function UpgradeModal({ open, onClose, requiredPlan, featureName }: Upgra
             {/* Plan name + price */}
             <div className="rounded-xl bg-amber-500/8 border border-amber-500/20 px-4 py-3 mb-4">
               <div className="flex items-center justify-between">
-                <span className="text-amber-400 font-bold text-sm">{requiredPlan} {t('upgrade_plan')}</span>
+                <span className="text-amber-400 font-bold text-sm">
+                  {t((`plan_${requiredPlan.toLowerCase()}_name`) as TranslationKey)} {t('upgrade_plan')}
+                </span>
                 <span className="text-white font-bold">{PLAN_PRICE[requiredPlan]}</span>
               </div>
             </div>
