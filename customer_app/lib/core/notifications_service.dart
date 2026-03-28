@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -15,6 +16,10 @@ class NotificationsService {
 
   final _fcm = FirebaseMessaging.instance;
   final _localNotifications = FlutterLocalNotificationsPlugin();
+
+  // Emits campaignId when the backend signals the campaign has ended
+  final _campaignEndedController = StreamController<String>.broadcast();
+  Stream<String> get onCampaignEnded => _campaignEndedController.stream;
 
   /// Called once from main() after Firebase.initializeApp()
   Future<void> init() async {
@@ -46,8 +51,10 @@ class NotificationsService {
           ?.createNotificationChannel(androidChannel);
     }
 
-    // Show notification when app is in foreground
+    // Handle foreground FCM messages
     FirebaseMessaging.onMessage.listen((message) {
+      _handleDataMessage(message);
+
       final notification = message.notification;
       if (notification == null) return;
 
@@ -72,6 +79,15 @@ class NotificationsService {
         ),
       );
     });
+  }
+
+  void _handleDataMessage(RemoteMessage message) {
+    final type = message.data['type'] as String?;
+    final campaignId = message.data['campaignId'] as String?;
+    if (campaignId != null &&
+        (type == 'campaign_ended' || type == 'campaign_winner')) {
+      _campaignEndedController.add(campaignId);
+    }
   }
 
   /// Request permission and return FCM token (null if denied)

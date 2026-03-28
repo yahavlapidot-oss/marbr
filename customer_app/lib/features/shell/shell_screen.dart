@@ -6,6 +6,7 @@ import '../../core/theme.dart';
 import '../../core/l10n/app_l10n.dart';
 import '../../core/locale_provider.dart';
 import '../../core/api_client.dart';
+import '../../core/notifications_service.dart';
 import '../campaigns/providers/campaigns_provider.dart';
 
 class ShellScreen extends ConsumerStatefulWidget {
@@ -18,13 +19,24 @@ class ShellScreen extends ConsumerStatefulWidget {
 
 class _ShellScreenState extends ConsumerState<ShellScreen> {
   Timer? _pollTimer;
-  String? _trackedCampaignId; // campaign ID we're currently tracking
+  StreamSubscription<String>? _fcmSub;
+  String? _trackedCampaignId;
   bool _dialogShowing = false;
 
   @override
   void initState() {
     super.initState();
-    // Poll every 30 seconds when the user is enrolled in a campaign
+
+    // Real-time: FCM data message fires immediately when backend ends the campaign
+    _fcmSub = NotificationsService().onCampaignEnded.listen((campaignId) {
+      if (_trackedCampaignId == campaignId || _trackedCampaignId != null) {
+        _trackedCampaignId = null;
+        ref.invalidate(activeCampaignEnrollmentProvider);
+        _triggerEnded(campaignId);
+      }
+    });
+
+    // Fallback polling in case FCM is delayed or unavailable
     _pollTimer = Timer.periodic(const Duration(seconds: 15), (_) {
       if (mounted) ref.invalidate(activeCampaignEnrollmentProvider);
     });
@@ -32,8 +44,17 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
 
   @override
   void dispose() {
+    _fcmSub?.cancel();
     _pollTimer?.cancel();
     super.dispose();
+  }
+
+  void _triggerEnded(String campaignId) {
+    final localIds = ref.read(enrolledCampaignIdsProvider);
+    if (localIds.isNotEmpty) {
+      ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
+    }
+    _onCampaignEnded(campaignId);
   }
 
   Future<void> _onCampaignEnded(String campaignId) async {
@@ -96,28 +117,19 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     final isEnrolled = enrollment != null || ref.watch(enrolledCampaignIdsProvider).isNotEmpty;
     final location = GoRouterState.of(context).matchedLocation;
 
-    // Detect campaign-ended transition
+    // Fallback: detect campaign end via polling result
+    // NOTE: we use _trackedCampaignId (set via ref.watch below) as the source of
+    // truth, NOT prev?.valueOrNull — because invalidate() causes the provider to
+    // pass through AsyncLoading first, making prev lose its value before the null
+    // result arrives, so hadEnrollment would incorrectly be false.
     ref.listen<AsyncValue<Map<String, dynamic>?>>(
       activeCampaignEnrollmentProvider,
-      (prev, next) {
-        // Detect transition: had enrollment → now gone
-        final hadEnrollment = prev?.valueOrNull != null;
+      (_, next) {
         final nowGone = next.valueOrNull == null && !next.isLoading && !next.hasError;
-
-        if (hadEnrollment && nowGone) {
-          final campaignId = _trackedCampaignId;
+        if (_trackedCampaignId != null && nowGone) {
+          final campaignId = _trackedCampaignId!;
           _trackedCampaignId = null;
-
-          // Clear local session state
-          final localIds = ref.read(enrolledCampaignIdsProvider);
-          if (localIds.isNotEmpty) {
-            ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
-          }
-
-          // Show result popup
-          if (campaignId != null) {
-            _onCampaignEnded(campaignId);
-          }
+          _triggerEnded(campaignId);
         }
       },
     );
