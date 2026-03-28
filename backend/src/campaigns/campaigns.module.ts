@@ -10,5 +10,6 @@ import { PrismaModule } from '../prisma/prisma.module';
   imports: [PrismaModule, NotificationsModule, RewardsModule],
   providers: [CampaignsService, CampaignSchedulerService],
   controllers: [CampaignsController],
+  exports: [CampaignSchedulerService],
 })
 export class CampaignsModule {}

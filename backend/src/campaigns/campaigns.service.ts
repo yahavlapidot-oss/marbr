@@ -12,6 +12,7 @@ import { PLAN_LIMITS } from '../billing/billing.service';
 import { CreateCampaignDto } from './dto/create-campaign.dto';
 import { UpdateCampaignDto } from './dto/update-campaign.dto';
 import { haversineMeters } from '../common/geo.util';
+import { CampaignSchedulerService } from './campaign-scheduler.service';
 
 @Injectable()
 export class CampaignsService {
@@ -20,6 +21,7 @@ export class CampaignsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifications: NotificationsService,
+    private readonly scheduler: CampaignSchedulerService,
   ) {}
 
   async create(businessId: string, dto: CreateCampaignDto) {
@@ -200,8 +202,9 @@ export class CampaignsService {
     const campaign = await this.prisma.campaign.findUnique({
       where: { id },
       include: {
-        rewards: { select: { id: true }, take: 1 },
+        rewards: true,
         products: { select: { productId: true }, take: 1 },
+        business: { select: { name: true } },
       },
     });
     if (!campaign) throw new NotFoundException('Campaign not found');
@@ -229,6 +232,19 @@ export class CampaignsService {
     if (status === CampaignStatus.ACTIVE) {
       this.notifications.sendNearbyNotification(id).catch((err) =>
         this.logger.error(`Failed to send campaign notification for ${id}`, err),
+      );
+    }
+
+    // Draw winners and notify participants when campaign ends manually
+    if (status === CampaignStatus.ENDED) {
+      this.scheduler.drawAndNotify({
+        id: campaign.id,
+        name: campaign.name,
+        type: campaign.type,
+        rewards: campaign.rewards,
+        business: campaign.business,
+      }).catch((err) =>
+        this.logger.error(`Failed to draw winners for campaign ${id}`, err),
       );
     }
 
