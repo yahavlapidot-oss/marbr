@@ -156,7 +156,7 @@ export class CampaignsService {
         OR: [{ endsAt: null }, { endsAt: { gt: now } }],
       },
       include: {
-        business: { select: { id: true, name: true, logoUrl: true, lat: true, lng: true } },
+        business: { select: { id: true, name: true, logoUrl: true, address: true, city: true, lat: true, lng: true } },
         rewards: true,
         _count: { select: { entries: true } },
       },

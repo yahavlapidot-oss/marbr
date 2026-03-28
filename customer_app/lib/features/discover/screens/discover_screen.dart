@@ -7,6 +7,7 @@ import '../../../core/locale_provider.dart';
 import '../../campaigns/providers/campaigns_provider.dart';
 import '../../campaigns/widgets/campaign_card.dart';
 import '../widgets/campaign_map_view.dart';
+import '../providers/businesses_provider.dart';
 
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
@@ -52,6 +53,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
 
     final userPosition = ref.watch(locationProvider);
     final campaigns = ref.watch(activeCampaignsProvider(userPosition));
+    final businesses = ref.watch(nearbyBusinessesProvider(userPosition));
 
     return Scaffold(
       backgroundColor: AppTheme.bg,
@@ -184,9 +186,19 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   final list = _filter(all);
 
                   if (_mapMode) {
-                    return CampaignMapView(
-                      campaigns: list,
-                      userPosition: userPosition,
+                    return businesses.when(
+                      loading: () => const Center(
+                        child: CircularProgressIndicator(
+                            color: AppTheme.gold, strokeWidth: 2),
+                      ),
+                      error: (_, _) => CampaignMapView(
+                        campaigns: list,
+                        userPosition: userPosition,
+                      ),
+                      data: (bizList) => CampaignMapView(
+                        campaigns: bizList,
+                        userPosition: userPosition,
+                      ),
                     );
                   }
 

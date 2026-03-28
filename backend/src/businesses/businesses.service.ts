@@ -1,6 +1,8 @@
 import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
+import { CampaignStatus } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateBusinessDto, UpdateBusinessDto } from './dto/create-business.dto';
+import { haversineMeters } from '../common/geo.util';
 
 @Injectable()
 export class BusinessesService {
@@ -37,6 +39,57 @@ export class BusinessesService {
       include: { business: { include: { _count: { select: { campaigns: true } } } } },
     });
     return employments.map((e) => ({ ...e.business, role: e.role }));
+  }
+
+  async findForDiscover(lat?: number, lng?: number) {
+    const now = new Date();
+    const businesses = await this.prisma.business.findMany({
+      where: { lat: { not: null }, lng: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        logoUrl: true,
+        address: true,
+        city: true,
+        lat: true,
+        lng: true,
+        campaigns: {
+          where: {
+            status: CampaignStatus.ACTIVE,
+            OR: [{ endsAt: null }, { endsAt: { gt: now } }],
+          },
+          select: {
+            id: true,
+            name: true,
+            type: true,
+            endsAt: true,
+            _count: { select: { entries: true } },
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 10,
+        },
+      },
+      take: 300,
+    });
+
+    const userLat = lat ? Number(lat) : null;
+    const userLng = lng ? Number(lng) : null;
+
+    const withDist = businesses.map((b) => ({
+      ...b,
+      _distanceMeters:
+        userLat && userLng && b.lat != null && b.lng != null
+          ? haversineMeters(userLat, userLng, b.lat, b.lng)
+          : null,
+    }));
+
+    if (userLat && userLng) {
+      return withDist.sort(
+        (a, b) => (a._distanceMeters ?? Infinity) - (b._distanceMeters ?? Infinity),
+      );
+    }
+
+    return withDist;
   }
 
   async getCampaigns(businessId: string, requesterId: string) {
