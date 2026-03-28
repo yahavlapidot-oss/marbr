@@ -8,6 +8,7 @@ import '../../core/locale_provider.dart';
 import '../../core/api_client.dart';
 import '../../core/notifications_service.dart';
 import '../campaigns/providers/campaigns_provider.dart';
+import '../discover/providers/businesses_provider.dart';
 
 class ShellScreen extends ConsumerStatefulWidget {
   final Widget child;
@@ -57,8 +58,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
           // Was enrolled, now null → campaign ended.
           final campaignId = _trackedCampaignId!;
           _trackedCampaignId = null;
-          ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
-          ref.invalidate(activeCampaignEnrollmentProvider);
+          _clearEnrollmentState();
           debugPrint('[ShellScreen] campaign ended → showing dialog for $campaignId');
           _showResultDialog(campaignId);
         }
@@ -76,6 +76,17 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     super.dispose();
   }
 
+  /// Clears all enrollment state and refreshes campaign lists so every screen
+  /// reflects the ended campaign immediately without waiting for the next poll.
+  void _clearEnrollmentState() {
+    ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
+    ref.invalidate(activeCampaignEnrollmentProvider);
+    // Refresh the campaigns list so the ended campaign disappears from the
+    // home screen and discover page right away.
+    ref.invalidate(activeCampaignsProvider(null));
+    ref.invalidate(nearbyBusinessesProvider(null));
+  }
+
   /// Called when an FCM data message announces the campaign ended.
   /// The campaignId comes from the FCM payload — reliable even before the
   /// poll timer fires.
@@ -83,8 +94,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     debugPrint('[ShellScreen] FCM campaign ended: $campaignId');
     if (_dialogShowing || !mounted) return;
     _trackedCampaignId = null;
-    ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
-    ref.invalidate(activeCampaignEnrollmentProvider);
+    _clearEnrollmentState();
     _showResultDialog(campaignId);
   }
 
