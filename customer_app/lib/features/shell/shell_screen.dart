@@ -33,21 +33,23 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     // FCM real-time path: fires the moment the backend sends the push notification.
     _fcmSub = NotificationsService().onCampaignEnded.listen(_onFcmCampaignEnded);
 
-    // Polling path: every 10s, directly check /entries/active.
+    // Polling path: every 5s, directly check /entries/active.
     // The timer is self-contained — it reads the API directly and updates
     // _trackedCampaignId from the response so it doesn't depend solely on build().
-    _pollTimer = Timer.periodic(const Duration(seconds: 10), (_) async {
+    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
       if (!mounted || _dialogShowing) return;
       try {
         final res = await createDio().get('/entries/active');
         if (!mounted || _dialogShowing) return;
 
-        final newId = res.data?['id'] as String?;
+        // res.data is the campaign object (with .id) or null
+        final newId = (res.data is Map) ? res.data['id'] as String? : null;
+
+        debugPrint('[ShellScreen] poll: newId=$newId tracked=$_trackedCampaignId');
 
         if (newId != null) {
           // Still enrolled — update tracked ID from fresh server data.
           _trackedCampaignId = newId;
-          // Keep the Riverpod provider in sync.
           ref.invalidate(activeCampaignEnrollmentProvider);
         } else if (_trackedCampaignId != null) {
           // Was enrolled, now null → campaign ended.
@@ -55,11 +57,12 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
           _trackedCampaignId = null;
           ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
           ref.invalidate(activeCampaignEnrollmentProvider);
+          debugPrint('[ShellScreen] campaign ended → showing dialog for $campaignId');
           _showResultDialog(campaignId);
         }
         // else: not enrolled before and not now — nothing to do.
-      } catch (_) {
-        // Network error — try again next tick.
+      } catch (e) {
+        debugPrint('[ShellScreen] poll error: $e');
       }
     });
   }
@@ -75,6 +78,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
   /// The campaignId comes from the FCM payload — reliable even before the
   /// poll timer fires.
   void _onFcmCampaignEnded(String campaignId) {
+    debugPrint('[ShellScreen] FCM campaign ended: $campaignId');
     if (_dialogShowing || !mounted) return;
     _trackedCampaignId = null;
     ref.read(enrolledCampaignIdsProvider.notifier).update((_) => {});
@@ -135,6 +139,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     final enrollment = ref.watch(activeCampaignEnrollmentProvider).valueOrNull;
     if (enrollment != null) {
       _trackedCampaignId = enrollment['id'] as String?;
+      debugPrint('[ShellScreen] build: enrollment id=$_trackedCampaignId');
     }
 
     // Also seed from the local provider set immediately after a QR scan — this
@@ -142,6 +147,7 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     final localIds = ref.watch(enrolledCampaignIdsProvider);
     if (localIds.isNotEmpty && _trackedCampaignId == null) {
       _trackedCampaignId = localIds.first;
+      debugPrint('[ShellScreen] build: seeded from localIds=$localIds');
     }
 
     final isEnrolled = enrollment != null || localIds.isNotEmpty;

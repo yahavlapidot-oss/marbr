@@ -70,7 +70,10 @@
       "Bash(find /Users/yahavlapidot/dev/mrbar/backend/src/branches -type f -name *.ts)",
       "Bash(find /Users/yahavlapidot/dev/mrbar/business-panel -type f -path */settings/* -name *.tsx -o -path */settings/* -name *.ts)",
       "Bash(find /Users/yahavlapidot/dev/mrbar/business-panel -type f \\\\\\(-name *redeem* -o -name *qr* \\\\\\))",
-      "Bash(grep -r branchId /Users/yahavlapidot/dev/mrbar/customer_app/lib --include=*.dart)"
+      "Bash(grep -r branchId /Users/yahavlapidot/dev/mrbar/customer_app/lib --include=*.dart)",
+      "Bash(grep -n \"point\\\\|POINT\\\\|guess\\\\|GUESS\\\\|draw\\\\|Draw\\\\|winner\\\\|Winner\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)",
+      "Bash(grep -v \"^Analyzing\\\\|^No issues\\\\|^$\")",
+      "Bash(grep -n \"useQuery\\\\|refetchInterval\\\\|queryKey\\\\|drawWinners\\\\|invalidateQueries\\\\|rewards.*id\\\\|campaign-analytics\" /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/campaigns/[id]/page.tsx)"
     ]
   }
 }
