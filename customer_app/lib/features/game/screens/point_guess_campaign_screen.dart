@@ -66,6 +66,27 @@ class _PgScanSheetState extends ConsumerState<_PgScanSheet> {
     }
   }
 
+  Widget _corner(int pos) {
+    const s = 26.0;
+    const stroke = 3.0;
+    const color = AppTheme.gold;
+    final anchors = [
+      [true, true, false, false],
+      [true, false, false, true],
+      [false, true, true, false],
+      [false, false, true, true],
+    ];
+    final a = anchors[pos];
+    return Positioned(
+      top: a[0] ? 0 : null, bottom: a[2] ? 0 : null,
+      left: a[1] ? 0 : null, right: a[3] ? 0 : null,
+      child: CustomPaint(
+        size: const Size(s, s),
+        painter: _PgCornerPaint(pos: pos, color: color, stroke: stroke),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final locale = ref.watch(localeProvider);
@@ -80,18 +101,36 @@ class _PgScanSheetState extends ConsumerState<_PgScanSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
         child: Stack(
           children: [
+            // Camera feed
             MobileScanner(controller: _ctrl, onDetect: _onDetect),
+
+            // Dark overlay with cutout
+            CustomPaint(
+              size: MediaQuery.of(context).size,
+              painter: _PgScanOverlay(),
+            ),
+
+            // Header
             Positioned(
-              top: 16, left: 0, right: 0,
+              top: 0, left: 0, right: 0,
               child: SafeArea(
                 bottom: false,
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
                   child: Row(
                     children: [
                       Expanded(
-                        child: Text(t('point_guess_scan_to_play'),
-                          style: const TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.w800)),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(t('point_guess_scan_to_play'),
+                              style: const TextStyle(color: Colors.white, fontSize: 18,
+                                  fontWeight: FontWeight.w800)),
+                            const SizedBox(height: 2),
+                            Text(t('point_camera_bar'),
+                              style: const TextStyle(color: Colors.white60, fontSize: 13)),
+                          ],
+                        ),
                       ),
                       GestureDetector(
                         onTap: () => Navigator.of(context).pop(),
@@ -109,22 +148,137 @@ class _PgScanSheetState extends ConsumerState<_PgScanSheet> {
                 ),
               ),
             ),
-            if (_processing)
-              const Center(child: CircularProgressIndicator(color: AppTheme.gold)),
-            if (_error != null)
-              Positioned(
-                bottom: 40, left: 32, right: 32,
-                child: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(color: Colors.redAccent, borderRadius: BorderRadius.circular(12)),
-                  child: Text(_error!, style: const TextStyle(color: Colors.white), textAlign: TextAlign.center),
-                ),
+
+            // Scan frame + status
+            Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: 220, height: 220,
+                    child: Stack(
+                      children: [
+                        _corner(0), _corner(1), _corner(2), _corner(3),
+                        if (_processing)
+                          const Center(
+                            child: CircularProgressIndicator(
+                                color: AppTheme.gold, strokeWidth: 2)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  if (_error != null)
+                    Container(
+                      margin: const EdgeInsets.symmetric(horizontal: 32),
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.redAccent.withAlpha(220),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.error_outline, color: Colors.white, size: 16),
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(_error!,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              textAlign: TextAlign.center),
+                          ),
+                        ],
+                      ),
+                    )
+                  else
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withAlpha(140),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        t('point_camera'),
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(color: Colors.white70, fontSize: 13),
+                      ),
+                    ),
+                ],
               ),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+// ── Painters ──────────────────────────────────────────────────────────────────
+
+class _PgScanOverlay extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cutout = 220.0;
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final rect = RRect.fromRectAndRadius(
+      Rect.fromCenter(center: Offset(cx, cy), width: cutout, height: cutout),
+      const Radius.circular(12),
+    );
+    final paint = Paint()..color = Colors.black.withAlpha(150);
+    canvas.drawPath(
+      Path.combine(
+        PathOperation.difference,
+        Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height)),
+        Path()..addRRect(rect),
+      ),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
+}
+
+class _PgCornerPaint extends CustomPainter {
+  final int pos;
+  final Color color;
+  final double stroke;
+  const _PgCornerPaint({required this.pos, required this.color, required this.stroke});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    const r = Radius.circular(4);
+    final w = size.width;
+    final h = size.height;
+    final rv = r.x;
+    switch (pos) {
+      case 0:
+        canvas.drawPath(Path()
+          ..moveTo(0, h)..lineTo(0, rv)..arcToPoint(Offset(rv, 0), radius: r)..lineTo(w, 0), p);
+        break;
+      case 1:
+        canvas.drawPath(Path()
+          ..moveTo(0, 0)..lineTo(w - rv, 0)..arcToPoint(Offset(w, rv), radius: r)..lineTo(w, h), p);
+        break;
+      case 2:
+        canvas.drawPath(Path()
+          ..moveTo(w, h)..lineTo(rv, h)..arcToPoint(Offset(0, h - rv), radius: r)..lineTo(0, 0), p);
+        break;
+      case 3:
+        canvas.drawPath(Path()
+          ..moveTo(w, 0)..lineTo(w, h - rv)..arcToPoint(Offset(w - rv, h), radius: r), p);
+        canvas.drawPath(Path()
+          ..moveTo(0, h)..lineTo(w - rv, h)..arcToPoint(Offset(w, h - rv), radius: r, clockwise: false), p);
+        break;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
 }
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
