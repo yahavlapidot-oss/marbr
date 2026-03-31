@@ -19,8 +19,8 @@ import { BillingService } from './billing.service';
 
 class CheckoutDto {
   @IsString()
-  @IsIn(['STARTER', 'GROWTH', 'ENTERPRISE'])
-  plan: 'STARTER' | 'GROWTH' | 'ENTERPRISE';
+  @IsIn(['FREE', 'STARTER', 'GROWTH', 'ENTERPRISE'])
+  plan: 'FREE' | 'STARTER' | 'GROWTH' | 'ENTERPRISE';
 }
 
 @ApiTags('billing')
@@ -42,7 +42,7 @@ export class BillingController {
   @Roles(UserRole.OWNER, UserRole.ADMIN)
   createCheckout(@Query('businessId') businessId: string, @Body() body: CheckoutDto) {
     if (!businessId) throw new BadRequestException('businessId is required');
-    return this.billing.createCheckoutSession(businessId, body.plan);
+    return this.billing.changePlan(businessId, body.plan);
   }
 
   @Post('portal')

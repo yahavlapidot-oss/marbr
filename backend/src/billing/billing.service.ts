@@ -58,18 +58,51 @@ export class BillingService {
     return sub;
   }
 
-  async createCheckoutSession(businessId: string, plan: Exclude<SubscriptionPlan, 'FREE'>) {
-    const priceEnvKey = STRIPE_PRICE_MAP[plan];
+  async changePlan(businessId: string, plan: SubscriptionPlan) {
+    const sub = await this.getSubscription(businessId);
+
+    // Downgrade to FREE → cancel existing subscription
+    if (plan === SubscriptionPlan.FREE) {
+      if (!sub.stripeSubscriptionId) {
+        // Already on FREE, nothing to do
+        return { redirect: false };
+      }
+      await this.stripe.subscriptions.cancel(sub.stripeSubscriptionId);
+      await this.prisma.subscription.update({
+        where: { businessId },
+        data: {
+          plan: SubscriptionPlan.FREE,
+          stripeSubscriptionId: null,
+          currentPeriodEnd: null,
+        },
+      });
+      return { redirect: false };
+    }
+
+    const priceEnvKey = STRIPE_PRICE_MAP[plan as Exclude<SubscriptionPlan, 'FREE'>];
     const priceId = this.config.get<string>(priceEnvKey);
     if (!priceId) {
       throw new BadRequestException(`Stripe price for ${plan} is not configured`);
     }
 
-    const sub = await this.getSubscription(businessId);
+    // Already has a paid Stripe subscription → update it directly (upgrade or downgrade)
+    if (sub.stripeSubscriptionId) {
+      const stripeSub = await this.stripe.subscriptions.retrieve(sub.stripeSubscriptionId);
+      const currentItemId = (stripeSub.items as any).data[0]?.id;
+      await this.stripe.subscriptions.update(sub.stripeSubscriptionId, {
+        items: [{ id: currentItemId, price: priceId }],
+        proration_behavior: 'create_prorations',
+      });
+      await this.prisma.subscription.update({
+        where: { businessId },
+        data: { plan },
+      });
+      return { redirect: false };
+    }
+
+    // No existing subscription → new Stripe Checkout session
     const customerId = await this.getOrCreateStripeCustomer(businessId, sub.stripeCustomerId);
-
     const panelUrl = this.config.get<string>('BUSINESS_PANEL_URL') ?? 'http://localhost:3001';
-
     const session = await this.stripe.checkout.sessions.create({
       customer: customerId,
       mode: 'subscription',
@@ -78,8 +111,7 @@ export class BillingService {
       cancel_url: `${panelUrl}/billing?cancelled=true`,
       metadata: { businessId, plan },
     });
-
-    return { url: session.url };
+    return { url: session.url, redirect: true };
   }
 
   async createPortalSession(businessId: string) {

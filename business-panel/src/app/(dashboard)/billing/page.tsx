@@ -132,12 +132,20 @@ function BillingContent() {
     return msg || err?.message || t('billing_error');
   };
 
-  const handleUpgrade = async (plan: string) => {
+  const handleChangePlan = async (plan: string) => {
     if (!businessId) return;
     setUpgrading(plan);
     try {
       const { data } = await api.post(`/billing/checkout?businessId=${businessId}`, { plan });
-      window.location.href = data.url;
+      if (data.redirect) {
+        window.location.href = data.url;
+      } else {
+        // Plan changed directly — refresh subscription
+        const updated = await api.get(`/billing/subscription?businessId=${businessId}`);
+        setSub(updated.data);
+        showToast(t('billing_plan_changed'), 'success');
+        setUpgrading(null);
+      }
     } catch (err: any) {
       showToast(parseApiError(err), 'error');
       setUpgrading(null);
@@ -286,21 +294,23 @@ function BillingContent() {
                   <div className="text-center text-sm font-medium text-[#6b6b80] py-2 border border-[#2a2a38] rounded-lg">
                     {t('billing_current')}
                   </div>
-                ) : plan.key === 'FREE' || isDowngrade ? (
-                  <div className="text-center text-xs text-[#6b6b80] py-2">
-                    {plan.key === 'FREE' ? t('billing_upgrade_portal') : t('billing_contact_downgrade')}
-                  </div>
                 ) : (
                   <button
-                    onClick={() => handleUpgrade(plan.key)}
+                    onClick={() => handleChangePlan(plan.key)}
                     disabled={upgrading === plan.key}
                     className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                       isHighlight
                         ? 'bg-amber-500 text-black hover:bg-amber-400'
+                        : isDowngrade || plan.key === 'FREE'
+                        ? 'bg-[#1e1e2e] text-[#a1a1b5] hover:bg-[#2a2a38] border border-[#2a2a38]'
                         : 'bg-[#2a2a38] text-white hover:bg-[#3a3a4e]'
                     } disabled:opacity-50`}
                   >
-                    {upgrading === plan.key ? t('billing_loading') : plan.cta}
+                    {upgrading === plan.key
+                      ? t('billing_loading')
+                      : isDowngrade || plan.key === 'FREE'
+                      ? plan.key === 'FREE' ? t('billing_downgrade_to_free') : t('billing_downgrade_cta')
+                      : plan.cta}
                   </button>
                 )}
               </div>
