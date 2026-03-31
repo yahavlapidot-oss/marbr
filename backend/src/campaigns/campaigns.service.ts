@@ -29,28 +29,71 @@ export class CampaignsService {
     if (removed.includes(dto.type as CampaignType)) {
       throw new BadRequestException(`Campaign type ${dto.type} is no longer supported.`);
     }
-    await this.enforcePlanLimits(businessId, dto.type as CampaignType);
 
-    const campaign = await this.prisma.campaign.create({
-      data: {
-        businessId,
-        name: dto.name,
-        description: dto.description,
-        type: dto.type,
-        startsAt: dto.startsAt ? new Date(dto.startsAt) : null,
-        endsAt: dto.endsAt ? new Date(dto.endsAt) : null,
-        maxEntries: dto.maxEntries,
-        maxEntriesPerUser: 1,
-        everyN: dto.everyN,
-        winProbability: dto.winProbability,
-        pushTitle: dto.pushTitle,
-        pushBody: dto.pushBody,
-        budget: dto.budget,
-        products: dto.productIds?.length
-          ? { create: dto.productIds.map((productId) => ({ productId })) }
-          : undefined,
-      },
-      include: { products: true, rewards: true },
+    if (dto.endsAt && new Date(dto.endsAt) <= new Date()) {
+      throw new BadRequestException('endsAt must be a future date');
+    }
+    if (dto.startsAt && dto.endsAt && new Date(dto.endsAt) <= new Date(dto.startsAt)) {
+      throw new BadRequestException('endsAt must be after startsAt');
+    }
+
+    // Enforce plan limits atomically (count + create in one transaction)
+    const campaign = await this.prisma.$transaction(async (tx) => {
+      const sub = await tx.subscription.findUnique({ where: { businessId } });
+      const plan = sub?.plan ?? SubscriptionPlan.FREE;
+      const limits = PLAN_LIMITS[plan];
+
+      const PLAN_ORDER = [SubscriptionPlan.FREE, SubscriptionPlan.STARTER, SubscriptionPlan.GROWTH, SubscriptionPlan.ENTERPRISE];
+      const nextPlan = (current: SubscriptionPlan) =>
+        PLAN_ORDER[Math.min(PLAN_ORDER.indexOf(current) + 1, PLAN_ORDER.length - 1)];
+
+      const advancedTypes: CampaignType[] = [CampaignType.SNAKE, CampaignType.POINT_GUESS, CampaignType.WEIGHTED_ODDS];
+      if (advancedTypes.includes(dto.type as CampaignType) && !limits.advancedCampaignTypes) {
+        throw new ForbiddenException({
+          message: `${dto.type} campaigns require the GROWTH plan or higher`,
+          requiredPlan: SubscriptionPlan.GROWTH,
+          currentPlan: plan,
+        });
+      }
+
+      if (limits.campaigns < Infinity) {
+        const startOfMonth = new Date();
+        startOfMonth.setDate(1);
+        startOfMonth.setHours(0, 0, 0, 0);
+        const monthlyCount = await tx.campaign.count({
+          where: { businessId, createdAt: { gte: startOfMonth } },
+        });
+        if (monthlyCount >= limits.campaigns) {
+          throw new ForbiddenException({
+            message: `Campaign limit reached for your ${plan} plan (max ${limits.campaigns} campaigns per month)`,
+            requiredPlan: nextPlan(plan),
+            currentPlan: plan,
+            limit: limits.campaigns,
+          });
+        }
+      }
+
+      return tx.campaign.create({
+        data: {
+          businessId,
+          name: dto.name,
+          description: dto.description,
+          type: dto.type,
+          startsAt: dto.startsAt ? new Date(dto.startsAt) : null,
+          endsAt: dto.endsAt ? new Date(dto.endsAt) : null,
+          maxEntries: dto.maxEntries,
+          maxEntriesPerUser: 1,
+          everyN: dto.everyN,
+          winProbability: dto.winProbability,
+          pushTitle: dto.pushTitle,
+          pushBody: dto.pushBody,
+          budget: dto.budget,
+          products: dto.productIds?.length
+            ? { create: dto.productIds.map((productId) => ({ productId })) }
+            : undefined,
+        },
+        include: { products: true, rewards: true },
+      });
     });
 
     return campaign;
@@ -104,6 +147,13 @@ export class CampaignsService {
       campaign.status === CampaignStatus.CANCELLED
     ) {
       throw new BadRequestException('Cannot edit a finished or cancelled campaign');
+    }
+
+    if (dto.endsAt && new Date(dto.endsAt) <= new Date()) {
+      throw new BadRequestException('endsAt must be a future date');
+    }
+    if (dto.startsAt && dto.endsAt && new Date(dto.endsAt) <= new Date(dto.startsAt)) {
+      throw new BadRequestException('endsAt must be after startsAt');
     }
 
     return this.prisma.campaign.update({
@@ -269,6 +319,16 @@ export class CampaignsService {
       );
     }
 
+    // Clear currentCampaignId for all users who had this campaign active
+    if (status === CampaignStatus.ENDED || status === CampaignStatus.CANCELLED) {
+      this.prisma.user.updateMany({
+        where: { currentCampaignId: id },
+        data: { currentCampaignId: null },
+      }).catch((err) =>
+        this.logger.error(`Failed to clear currentCampaignId for campaign ${id}`, err),
+      );
+    }
+
     // Draw winners and notify participants when campaign ends manually
     if (status === CampaignStatus.ENDED) {
       this.scheduler.drawAndNotify({
@@ -313,17 +373,28 @@ export class CampaignsService {
     if (!campaign) throw new NotFoundException('Campaign not found');
     await this.assertBusinessEmployee(userId, userRole, campaign.businessId);
 
-    const revenuePerEntry = campaign.products.reduce(
-      (sum: number, cp: any) => sum + (cp.product?.price ?? 0) * cp.minQuantity,
-      0,
-    );
-    const revenue = entryCount * revenuePerEntry;
-    const rewardCost = campaign.rewards.reduce(
-      (sum: number, r: any) => sum + r._count.userRewards * (r.quantity ?? 1) * (r.product?.price ?? 0),
-      0,
-    );
-    const netProfit = revenue - rewardCost;
-    const roi = rewardCost > 0 ? (netProfit / rewardCost) * 100 : null;
+    const sub = await this.prisma.subscription.findUnique({ where: { businessId: campaign.businessId } });
+    const plan = sub?.plan ?? SubscriptionPlan.FREE;
+    const hasFinancials = PLAN_LIMITS[plan].financialAnalytics;
+
+    let financials: { revenue: number | null; rewardCost: number | null; netProfit: number | null; roi: number | null; purchases: number } = {
+      revenue: null, rewardCost: null, netProfit: null, roi: null, purchases: entryCount,
+    };
+
+    if (hasFinancials) {
+      const revenuePerEntry = campaign.products.reduce(
+        (sum: number, cp: any) => sum + (cp.product?.price ?? 0) * cp.minQuantity,
+        0,
+      );
+      const revenue = entryCount * revenuePerEntry;
+      const rewardCost = campaign.rewards.reduce(
+        (sum: number, r: any) => sum + r._count.userRewards * (r.quantity ?? 1) * (r.product?.price ?? 0),
+        0,
+      );
+      const netProfit = revenue - rewardCost;
+      const roi = rewardCost > 0 ? (netProfit / rewardCost) * 100 : null;
+      financials = { revenue, rewardCost, netProfit, roi, purchases: entryCount };
+    }
 
     return {
       campaign,
@@ -335,50 +406,10 @@ export class CampaignsService {
         redemptionRate: rewardCount > 0 ? (redemptionCount / rewardCount) * 100 : 0,
       },
       recentEntries,
-      financials: { revenue, rewardCost, netProfit, roi, purchases: entryCount },
+      financials,
     };
   }
 
-  private async enforcePlanLimits(businessId: string, type: CampaignType) {
-    const sub = await this.prisma.subscription.findUnique({ where: { businessId } });
-    const plan = sub?.plan ?? SubscriptionPlan.FREE;
-    const limits = PLAN_LIMITS[plan];
-
-    const PLAN_ORDER = [SubscriptionPlan.FREE, SubscriptionPlan.STARTER, SubscriptionPlan.GROWTH, SubscriptionPlan.ENTERPRISE];
-    const nextPlan = (current: SubscriptionPlan) =>
-      PLAN_ORDER[Math.min(PLAN_ORDER.indexOf(current) + 1, PLAN_ORDER.length - 1)];
-
-    // Advanced campaign types require STARTER+
-    const advancedTypes: CampaignType[] = [CampaignType.SNAKE, CampaignType.POINT_GUESS, CampaignType.WEIGHTED_ODDS];
-    if (advancedTypes.includes(type) && !limits.advancedCampaignTypes) {
-      throw new ForbiddenException({
-        message: `${type} campaigns require the GROWTH plan or higher`,
-        requiredPlan: SubscriptionPlan.GROWTH,
-        currentPlan: plan,
-      });
-    }
-
-    if (limits.campaigns < Infinity) {
-      const startOfMonth = new Date();
-      startOfMonth.setDate(1);
-      startOfMonth.setHours(0, 0, 0, 0);
-
-      const monthlyCount = await this.prisma.campaign.count({
-        where: {
-          businessId,
-          createdAt: { gte: startOfMonth },
-        },
-      });
-      if (monthlyCount >= limits.campaigns) {
-        throw new ForbiddenException({
-          message: `Campaign limit reached for your ${plan} plan (max ${limits.campaigns} campaigns per month)`,
-          requiredPlan: nextPlan(plan),
-          currentPlan: plan,
-          limit: limits.campaigns,
-        });
-      }
-    }
-  }
 
   private validateTransition(current: CampaignStatus, next: CampaignStatus) {
     const allowed: Record<CampaignStatus, CampaignStatus[]> = {

@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useSearchParams } from 'next/navigation';
 import { CreditCard, Check, ExternalLink, Download, Zap, Crown, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -32,6 +33,7 @@ const PLAN_ORDER = ['FREE', 'STARTER', 'GROWTH', 'ENTERPRISE'];
 function BillingContent() {
   const { businessId } = useAuthStore();
   const t = useLocaleStore((s) => s.t);
+  const queryClient = useQueryClient();
 
   const PLANS = [
     {
@@ -148,6 +150,7 @@ function BillingContent() {
       } else {
         const updated = await api.get(`/billing/subscription?businessId=${businessId}`);
         setSub(updated.data);
+        queryClient.invalidateQueries({ queryKey: ['subscription', businessId] });
         showToast(t('billing_plan_changed'), 'success');
         setUpgrading(null);
       }

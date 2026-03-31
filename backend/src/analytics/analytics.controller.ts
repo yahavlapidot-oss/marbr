@@ -85,7 +85,13 @@ export class AnalyticsController {
   @Post('track')
   @Roles(UserRole.OWNER, UserRole.MANAGER, UserRole.ADMIN)
   @ApiOperation({ summary: 'Track a custom event' })
-  track(@Body() body: { event: string; payload?: any; businessId?: string }) {
-    return this.svc.track(body.event, body.payload ?? {}, undefined, body.businessId);
+  async track(
+    @Body() body: { event: string; payload?: any; businessId?: string },
+    @CurrentUser() user: { id: string; role: UserRole },
+  ) {
+    if (body.businessId) {
+      await this.assertBusinessAccess(user.id, user.role, body.businessId);
+    }
+    return this.svc.track(body.event, body.payload ?? {}, user.id, body.businessId);
   }
 }

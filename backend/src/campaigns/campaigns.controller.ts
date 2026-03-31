@@ -8,6 +8,7 @@ import {
   Param,
   Query,
   UseGuards,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CampaignStatus, UserRole } from '@prisma/client';
@@ -135,6 +136,9 @@ export class CampaignsController {
     @Body() body: { productId: string; minQuantity?: number },
     @CurrentUser() user: { id: string; role: UserRole },
   ) {
+    if (body.minQuantity !== undefined && body.minQuantity < 1) {
+      throw new BadRequestException('minQuantity must be at least 1');
+    }
     return this.campaignsService.addProduct(id, body.productId, body.minQuantity, user.id, user.role);
   }
 
