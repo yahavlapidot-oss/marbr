@@ -82,7 +82,8 @@
       "Bash(grep -v \"^$\")",
       "Bash(ls -la /Users/yahavlapidot/dev/mrbar/business-panel/src/app/\\\\\\(dashboard\\\\\\)/8)",
       "Bash(wc:*)",
-      "Bash(grep \"\"\"@radix-ui/react-dialog\"\"\" /Users/yahavlapidot/dev/mrbar/business-panel/package.json)"
+      "Bash(grep \"\"\"@radix-ui/react-dialog\"\"\" /Users/yahavlapidot/dev/mrbar/business-panel/package.json)",
+      "Bash(head:*)"
     ]
   }
 }

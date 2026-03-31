@@ -37,10 +37,11 @@ Every change to the business panel that adds, removes, or modifies a feature **m
 3. **Upgrade modals** — any UI action gated behind a plan must intercept the action client-side (show `<UpgradeModal>`) AND reject server-side (throw `ForbiddenException` with `requiredPlan`). Never gate only one side.
 
 4. **Plan tiers (for reference):**
-   - `FREE` — 1 campaign, RAFFLE / EVERY_N only, no financial analytics, no duplication
-   - `STARTER` — 5 campaigns, all campaign types, duplication, financial analytics
-   - `GROWTH` — 20 campaigns, everything in Starter + activity audit log
+   - `FREE` — 1 campaign/month, RAFFLE / EVERY_N only, no financial analytics, no duplication
+   - `STARTER` — 5 campaigns/month, all types (RAFFLE, EVERY_N, SNAKE, POINT_GUESS), duplication, financial analytics
+   - `GROWTH` — 20 campaigns/month, everything in Starter + activity audit log
    - `ENTERPRISE` — unlimited campaigns, everything in Growth
+   - Campaign limit = campaigns **created this calendar month** (not concurrent active campaigns)
 
 כל שינוי בלוח הניהול שמוסיף, מסיר או משנה פיצ'ר **חייב** להיות מתואם עם הגדרות תוכניות החיוב. יש לעדכן את `PLAN_LIMITS` ב-backend, את שכבות האכיפה, את רשימות הפיצ'רים בדף החיוב ובמודל השדרוג, ואת מפתחות התרגום.
 

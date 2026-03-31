@@ -355,15 +355,20 @@ export class CampaignsService {
     }
 
     if (limits.campaigns < Infinity) {
-      const activeCount = await this.prisma.campaign.count({
+      const startOfMonth = new Date();
+      startOfMonth.setDate(1);
+      startOfMonth.setHours(0, 0, 0, 0);
+
+      const monthlyCount = await this.prisma.campaign.count({
         where: {
           businessId,
-          status: { in: [CampaignStatus.ACTIVE, CampaignStatus.SCHEDULED, CampaignStatus.PAUSED] },
+          createdAt: { gte: startOfMonth },
         },
       });
-      if (activeCount >= limits.campaigns) {
+      if (monthlyCount >= limits.campaigns) {
         throw new ForbiddenException({
-          message: `Campaign limit reached for your ${plan} plan (max ${limits.campaigns} active campaigns)`,
+          message: `Campaign limit reached for your ${plan} plan (max ${limits.campaigns} campaigns per month)`,
+          requiredPlan: SubscriptionPlan.STARTER,
           currentPlan: plan,
           limit: limits.campaigns,
         });
