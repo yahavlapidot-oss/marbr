@@ -50,7 +50,7 @@ extension DirExt on Dir {
 
 // ── Game state ────────────────────────────────────────────────────────────────
 
-enum Phase { starting, playing, over, submitting, submitted }
+enum Phase { starting, countdown, playing, over, submitting, submitted }
 
 class _GameState {
   final List<Offset> snake; // head first, in grid coords
@@ -128,6 +128,8 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
 
   String? _gameToken;
   final _rng = math.Random();
+  int _countdown = 3;
+  Timer? _countdownTimer;
 
   Offset? _eatGridPos; // grid position where last apple was eaten
 
@@ -157,6 +159,7 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
 
   @override
   void dispose() {
+    _countdownTimer?.cancel();
     _ticker.dispose();
     _deathAnim.dispose();
     _eatAnim.dispose();
@@ -206,11 +209,22 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
           await createDio().post('/game/snake/${widget.campaignId}/start');
       _gameToken = res.data['gameToken'] as String;
       if (mounted) {
-        _lastTickUs = 0; // will be set on first ticker frame
+        _countdown = 3;
         setState(() {
-          _gs = _gs.copyWith(phase: Phase.playing);
+          _gs = _gs.copyWith(phase: Phase.countdown);
         });
-        _ticker.start();
+        _countdownTimer = Timer.periodic(const Duration(seconds: 1), (t) {
+          if (!mounted) { t.cancel(); return; }
+          setState(() => _countdown--);
+          if (_countdown <= 0) {
+            t.cancel();
+            _lastTickUs = 0;
+            setState(() {
+              _gs = _gs.copyWith(phase: Phase.playing);
+            });
+            _ticker.start();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -462,6 +476,43 @@ class _SnakeGameScreenState extends ConsumerState<SnakeGameScreen>
                     Text(
                       'Loading game…',
                       style: TextStyle(color: Colors.white54, fontSize: 14),
+                    ),
+                  ],
+                ),
+              ),
+
+            // Countdown overlay
+            if (_gs.phase == Phase.countdown)
+              _buildFullOverlay(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'GET READY',
+                      style: TextStyle(
+                        color: Colors.white54,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 300),
+                      transitionBuilder: (child, anim) => ScaleTransition(
+                        scale: anim,
+                        child: FadeTransition(opacity: anim, child: child),
+                      ),
+                      child: Text(
+                        '$_countdown',
+                        key: ValueKey(_countdown),
+                        style: const TextStyle(
+                          color: AppTheme.gold,
+                          fontSize: 96,
+                          fontWeight: FontWeight.w900,
+                          height: 1,
+                        ),
+                      ),
                     ),
                   ],
                 ),
