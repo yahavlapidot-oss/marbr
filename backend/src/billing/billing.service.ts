@@ -19,7 +19,7 @@ export interface PlanFeatures {
 
 export const PLAN_LIMITS: Record<SubscriptionPlan, PlanFeatures> = {
   FREE:       { campaigns: 3,        advancedCampaignTypes: false, duplication: false, financialAnalytics: false, eventLog: false },
-  STARTER:    { campaigns: 10,       advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: false },
+  STARTER:    { campaigns: 10,       advancedCampaignTypes: false, duplication: true,  financialAnalytics: true,  eventLog: false },
   GROWTH:     { campaigns: 20,       advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: true  },
   ENTERPRISE: { campaigns: Infinity, advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: true  },
 };

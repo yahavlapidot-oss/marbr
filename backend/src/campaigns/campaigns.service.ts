@@ -352,8 +352,8 @@ export class CampaignsService {
     const advancedTypes: CampaignType[] = [CampaignType.SNAKE, CampaignType.POINT_GUESS, CampaignType.WEIGHTED_ODDS];
     if (advancedTypes.includes(type) && !limits.advancedCampaignTypes) {
       throw new ForbiddenException({
-        message: `${type} campaigns require the STARTER plan or higher`,
-        requiredPlan: SubscriptionPlan.STARTER,
+        message: `${type} campaigns require the GROWTH plan or higher`,
+        requiredPlan: SubscriptionPlan.GROWTH,
         currentPlan: plan,
       });
     }

@@ -20,12 +20,13 @@ export function UpgradeModal({ open, onClose, requiredPlan, featureName }: Upgra
   const PLAN_FEATURES: Record<Exclude<Plan, 'FREE'>, string[]> = {
     STARTER: [
       t('plan_starter_f1'),
-      t('plan_feat_advanced_types'),
       t('plan_feat_duplication'),
       t('plan_starter_f4'),
+      t('plan_feat_financials'),
     ],
     GROWTH: [
       t('plan_growth_f1'),
+      t('plan_feat_advanced_types'),
       t('plan_feat_event_log'),
       t('plan_feat_everything_starter'),
     ],

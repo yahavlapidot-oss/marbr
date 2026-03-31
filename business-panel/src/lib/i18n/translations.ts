@@ -316,7 +316,7 @@ export const translations = {
     plan_free_f6: 'Analytics — entries, winners, conversion rate',
     // Starter plan features
     plan_starter_f1: '10 campaigns per month',
-    plan_starter_f2: 'All campaign types (Snake 🐍, Point Guess 🔢)',
+    plan_starter_f2: 'Raffle & Every-N campaigns',
     plan_starter_f3: 'Campaign duplication',
     plan_starter_f4: 'Financial analytics — revenue, reward cost, ROI',
     // Growth plan features
@@ -837,7 +837,7 @@ export const translations = {
     plan_free_f6: 'אנליטיקה — הצטרפויות, זוכים, שיעור המרה',
     // Starter plan features
     plan_starter_f1: '10 קמפיינים בחודש',
-    plan_starter_f2: 'כל סוגי הקמפיינים (סנייק 🐍, ניחוש נקודות 🔢)',
+    plan_starter_f2: 'קמפיינים: הגרלה וזוכים X',
     plan_starter_f3: 'שכפול קמפיינים',
     plan_starter_f4: 'אנליטיקה פיננסית — הכנסות, עלות פרסים, ROI',
     // Growth plan features

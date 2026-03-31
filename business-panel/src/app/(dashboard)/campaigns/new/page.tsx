@@ -141,8 +141,9 @@ export default function NewCampaignPage() {
               <Select
                 value={campaignType}
                 onValueChange={(v) => {
-                  if (ADVANCED_TYPES.includes(v) && !planAtLeast(plan, 'STARTER')) {
+                  if (ADVANCED_TYPES.includes(v) && !planAtLeast(plan, 'GROWTH')) {
                     setUpgradeReason('advanced_types');
+                    setUpgradeRequiredPlan('GROWTH');
                     setUpgradeOpen(true);
                     return;
                   }
