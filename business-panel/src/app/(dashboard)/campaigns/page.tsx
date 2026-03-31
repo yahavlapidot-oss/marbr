@@ -34,6 +34,7 @@ export default function CampaignsPage() {
   const plan = usePlan();
   const [page, setPage] = useState(1);
   const [upgradeOpen, setUpgradeOpen] = useState(false);
+  const [upgradeRequiredPlan, setUpgradeRequiredPlan] = useState<'STARTER' | 'GROWTH' | 'ENTERPRISE'>('STARTER');
 
   const { data: campaigns, isLoading } = useQuery({
     queryKey: ['campaigns', businessId],
@@ -57,6 +58,7 @@ export default function CampaignsPage() {
     },
     onError: (err: any) => {
       if (err?.response?.status === 403 && err?.response?.data?.requiredPlan) {
+        setUpgradeRequiredPlan(err.response.data.requiredPlan);
         setUpgradeOpen(true);
         return;
       }
@@ -78,7 +80,7 @@ export default function CampaignsPage() {
     <UpgradeModal
       open={upgradeOpen}
       onClose={() => setUpgradeOpen(false)}
-      requiredPlan="STARTER"
+      requiredPlan={upgradeRequiredPlan}
       featureName={t('upgrade_duplicate')}
     />
     <div className="space-y-6">

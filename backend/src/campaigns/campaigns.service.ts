@@ -344,6 +344,10 @@ export class CampaignsService {
     const plan = sub?.plan ?? SubscriptionPlan.FREE;
     const limits = PLAN_LIMITS[plan];
 
+    const PLAN_ORDER = [SubscriptionPlan.FREE, SubscriptionPlan.STARTER, SubscriptionPlan.GROWTH, SubscriptionPlan.ENTERPRISE];
+    const nextPlan = (current: SubscriptionPlan) =>
+      PLAN_ORDER[Math.min(PLAN_ORDER.indexOf(current) + 1, PLAN_ORDER.length - 1)];
+
     // Advanced campaign types require STARTER+
     const advancedTypes: CampaignType[] = [CampaignType.SNAKE, CampaignType.POINT_GUESS, CampaignType.WEIGHTED_ODDS];
     if (advancedTypes.includes(type) && !limits.advancedCampaignTypes) {
@@ -368,7 +372,7 @@ export class CampaignsService {
       if (monthlyCount >= limits.campaigns) {
         throw new ForbiddenException({
           message: `Campaign limit reached for your ${plan} plan (max ${limits.campaigns} campaigns per month)`,
-          requiredPlan: SubscriptionPlan.STARTER,
+          requiredPlan: nextPlan(plan),
           currentPlan: plan,
           limit: limits.campaigns,
         });

@@ -41,6 +41,7 @@ export default function NewCampaignPage() {
   const [rewardProductId, setRewardProductId] = useState('');
   const [upgradeOpen, setUpgradeOpen] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState<'advanced_types' | 'campaign_limit'>('advanced_types');
+  const [upgradeRequiredPlan, setUpgradeRequiredPlan] = useState<'STARTER' | 'GROWTH' | 'ENTERPRISE'>('STARTER');
   const plan = usePlan();
   const ADVANCED_TYPES = ['SNAKE', 'POINT_GUESS', 'WEIGHTED_ODDS'];
 
@@ -96,6 +97,7 @@ export default function NewCampaignPage() {
       const body = err.response?.data;
       if (status === 403 && body?.requiredPlan) {
         setUpgradeReason('campaign_limit');
+        setUpgradeRequiredPlan(body.requiredPlan);
         setUpgradeOpen(true);
         return;
       }
@@ -108,8 +110,8 @@ export default function NewCampaignPage() {
     <UpgradeModal
       open={upgradeOpen}
       onClose={() => setUpgradeOpen(false)}
-      requiredPlan="STARTER"
-      featureName={upgradeReason === 'campaign_limit' ? t('upgrade_campaign_limit') : t('upgrade_advanced_types')}
+      requiredPlan={upgradeRequiredPlan}
+      featureName={upgradeReason === 'campaign_limit' ? t('upgrade_more_campaigns') : t('upgrade_advanced_types')}
     />
     <div className="max-w-2xl mx-auto space-y-6">
       <div className="flex items-center gap-3">
