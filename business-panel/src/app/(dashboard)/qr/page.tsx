@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Loader2, QrCode, Download, Maximize2, X } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -39,7 +40,7 @@ export default function QrPage() {
       setQrDataUrl(data.qrDataUrl);
       setCountdown(ROTATE_EVERY);
     },
-    onError: (err: any) => alert(err?.response?.data?.message ?? 'Failed to generate QR code'),
+    onError: (err: any) => toast.error(err?.response?.data?.message ?? 'Failed to generate QR code'),
   });
 
   const stopRotation = useCallback(() => {

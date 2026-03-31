@@ -269,6 +269,7 @@ model Campaign {
   gameScores  GameScore[]
 
   @@index([businessId])
+  @@index([businessId, status])
   @@map("campaigns")
 }
 
@@ -304,6 +305,7 @@ model Entry {
 
   @@index([campaignId])
   @@index([userId])
+  @@index([campaignId, userId, isValid])
   @@map("entries")
 }
 
@@ -367,6 +369,7 @@ model UserReward {
   reward     Reward      @relation(fields: [rewardId], references: [id])
   redemption Redemption?
 
+  @@index([userId, status])
   @@map("user_rewards")
 }
 
@@ -425,6 +428,7 @@ model EventLog {
 
   @@index([event])
   @@index([businessId])
+  @@index([businessId, createdAt])
   @@map("event_logs")
 }
 

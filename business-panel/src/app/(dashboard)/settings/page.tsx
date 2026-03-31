@@ -115,7 +115,7 @@ function ImageUpload({
       setPreview(data.url);
       onChange(data.url);
     } catch (err: any) {
-      alert(err?.response?.data?.message ?? 'Upload failed');
+      toast.error(err?.response?.data?.message ?? 'Upload failed');
     } finally {
       setUploading(false);
       if (inputRef.current) inputRef.current.value = '';
