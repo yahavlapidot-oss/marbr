@@ -413,6 +413,12 @@ export const translations = {
     dashboard_no_active: 'No active campaigns',
     dashboard_ends: 'Ends',
     dashboard_no_end: 'No end time',
+    dashboard_usage_title: 'Monthly Campaign Usage',
+    dashboard_usage_of: 'of',
+    dashboard_usage_campaigns: 'campaigns this month',
+    dashboard_usage_unlimited: 'Unlimited campaigns',
+    dashboard_usage_unlimited_sub: 'Enterprise plan — no limits',
+    dashboard_usage_upgrade: 'Upgrade to create more campaigns',
     // rewards
     rewards_select_campaign: 'Select a campaign to view rewards',
     // branches
@@ -924,6 +930,12 @@ export const translations = {
     dashboard_no_active: 'אין קמפיינים פעילים',
     dashboard_ends: 'מסתיים',
     dashboard_no_end: 'ללא זמן סיום',
+    dashboard_usage_title: 'שימוש בקמפיינים החודשי',
+    dashboard_usage_of: 'מתוך',
+    dashboard_usage_campaigns: 'קמפיינים החודש',
+    dashboard_usage_unlimited: 'קמפיינים ללא הגבלה',
+    dashboard_usage_unlimited_sub: 'תוכנית Enterprise — ללא מגבלות',
+    dashboard_usage_upgrade: 'שדרג כדי ליצור קמפיינים נוספים',
     // rewards
     rewards_select_campaign: 'בחר קמפיין לצפייה בפרסים',
     // branches

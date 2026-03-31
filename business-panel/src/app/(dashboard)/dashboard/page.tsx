@@ -71,6 +71,18 @@ export default function DashboardPage() {
   });
 
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];
+
+  // Monthly campaign usage
+  const PLAN_MONTHLY_LIMIT: Record<string, number> = { FREE: 1, STARTER: 5, GROWTH: 20, ENTERPRISE: Infinity };
+  const plan = subscription?.plan ?? 'FREE';
+  const monthlyLimit = PLAN_MONTHLY_LIMIT[plan] ?? 1;
+  const startOfMonth = new Date();
+  startOfMonth.setDate(1);
+  startOfMonth.setHours(0, 0, 0, 0);
+  const thisMonthCount = (campaigns ?? []).filter((c: any) => new Date(c.createdAt) >= startOfMonth).length;
+  const usagePct = monthlyLimit === Infinity ? 0 : Math.min((thisMonthCount / monthlyLimit) * 100, 100);
+  const barColor = usagePct >= 100 ? 'bg-red-500' : usagePct >= 80 ? 'bg-amber-500' : 'bg-green-500';
+
   const totals = analytics?.totals;
   const totalEntries: number = totals?.entries ?? campaigns?.reduce((sum: number, c: any) => sum + (c._count?.entries ?? 0), 0) ?? 0;
   const totalWinners: number = totals?.winners ?? 0;
@@ -247,6 +259,56 @@ export default function DashboardPage() {
               sub={roi != null ? `ROI ${roi.toFixed(0)}%` : undefined}
             />
           </div>
+        )}
+      </div>
+
+      {/* Monthly usage */}
+      <div className="rounded-xl border border-[#2a2a38] bg-[#1a1a24] p-5">
+        <div className="flex items-center justify-between mb-3">
+          <span className="text-sm font-semibold text-white">{t('dashboard_usage_title')}</span>
+          <span className="text-xs text-[#6b6b80]">{plan}</span>
+        </div>
+        {monthlyLimit === Infinity ? (
+          <div className="flex items-center gap-3">
+            <div className="flex-1">
+              <p className="text-2xl font-bold text-green-400">{thisMonthCount}</p>
+              <p className="text-xs text-[#6b6b80] mt-0.5">{t('dashboard_usage_unlimited')}</p>
+            </div>
+            <span className="text-xs text-green-400 bg-green-500/10 px-2 py-1 rounded-full font-medium">∞</span>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-end justify-between mb-2">
+              <span className="text-2xl font-bold text-white">
+                {thisMonthCount}
+                <span className="text-sm font-normal text-[#6b6b80] ml-1">
+                  {t('dashboard_usage_of')} {monthlyLimit} {t('dashboard_usage_campaigns')}
+                </span>
+              </span>
+              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                usagePct >= 100
+                  ? 'bg-red-500/15 text-red-400'
+                  : usagePct >= 80
+                  ? 'bg-amber-500/15 text-amber-400'
+                  : 'bg-green-500/15 text-green-400'
+              }`}>
+                {usagePct.toFixed(0)}%
+              </span>
+            </div>
+            <div className="w-full bg-[#2a2a38] rounded-full h-2">
+              <div
+                className={`h-2 rounded-full transition-all duration-500 ${barColor}`}
+                style={{ width: `${usagePct}%` }}
+              />
+            </div>
+            {usagePct >= 80 && (
+              <p className="text-xs text-amber-400 mt-2">
+                {usagePct >= 100 ? t('upgrade_campaign_limit') : t('dashboard_usage_upgrade')}
+                {' '}
+                <a href="/billing" className="underline hover:text-amber-300">{t('billing_upgrade_cta')}</a>
+              </p>
+            )}
+          </>
         )}
       </div>
 
