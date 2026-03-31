@@ -21,6 +21,31 @@ When asked to make any change, always search for every place in the codebase tha
 
 ---
 
+## Billing & Plan Consistency / עקביות חיוב ותוכניות
+
+Every change to the business panel that adds, removes, or modifies a feature **must** be correlated with the billing plan definitions. Specifically:
+
+1. **If a feature is new or changes scope** — decide which plan tier it belongs to and update:
+   - `PLAN_LIMITS` in `backend/src/billing/billing.service.ts` (add the relevant flag/limit)
+   - Backend enforcement guards (e.g. `assertBusinessEmployee`, `enforcePlanLimits`, or a new check in the relevant service)
+   - The `PLANS` feature list in `business-panel/src/app/(dashboard)/billing/page.tsx` (add it to the correct plan's `features` or `locked` arrays)
+   - The `PLAN_FEATURES` list in `business-panel/src/components/upgrade-modal.tsx`
+   - Translation keys in `business-panel/src/lib/i18n/translations.ts` (EN + HE) for any new feature description strings
+
+2. **If a feature is removed** — remove it from all plan definitions and drop the backend enforcement check.
+
+3. **Upgrade modals** — any UI action gated behind a plan must intercept the action client-side (show `<UpgradeModal>`) AND reject server-side (throw `ForbiddenException` with `requiredPlan`). Never gate only one side.
+
+4. **Plan tiers (for reference):**
+   - `FREE` — 1 campaign, RAFFLE / EVERY_N only, no financial analytics, no duplication
+   - `STARTER` — 5 campaigns, all campaign types, duplication, financial analytics
+   - `GROWTH` — 20 campaigns, everything in Starter + activity audit log
+   - `ENTERPRISE` — unlimited campaigns, everything in Growth
+
+כל שינוי בלוח הניהול שמוסיף, מסיר או משנה פיצ'ר **חייב** להיות מתואם עם הגדרות תוכניות החיוב. יש לעדכן את `PLAN_LIMITS` ב-backend, את שכבות האכיפה, את רשימות הפיצ'רים בדף החיוב ובמודל השדרוג, ואת מפתחות התרגום.
+
+---
+
 ## Product Overview / סקירת המוצר
 
 MrBar is a two-sided promotions, raffles, and notifications platform for physical venues (bars, clubs, restaurants). Businesses launch real-time campaigns (e.g. "buy a Heineken in the next 15 min, enter a raffle for 20 free shots"), customers receive push notifications, scan a QR/enter a code at the POS, and are entered into the raffle or receive an instant reward.
