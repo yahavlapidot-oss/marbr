@@ -1,5 +1,6 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto, RefreshTokenDto, SendOtpDto, VerifyOtpDto } from './dto/login.dto';
@@ -22,7 +23,9 @@ export class AuthController {
   }
 
   @Post('otp/send')
-  @ApiOperation({ summary: 'Send OTP to phone or email' })
+  @UseGuards(ThrottlerGuard)
+  @Throttle({ default: { ttl: 60000, limit: 3 } })
+  @ApiOperation({ summary: 'Send OTP to phone or email (max 3/min)' })
   sendOtp(@Body() dto: SendOtpDto) {
     return this.authService.sendOtp(dto);
   }

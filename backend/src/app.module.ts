@@ -21,6 +21,7 @@ import { AdminModule } from './admin/admin.module';
 import { GameModule } from './game/game.module';
 import { DevicesModule } from './devices/devices.module';
 import { UploadModule } from './upload/upload.module';
+import { HealthModule } from './health/health.module';
 
 @Module({
   controllers: [AppController],
@@ -46,6 +47,7 @@ import { UploadModule } from './upload/upload.module';
     GameModule,
     DevicesModule,
     UploadModule,
+    HealthModule,
   ],
 })
 export class AppModule {}

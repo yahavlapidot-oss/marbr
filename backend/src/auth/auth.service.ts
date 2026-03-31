@@ -8,6 +8,7 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
 import * as twilio from 'twilio';
+import { randomInt } from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto, SendOtpDto, VerifyOtpDto } from './dto/login.dto';
@@ -100,7 +101,7 @@ export class AuthService {
   }
 
   async sendOtp(dto: SendOtpDto) {
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    const code = randomInt(100000, 1000000).toString();
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 min
 
     await this.prisma.otpCode.create({
