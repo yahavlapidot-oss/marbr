@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { CreditCard, Check, ExternalLink, Download, Zap, Crown } from 'lucide-react';
+import { CreditCard, Check, ExternalLink, Download, Zap, Crown, AlertTriangle } from 'lucide-react';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/lib/auth-store';
 import { useLocaleStore } from '@/lib/locale-store';
@@ -104,6 +104,7 @@ function BillingContent() {
   const [loading, setLoading] = useState(true);
   const [upgrading, setUpgrading] = useState<string | null>(null);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [confirmPlan, setConfirmPlan] = useState<{ key: string; price: number; isUpgrade: boolean } | null>(null);
 
   const showToast = (message: string, type: 'success' | 'error' = 'success') => {
     setToast({ message, type });
@@ -133,15 +134,20 @@ function BillingContent() {
     return msg || err?.message || t('billing_error');
   };
 
-  const handleChangePlan = async (plan: string) => {
-    if (!businessId) return;
+  const requestChangePlan = (planKey: string, planPrice: number, isUpgrade: boolean) => {
+    setConfirmPlan({ key: planKey, price: planPrice, isUpgrade });
+  };
+
+  const handleChangePlan = async () => {
+    if (!businessId || !confirmPlan) return;
+    const plan = confirmPlan.key;
+    setConfirmPlan(null);
     setUpgrading(plan);
     try {
       const { data } = await api.post(`/billing/checkout?businessId=${businessId}`, { plan });
       if (data.redirect) {
         window.location.href = data.url;
       } else {
-        // Plan changed directly — refresh subscription
         const updated = await api.get(`/billing/subscription?businessId=${businessId}`);
         setSub(updated.data);
         showToast(t('billing_plan_changed'), 'success');
@@ -183,6 +189,45 @@ function BillingContent() {
           }`}
         >
           {toast.message}
+        </div>
+      )}
+
+      {/* Confirm plan change dialog */}
+      {confirmPlan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
+          <div className="bg-[#13131a] border border-[#2a2a38] rounded-2xl shadow-2xl p-6 w-full max-w-sm mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <div className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${confirmPlan.isUpgrade ? 'bg-amber-500/15' : 'bg-red-500/10'}`}>
+                <AlertTriangle className={`h-5 w-5 ${confirmPlan.isUpgrade ? 'text-amber-400' : 'text-red-400'}`} />
+              </div>
+              <h3 className="text-white font-bold text-base">{t('billing_confirm_title')}</h3>
+            </div>
+            <p className="text-[#a1a1b5] text-sm mb-6 leading-relaxed">
+              {confirmPlan.key === 'FREE'
+                ? t('billing_confirm_free_body')
+                : confirmPlan.isUpgrade
+                ? t('billing_confirm_upgrade_body').replace('{price}', `₪${confirmPlan.price}`)
+                : t('billing_confirm_downgrade_body').replace('{price}', `₪${confirmPlan.price}`)}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={handleChangePlan}
+                className={`flex-1 py-2.5 text-sm font-bold rounded-lg transition-colors ${
+                  confirmPlan.isUpgrade
+                    ? 'bg-amber-500 hover:bg-amber-400 text-black'
+                    : 'bg-red-500/80 hover:bg-red-500 text-white'
+                }`}
+              >
+                {t('billing_confirm_cta')}
+              </button>
+              <button
+                onClick={() => setConfirmPlan(null)}
+                className="flex-1 py-2.5 bg-[#1e1e2e] hover:bg-[#2a2a38] border border-[#2a2a38] text-[#a1a1b5] text-sm font-medium rounded-lg transition-colors"
+              >
+                {t('cancel')}
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -297,7 +342,7 @@ function BillingContent() {
                   </div>
                 ) : (
                   <button
-                    onClick={() => handleChangePlan(plan.key)}
+                    onClick={() => requestChangePlan(plan.key, plan.price, !isDowngrade && plan.key !== 'FREE')}
                     disabled={upgrading === plan.key}
                     className={`w-full py-2 px-4 rounded-lg text-sm font-medium transition-colors ${
                       isHighlight
