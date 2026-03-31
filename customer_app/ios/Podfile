@@ -41,6 +41,11 @@ post_install do |installer|
     target.build_configurations.each do |config|
       # Remove arm64 exclusion from simulator so Xcode 26+ builds correctly
       config.build_settings.delete 'EXCLUDED_ARCHS[sdk=iphonesimulator*]'
+      # Enable location permission for permission_handler plugin
+      config.build_settings['GCC_PREPROCESSOR_DEFINITIONS'] ||= [
+        '$(inherited)',
+        'PERMISSION_LOCATION=1',
+      ]
     end
   end
 end
