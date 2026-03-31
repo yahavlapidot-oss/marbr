@@ -211,7 +211,7 @@ export const translations = {
     // Layout / plan banner
     banner_free_plan: 'Free plan',
     banner_upgrade: 'Upgrade',
-    banner_limited: 'Limited to 1 campaign per month',
+    banner_limited: 'Limited to 3 campaigns per month',
     // Employees form
     employees_email: 'Email',
     employees_role: 'Role',
@@ -304,14 +304,14 @@ export const translations = {
     plan_feat_everything_starter: 'Everything in Starter',
     plan_feat_everything_growth: 'Everything in Growth',
     // Free plan features
-    plan_free_f1: '1 campaign per month',
+    plan_free_f1: '3 campaigns per month',
     plan_free_f2: 'Raffle & Every-N (X Winners) campaigns',
     plan_free_f3: 'Customer QR scanning & entry',
     plan_free_f4: 'Rewards & redemptions',
     plan_free_f5: 'Push notifications',
     plan_free_f6: 'Analytics — entries, winners, conversion rate',
     // Starter plan features
-    plan_starter_f1: '5 campaigns per month',
+    plan_starter_f1: '10 campaigns per month',
     plan_starter_f2: 'All campaign types (Snake 🐍, Point Guess 🔢)',
     plan_starter_f3: 'Campaign duplication',
     plan_starter_f4: 'Financial analytics — revenue, reward cost, ROI',
@@ -728,7 +728,7 @@ export const translations = {
     // Layout / plan banner
     banner_free_plan: 'תוכנית חינמית',
     banner_upgrade: 'שדרג',
-    banner_limited: 'מוגבל לקמפיין אחד בחודש',
+    banner_limited: 'מוגבל ל-3 קמפיינים בחודש',
     // Employees form
     employees_email: 'אימייל',
     employees_role: 'תפקיד',
@@ -821,14 +821,14 @@ export const translations = {
     plan_feat_everything_starter: 'כל מה שב-Starter',
     plan_feat_everything_growth: 'כל מה שב-Growth',
     // Free plan features
-    plan_free_f1: 'קמפיין אחד בחודש',
+    plan_free_f1: '3 קמפיינים בחודש',
     plan_free_f2: 'קמפיינים: הגרלה וזוכים X',
     plan_free_f3: 'סריקת QR והצטרפות לקוחות',
     plan_free_f4: 'פרסים ומימושים',
     plan_free_f5: 'התראות Push',
     plan_free_f6: 'אנליטיקה — הצטרפויות, זוכים, שיעור המרה',
     // Starter plan features
-    plan_starter_f1: '5 קמפיינים בחודש',
+    plan_starter_f1: '10 קמפיינים בחודש',
     plan_starter_f2: 'כל סוגי הקמפיינים (סנייק 🐍, ניחוש נקודות 🔢)',
     plan_starter_f3: 'שכפול קמפיינים',
     plan_starter_f4: 'אנליטיקה פיננסית — הכנסות, עלות פרסים, ROI',

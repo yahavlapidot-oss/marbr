@@ -38,7 +38,7 @@ function BillingContent() {
       key: 'FREE',
       name: t('plan_free_name'),
       price: 0,
-      campaigns: 1,
+      campaigns: 3,
       features: [
         t('plan_free_f1'),
         t('plan_free_f2'),
@@ -58,7 +58,7 @@ function BillingContent() {
       key: 'STARTER',
       name: t('plan_starter_name'),
       price: 149,
-      campaigns: 5,
+      campaigns: 10,
       features: [
         t('plan_starter_f1'),
         t('plan_starter_f2'),

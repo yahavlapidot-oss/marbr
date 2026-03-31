@@ -73,7 +73,7 @@ export default function DashboardPage() {
   const active = campaigns?.filter((c: any) => c.status === 'ACTIVE') ?? [];
 
   // Monthly campaign usage
-  const PLAN_MONTHLY_LIMIT: Record<string, number> = { FREE: 1, STARTER: 5, GROWTH: 20, ENTERPRISE: Infinity };
+  const PLAN_MONTHLY_LIMIT: Record<string, number> = { FREE: 3, STARTER: 10, GROWTH: 20, ENTERPRISE: Infinity };
   const plan = subscription?.plan ?? 'FREE';
   const monthlyLimit = PLAN_MONTHLY_LIMIT[plan] ?? 1;
   const startOfMonth = new Date();
