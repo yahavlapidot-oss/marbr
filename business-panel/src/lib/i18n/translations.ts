@@ -294,7 +294,6 @@ export const translations = {
     upgrade_duplicate: 'Campaign Duplication',
     upgrade_advanced_types: 'Advanced Campaign Types',
     upgrade_financial_analytics: 'Financial Analytics',
-    upgrade_event_log: 'Activity Audit Log',
     // Plan names
     plan_free_name: 'Free',
     plan_starter_name: 'Starter',
@@ -308,7 +307,6 @@ export const translations = {
     plan_feat_advanced_types: 'Snake 🐍 & Point Guess 🔢 campaigns',
     plan_feat_financials: 'Financial analytics (revenue, reward cost, ROI)',
     plan_feat_duplication: 'Campaign duplication',
-    plan_feat_event_log: 'Full activity audit log',
     plan_feat_everything_free: 'Everything in Free',
     plan_feat_everything_starter: 'Everything in Starter',
     plan_feat_everything_growth: 'Everything in Growth',
@@ -820,7 +818,6 @@ export const translations = {
     upgrade_duplicate: 'שכפול קמפיין',
     upgrade_advanced_types: 'סוגי קמפיינים מתקדמים',
     upgrade_financial_analytics: 'אנליטיקת הכנסות',
-    upgrade_event_log: 'יומן פעילות מלא',
     // Plan names
     plan_free_name: 'Free',
     plan_starter_name: 'Starter',
@@ -834,7 +831,6 @@ export const translations = {
     plan_feat_advanced_types: 'קמפיינים: משחק סנייק 🐍 וניחוש נקודות 🔢',
     plan_feat_financials: 'אנליטיקה פיננסית (הכנסות, עלות פרסים, ROI)',
     plan_feat_duplication: 'שכפול קמפיינים',
-    plan_feat_event_log: 'יומן פעילות מלא',
     plan_feat_everything_free: 'כל מה שב-Free',
     plan_feat_everything_starter: 'כל מה שב-Starter',
     plan_feat_everything_growth: 'כל מה שב-Growth',

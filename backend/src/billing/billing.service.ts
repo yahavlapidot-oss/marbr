@@ -14,14 +14,13 @@ export interface PlanFeatures {
   advancedCampaignTypes: boolean; // WEIGHTED_ODDS, SNAKE, POINT_GUESS
   duplication: boolean;
   financialAnalytics: boolean;
-  eventLog: boolean;
 }
 
 export const PLAN_LIMITS: Record<SubscriptionPlan, PlanFeatures> = {
-  FREE:       { campaigns: 3,        advancedCampaignTypes: false, duplication: false, financialAnalytics: false, eventLog: false },
-  STARTER:    { campaigns: 10,       advancedCampaignTypes: false, duplication: true,  financialAnalytics: true,  eventLog: false },
-  GROWTH:     { campaigns: 20,       advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: true  },
-  ENTERPRISE: { campaigns: Infinity, advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true,  eventLog: true  },
+  FREE:       { campaigns: 3,        advancedCampaignTypes: false, duplication: false, financialAnalytics: false },
+  STARTER:    { campaigns: 10,       advancedCampaignTypes: false, duplication: true,  financialAnalytics: true  },
+  GROWTH:     { campaigns: 20,       advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true  },
+  ENTERPRISE: { campaigns: Infinity, advancedCampaignTypes: true,  duplication: true,  financialAnalytics: true  },
 };
 
 const STRIPE_PRICE_MAP: Record<Exclude<SubscriptionPlan, 'FREE'>, string> = {

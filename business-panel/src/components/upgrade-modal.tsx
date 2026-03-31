@@ -27,7 +27,6 @@ export function UpgradeModal({ open, onClose, requiredPlan, featureName }: Upgra
     GROWTH: [
       t('plan_growth_f1'),
       t('plan_feat_advanced_types'),
-      t('plan_feat_event_log'),
       t('plan_feat_everything_starter'),
     ],
     ENTERPRISE: [
