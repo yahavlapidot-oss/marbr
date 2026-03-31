@@ -36,10 +36,10 @@ class _ShellScreenState extends ConsumerState<ShellScreen> {
     // FCM real-time path: fires the moment the backend sends the push notification.
     _fcmSub = NotificationsService().onCampaignEnded.listen(_onFcmCampaignEnded);
 
-    // Polling path: every 5s, directly check /entries/active.
+    // Polling path: every 30s fallback check (FCM is the primary real-time path).
     // The timer is self-contained — it reads the API directly and updates
     // _trackedCampaignId from the response so it doesn't depend solely on build().
-    _pollTimer = Timer.periodic(const Duration(seconds: 5), (_) async {
+    _pollTimer = Timer.periodic(const Duration(seconds: 30), (_) async {
       if (!mounted || _dialogShowing) return;
       try {
         final res = await createDio().get('/entries/active');
