@@ -78,7 +78,7 @@ export class AnalyticsController {
   ) {
     await this.assertBusinessAccess(user.id, user.role, businessId);
     const plan = await this.getPlan(businessId);
-    if (!PLAN_LIMITS[plan].eventLog) return [];
+    if (plan === 'FREE' || plan === 'STARTER') return [];
     return this.svc.getEventLog(businessId);
   }
 
